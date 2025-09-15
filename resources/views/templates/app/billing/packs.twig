@@ -1,0 +1,98 @@
+{% extends "/layouts/main.twig" %}
+
+{% set xdata = 'packs' %}
+{% block title p__('title', 'Add-on credit packs')|title %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {link: 'app/billing', label: p__('button', 'Billing overview')} %}
+
+		<div class="flex items-center gap-4 mt-4">
+			<h1>{{ p__('heading', 'Add-on credit packs') }}</h1>
+		</div>
+
+		<p class="mt-2 text-content-dimmed">
+			{{ __('Permanent, non-renewing extras for your subscription, used only after recurring credits run out.')}}
+		</p>
+	</div>
+
+	{# List #}
+	<div class="group/list" data-state="initial" :data-state="state">
+		<div class="hidden group-data-[state=empty]/list:block">
+			{% include "sections/empty.twig" with { title: p__('heading', 'Not available'), message: __('Add-on credit packs are not available at the moment') } %}
+		</div>
+
+		<ul class="group-data-[state=empty]/list:hidden flex flex-col gap-1 mt-3">
+			{% for i in range(1,3) %}
+				<li class="hidden grid-cols-1 group-data-[state=initial]/list:grid md:grid-cols-3 gap-4 md:gap-8 p-8 box">
+					<div>
+						<div class="w-32 h-6 loading"></div>
+						<div class="w-48 h-5 mt-1 loading"></div>
+					</div>
+
+					<div>
+						<div class="w-32 h-6 loading"></div>
+						<div class="w-48 h-5 mt-1 loading"></div>
+					</div>
+
+					<div class="flex flex-col md:items-end">
+						<div class="w-32 h-6 loading"></div>
+						<div class="w-48 h-5 mt-1 loading"></div>
+					</div>
+				</li>
+			{% endfor %}
+
+			<template x-for="pack in packs" :key="pack.id">
+				<li class="relative grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8 p-8 box hover:border-line">
+					<a :href="`app/billing/checkout/${pack.id}`" class="absolute top-0 left-0 w-full h-full cursor-pointer"></a>
+
+					<div class="flex flex-col gap-4">
+						<template x-if="pack.is_featured">
+							<div class="flex items-center gap-2 md:hidden">
+								<span class="badge badge-success">{{ __('Featured') }}</span>
+							</div>
+						</template>
+
+						<div>
+							<div class="flex items-center gap-2">
+								<h3 class="text-lg" x-text="pack.title"></h3>
+
+								<template x-if="pack.is_featured">
+									<span class="badge badge-success hidden md:flex">{{ __('Featured') }}</span>
+								</template>
+							</div>
+
+							<p class="text-sm text-content-dimmed" x-text="pack.description"></p>
+						</div>
+					</div>
+
+					<div>
+						<div class="relative text-lg font-bold">
+							<x-credit :data-value="pack.credit_count"></x-credit>
+						</div>
+
+						<p class="text-sm text-content-dimmed">
+							{{ __('Credits') }}
+						</p>
+					</div>
+
+					<div class="md:text-end">
+						<div class="text-lg font-bold">
+							<x-money :data-value="pack.price" currency="{{ currency.code }}" minor-units="{{ currency.fraction_digits }}"></x-money>
+						</div>
+
+						<p class="text-sm text-content-dimmed">
+							{{ __('One time') }}
+						</p>
+					</div>
+				</li>
+			</template>
+		</ul>
+
+		<template x-if="packs.length > 0">
+			<p class="mt-4 text-xs text-content-dimmed">
+				{{ __('You can purchase additional credits to supplement your existing subscription.') }}
+			</p>
+		</template>
+	</div>
+{% endblock %}

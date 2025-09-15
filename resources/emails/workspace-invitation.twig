@@ -1,0 +1,56 @@
+{% extends "@emails/layout.twig" %}
+
+{% block subject %}
+	{% if option.site.name is defined and option.site.name %}
+		You were invited to the workspace
+		{{ workspace.name }}
+		on
+		{{ option.site.name }}
+	{% else %}
+		You were invited to the workspace
+		{{ workspace.name }}
+	{% endif %}
+{% endblock %}
+
+{% block content %}
+	<div>
+		{% if option.site.name is defined and option.site.name  %}
+			Greetings form
+			<strong>{{ option.site.name }}</strong>,
+		{% else %}
+			Hello,
+		{% endif %}
+
+		<p>
+			{% if option.site.name is defined and option.site.name  %}
+				You've been invited to be a member of the workspace
+				<strong>{{ workspace.name }}</strong>
+				on
+				<strong>{{ option.site.name }}</strong>.
+			{% else %}
+				You've been invited to be a member of the workspace
+				<strong>{{ workspace.name }}</strong>.
+			{% endif %}
+		</p>
+
+		<p>
+			Click the button below to accept the invitation:
+		</p>
+
+		<p>
+			<a href="{{ accept_invitation_url }}" class="button">Accept Invitation</a>
+		</p>
+
+		<p>If you don't recognize this, you may safely ignore it.</p>
+
+		<p>
+			Warm regards,
+			<br/>
+
+			<strong>
+				{{ option.site.name ?? '' }}
+				team
+			</strong>
+		</p>
+	</div>
+{% endblock %}

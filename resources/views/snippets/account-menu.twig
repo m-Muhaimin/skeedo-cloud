@@ -1,0 +1,126 @@
+<div class="relative" @click.outside="$refs.usermenu.removeAttribute('data-open')">
+
+	<div class="start-0 top-auto end-auto bottom-full mb-1 w-60 menu max-h-max peer" x-ref="usermenu" @click="$el.removeAttribute('data-open')">
+		<a href="app/account" class="flex gap-2 items-center p-4 w-full text-start hover:bg-intermediate hover:text-intermediate-content">
+			<x-avatar class="size-7" title="{{ user.first_name ~ " " ~ user.last_name }}" src="{{ user.avatar }}"></x-avatar>
+
+			<div class="max-w-[156px]">
+				<div class="overflow-hidden font-semibold text-xs text-ellipsis">
+					{{ user.first_name }}
+					{{ user.last_name }}
+				</div>
+
+				<div class="overflow-hidden text-xs text-content-dimmed text-ellipsis">
+					{{ user.email }}</div>
+			</div>
+		</a>
+
+		<hr class="border-t border-line-dimmed">
+		<ul>
+			{% if user.role == 'admin' %}
+				{% if view_namespace == 'admin' %}
+					<li>
+						<a href="app" class="flex gap-2 items-center px-4 py-2 hover:bg-intermediate hover:text-intermediate-content">
+							<i class="text-lg ti ti-sparkles"></i>
+							{{ p__('button', 'Switch to app') }}
+						</a>
+					</li>
+				{% else %}
+					<li>
+						<a href="admin" class="flex gap-2 items-center px-4 py-2 hover:bg-intermediate hover:text-intermediate-content">
+							<i class="text-lg ti ti-lock-cog"></i>
+							{{ p__('button', 'Switch to admin') }}
+						</a>
+					</li>
+				{% endif %}
+			{% endif %}
+		</ul>
+
+		<hr class="border-t border-line-dimmed">
+
+		<ul>
+			<li>
+				<a href="app/account" class="flex gap-2 items-center px-4 py-2 hover:bg-intermediate hover:text-intermediate-content">
+					<i class="text-lg ti ti-user-circle"></i>
+
+					{{ p__('button', 'Account') }}
+				</a>
+			</li>
+
+			{% if option.affiliates is defined and option.affiliates.is_enabled and view_namespace == 'app' %}
+				<li>
+					<a href="app/affiliates" class="flex gap-2 items-center px-4 py-2 hover:bg-intermediate hover:text-intermediate-content">
+						<i class="text-lg ti ti-coins"></i>
+
+						{{ p__('button', 'Affiliates') }}
+					</a>
+				</li>
+			{% endif %}
+
+			<li>
+				<a href="logout" class="flex gap-2 items-center px-4 py-2 hover:bg-intermediate hover:text-intermediate-content">
+					<i class="text-lg ti ti-logout"></i>
+
+					{{ p__('button', 'Logout') }}
+				</a>
+			</li>
+		</ul>
+
+		<hr class="border-t border-line-dimmed">
+
+		<ul class="flex flex-col gap-2 px-4 py-2 text-xs text-content-dimmed">
+			{% if user.role == 'admin' %}
+				<li>
+					<a href="admin/api-docs" class="flex gap-1 items-center hover:text-content group" target="_blank">
+						<span class="group-hover:underline">
+							{{ p__('button', 'Admin API Docs') }}
+						</span>
+
+						<i class="text-xs ti ti-external-link"></i>
+					</a>
+				</li>
+			{% endif %}
+
+			{% if option.policies.tos is defined and option.policies.tos is not empty %}
+				<li>
+					<a href="policies/terms" class="hover:text-content hover:underline">
+						{{ p__('button', 'Terms of services') }}
+					</a>
+				</li>
+			{% endif %}
+
+			{% if option.policies.privacy is defined and option.policies.privacy is not empty %}
+				<li>
+					<a href="policies/privacy" class="hover:text-content hover:underline">
+						{{ p__('button', 'Privacy policy') }}
+					</a>
+				</li>
+			{% endif %}
+
+			{% if option.policies.refund is defined and option.policies.refund is not empty %}
+				<li>
+					<a href="policies/refund" class="hover:text-content hover:underline">
+						{{ p__('button', 'Refund policy') }}
+					</a>
+				</li>
+			{% endif %}
+		</ul>
+	</div>
+
+	<button class="flex items-center w-full gap-2 rounded-lg text-intermediate-content-dimmed hover:text-content peer-data-open:text-intermediate-content text-start" @click="$refs.usermenu.toggleAttribute('data-open')">
+		<x-avatar class="bg-content text-main size-7" title="{{ user.first_name ~ " " ~ user.last_name }}" src="{{ user.avatar }}"></x-avatar>
+
+		<div class="max-w-[128px] whitespace-nowrap">
+			<div class="overflow-hidden text-xs font-semibold text-intermediate-content text-ellipsis">
+				{{ user.first_name }}
+				{{ user.last_name }}
+			</div>
+
+			<div class="overflow-hidden text-xs text-intermediate-content-dimmed text-ellipsis">
+				{{ user.subscription ? user.subscription.plan.title : user.email }}
+			</div>
+		</div>
+
+		<i class="text-lg ms-auto ti ti-dots-vertical"></i>
+	</button>
+</div>

@@ -1,0 +1,59 @@
+{% if placeholder is defined %}
+	<div class="flex relative flex-col gap-6 box hover:border-line" data-starred="false">
+
+		<div class="flex justify-between items-center avatar">
+			<div class="w-10 h-10 rounded-ful loading"></div>
+		</div>
+
+		<div>
+			<div class="w-16 h-6 loading"></div>
+			<div class="mt-2 h-4 loading"></div>
+			<div class="mt-1 me-3 h-4 loading"></div>
+			<div class="mt-1 w-1/2 h-4 loading"></div>
+		</div>
+
+		<div class="flex flex-col gap-6 mt-auto">
+			<div class="flex gap-2 items-center">
+				<span class="py-1 w-10 h-5 loading"></span>
+			</div>
+		</div>
+	</div>
+{% else %}
+	<div class="flex relative flex-col gap-6 box hover:border-line" data-starred="false">
+
+		<div class="flex justify-between items-center">
+			<x-avatar :style="{backgroundColor: preset.color, color: '#fff'}" :title="preset.title" :icon="preset.image"></x-avatar>
+
+			<template x-if="$store.workspace.subscription?.plan.config.presets != null && !$store.workspace.subscription?.plan.config.presets.includes(preset.id)">
+				<a href="app/billing" x-tooltip.raw="{{ __('Upgrade plan') }}" class="relative z-20 text-content-dimmed">
+					<i class="text-2xl ti ti-lock-up"></i>
+				</a>
+			</template>
+
+			<template>
+				<button>
+					<i class="ti ti-star text-2xl text-line-dimmed hover:text-line group-data-[starred=true]:hidden"></i>
+					<i class="ti ti-star-filled text-2xl text-[#F3CF6B] hidden group-data-[starred=true]:block hover:text-line"></i>
+				</button>
+			</template>
+		</div>
+
+		<div>
+			<h3 class="font-bold" x-text="preset.title"></h3>
+
+			<p class="text-sm text-content-dimmed mt-1 min-h-[3.75rem]" x-text="preset.description">
+				{{ p__('writer-tool-description', 'Write SEO optimized blogs, sales emails and more...') }}
+			</p>
+		</div>
+
+		<div class="flex flex-col gap-6 mt-auto">
+			<div class="flex gap-2 items-center">
+				<template x-if="preset.category">
+					<span class="px-2 py-1 text-xs capitalize bg-transparent rounded-lg border border-line text-content" x-text="preset.category.title"></span>
+				</template>
+			</div>
+		</div>
+
+		<a class="absolute top-0 left-0 z-10 w-full h-full" :href="$store.workspace.subscription?.plan.config.presets == null || $store.workspace.subscription?.plan.config.presets.includes(preset.id) ? `app/writer/${preset.id}` : `app/billing`"></a>
+	</div>
+{% endif %}

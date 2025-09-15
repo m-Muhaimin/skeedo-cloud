@@ -1,0 +1,504 @@
+{% extends "/layouts/main.twig" %}
+{% set mobile_head_button = {
+  link: 'app/writer'
+} %}
+
+{% set active_menu = '/app/presets' %}
+
+{% set xdata %}
+writer({{ (preset ?? null )|json_encode() }},
+{{ (document ?? null )|json_encode() }})
+{% endset %}
+
+{% block title (preset is defined ? preset.title : p__('title', 'Writer'))|title %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {
+    link: document is defined ? 'app/library/documents' : 'app/presets', 
+    label: document is defined ? p__('button', 'Library') : p__('button', 'Templates'),
+    icon: document is defined ? 'square-rounded-arrow-up-filled' : null
+  } %}
+
+		<h1 class="{{ preset is defined ? 'mt-4' : '' }}">
+			{{ preset is defined ? preset.title : p__('heading', 'Writer') }}</h1>
+
+		{% if preset is defined %}
+			<p class="text-content-dimmed">{{ preset.description }}</p>
+		{% endif %}
+	</div>
+
+	<div class="flex flex-col gap-4">
+		<section class="box" data-density="comfortable" x-show="showForm">
+			<h2>{{ p__('heading', 'Prompts') }}</h2>
+
+			<x-form>
+				<form class="grid grid-cols-1 gap-6 mt-4" x-ref="form" @submit.prevent="{{ workspace.subscription.plan.config.writer.is_enabled is defined and workspace.subscription.plan.config.writer.is_enabled ? 'submit(null)' : '' }}">
+					{% if placeholders|length > 0 %}
+						{% for p in placeholders %}
+							{% set id = "i#{random()}" %}
+
+							{% if p.type.value is defined and p.type.value == 'text' %}
+								<div>
+									<label for="{{ id }}">
+										{{ p.label }}
+
+										{% if p.info %}
+											<i class="ti ti-help-square-rounded-filled help" x-tooltip.raw="{{ p.info }}" data-tooltip></i>
+										{% endif %}
+									</label>
+
+									{% if p.multiline %}
+										<textarea cols="5" id="{{ id }}" name="{{ p.name }}" placeholder="{{ p.placeholder }}" class="mt-2 input" autocomplete="off" rows="3" {{ p.required ? 'required' : '' }}>{{ p.value }}</textarea>
+									{% else %}
+										<input type="text" id="{{ id }}" name="{{ p.name }}" placeholder="{{ p.placeholder }}" class="mt-2 input" autocomplete="off" rows="3" value="{{ p.value }}" {{ p.required ? 'required' : '' }}>
+									{% endif %}
+								</div>
+							{% endif %}
+
+							{% if p.type.value is defined and p.type.value == 'enum' %}
+								<div>
+									<label for="{{ id }}">
+										{{ p.label }}
+
+										{% if p.info %}
+											<i class="ti ti-help-square-rounded-filled help" x-tooltip.raw="{{ p.info }}" data-tooltip></i>
+										{% endif %}
+									</label>
+
+									<select id="{{ id }}" name="{{ p.name }}" class="mt-2 input" {{ p.required ? 'required' : '' }}>
+										{% for o in p.options %}
+											<option value="{{ o.value }}" {{ o.value == p.value ? 'seleected' : '' }}>{{ o.label }}</option>
+										{% endfor %}
+									</select>
+								</div>
+							{% endif %}
+
+							{% if p.type == 'language' %}
+								<div>
+									<label for="language">
+										{{ p__('label', 'Language') }}
+									</label>
+
+									{% set languages = {
+                    "sq-AL": "Albanian (Shqip)", 
+                    "ar-SA": "Arabic (العربية)", 
+                    "hy-AM": "Armenian (Հայերեն)", 
+                    "awa-IN": "Awadhi (अवधी)", 
+                    "az-AZ": "Azerbaijani (Azərbaycanca)", 
+                    "ba-RU": "Bashkir (Башҡорт)", 
+                    "eu-ES": "Basque (Euskara)", 
+                    "be-BY": "Belarusian (Беларуская)", 
+                    "bn-IN": "Bengali (বাংলা)", 
+                    "bho-IN": "Bhojpuri (भोजपुरी)", 
+                    "bs-BA": "Bosnian (Bosanski)", 
+                    "pt-BR": "Brazilian Portugu (português brasileiro)", 
+                    "bg-BG": "Bulgarian (български)", 
+                    "yue-HK": "Cantonese (Yue) (粵語)", 
+                    "ca-ES": "Catalan (Català)", 
+                    "hi-IN": "Chhattisgarhi (छत्तीसगढ़ी)", 
+                    "zh-CN": "Chinese (中文)", 
+                    "hr-HR": "Croatian (Hrvatski)", 
+                    "cs-CZ": "Czech (Čeština)", 
+                    "da-DK": "Danish (Dansk)", 
+                    "doi-IN": "Dogri (डोगरी)", 
+                    "nl-NL": "Dutch (Nederlands)", 
+                    "en-US": "English", 
+                    "et-EE": "Estonian (Eesti)", 
+                    "fo-FO": "Faroese (Føroyskt)", 
+                    "fi-FI": "Finnish (Suomi)", 
+                    "fr-FR": "French (Français)", 
+                    "gl-ES": "Galician (Galego)", 
+                    "ka-GE": "Georgian (ქართული)", 
+                    "de-DE": "German (Deutsch)", 
+                    "el-GR": "Greek (Ελληνικά)", 
+                    "gu-IN": "Gujarati (ગુજરાતી)", 
+                    "ha-IN": "Haryanvi (हरियाणवी)", 
+                    "hi-IN": "Hindi (हिंदी)", 
+                    "hu-HU": "Hungarian (Magyar)", 
+                    "id-ID": "Indonesian (Bahasa Indonesia)", 
+                    "ga-IE": "Irish (Gaeilge)", 
+                    "it-IT": "Italian (Italiano)", 
+                    "ja-JP": "Japanese (日本語)", 
+                    "jv-ID": "Javanese (Basa Jawa)", 
+                    "kn-IN": "Kannada (ಕನ್ನಡ)", 
+                    "ks-IN": "Kashmiri (कश्मीरी)", 
+                    "kk-KZ": "Kazakh (Қазақша)", 
+                    "kok-IN": "Konkani (कोंकणी)", 
+                    "ko-KR": "Korean (한국어)", 
+                    "ky-KG": "Kyrgyz (Кыргызча)", 
+                    "lv-LV": "Latvian (Latviešu)", 
+                    "lt-LT": "Lithuanian (Lietuvių)", 
+                    "mk-MK": "Macedonian (Македонски)", 
+                    "mai-IN": "Maithili (मैथिली)", 
+                    "ms-MY": "Malay (Bahasa Melayu)", 
+                    "mt-MT": "Maltese (Malti)", 
+                    "zh-CN": "Mandarin (普通话)", 
+                    "zh-CN": "Mandarin Chinese (中文)", 
+                    "mr-IN": "Marathi (मराठी)", 
+                    "mwr-IN": "Marwari (मारवाड़ी)", 
+                    "nan-TW": "Min Nan (閩南語)", 
+                    "mo-MD": "Moldovan (Moldovenească)", 
+                    "mn-MN": "Mongolian (Монгол)", 
+                    "sr-RS": "Montenegrin (Crnogorski)", 
+                    "ne-NP": "Nepali (नेपाली)", 
+                    "no-NO": "Norwegian (Norsk)", 
+                    "or-IN": "Oriya (ଓଡ଼ିଆ)", 
+                    "ps-AF": "Pashto (پښتو)", 
+                    "fa-IR": "Persian (Farsi) (فارسی)", 
+                    "pl-PL": "Polish (Polski)", 
+                    "pt-PT": "Portuguese (Português)", 
+                    "pa-IN": "Punjabi (ਪੰਜਾਬੀ)", 
+                    "raj-IN": "Rajasthani (राजस्थानी)", 
+                    "ro-RO": "Romanian (Română)", 
+                    "ru-RU": "Russian (Русский)", 
+                    "sa-IN": "Sanskrit (संस्कृतम्)", 
+                    "sat-IN": "Santali (संताली)", 
+                    "sr-RS": "Serbian (Српски)", 
+                    "sd-IN": "Sindhi (سنڌي)", 
+                    "si-LK": "Sinhala (සිංහල)", 
+                    "sk-SK": "Slovak (Slovenčina)", 
+                    "sl-SI": "Slovene (Slovenščina)", 
+                    "sl-SI": "Slovenian (Slovenščina)", 
+                    "es-ES": "Spanish (Español)", 
+                    "tr-TR": "Turkish (Türkçe)", 
+                    "uk-UA": "Ukrainian (Українська)", 
+                    "ur-PK": "Urdu (اردو)", 
+                    "uz-UZ": "Uzbek (Ўзбек)", 
+                    "vi-VN": "Vietnamese (Việt Nam)", 
+                    "cy-GB": "Welsh (Cymraeg)", 
+                    "wuu-CN": "Wu (吴语)" 
+                    } %}
+
+									{% set default = option.features.writer.default_language|default('auto') %}
+									{% if default == 'auto' %}
+										{% set default = locale|default('en-US') %}
+									{% endif %}
+
+									<select id="language" name="language" class="mt-2 input">
+										{% for code, language in languages %}
+											<option value="{{ language }}" {{ default == code ? 'selected' : '' }}>
+												{{ language }}
+											</option>
+										{% endfor %}
+									</select>
+								</div>
+							{% endif %}
+
+							{% if p.type == 'tone' %}
+								<div>
+									<label for="tone">
+										{{ p__('label', 'Tone of voice') }}
+									</label>
+
+									<div class="flex flex-wrap gap-2 items-center mt-2">
+										{% 
+                set tones = [
+                  p__('voice-tone', 'Professional'), 
+                  p__('voice-tone', 'Funny'), 
+                  p__('voice-tone', 'Casual'), 
+                  p__('voice-tone', 'Excited'), 
+                  p__('voice-tone', 'Witty'), 
+                  p__('voice-tone', 'Sarcastic'),
+                  p__('voice-tone', 'Dramatic'), 
+                  p__('voice-tone', 'Feminine'), 
+                  p__('voice-tone', 'Masculine'), 
+                  p__('voice-tone', 'Grumpy'), 
+                  p__('voice-tone', 'Bold'), 
+                  p__('voice-tone', 'Secretive')
+                ] 
+              %}
+
+										{% for tone in tones %}
+											<label>
+												<input type="radio" name="tone" value="{{ tone }}" class="radio-button"/>
+
+												<span>{{ tone }}</span>
+											</label>
+										{% endfor %}
+									</div>
+								</div>
+							{% endif %}
+						{% endfor %}
+					{% else %}
+						{% set id = "i#{random()}" %}
+						<div>
+							<label for="{{ id }}">{{ p__("label", "Query") }}</label>
+
+							<textarea cols="5" id="{{ id }}" name="query" placeholder="{{ __('Enter your query here') }}" class="mt-2 input" autocomplete="off" rows="3" required></textarea>
+						</div>
+					{% endif %}
+
+					<div>
+						<div class="label">
+							{{ p__('label', 'Creativity') }}
+						</div>
+
+						<div class="flex flex-wrap gap-2 items-center mt-2">
+							{% set levels = {
+              "0.0": p__('creativity-level', 'Minimal'),
+              "0.1": p__('creativity-level', 'Subtle'),
+              "0.2": p__('creativity-level', 'Basic'),
+              "0.3": p__('creativity-level', 'Modest'),
+              "0.4": p__('creativity-level', 'Adequate'),
+              "0.5": p__('creativity-level', 'Balanced'),
+              "0.6": p__('creativity-level', 'Intermediate'),
+              "0.7": p__('creativity-level', 'Enriched'),
+              "0.8": p__('creativity-level', 'Expressive'),
+              "0.9": p__('creativity-level', 'Imaginative'),
+              "1.0": p__('creativity-level', 'Creative'),
+              "1.1": p__('creativity-level', 'Innovative'),
+              "1.2": p__('creativity-level', 'Inspired'),
+              "1.3": p__('creativity-level', 'Visionary'),
+              "1.4": p__('creativity-level', 'Inventive'),
+              "1.5": p__('creativity-level', 'Pioneering'),
+              "1.6": p__('creativity-level', 'Artistic'),
+              "1.7": p__('creativity-level', 'Radical'),
+              "1.8": p__('creativity-level', 'Genius'),
+              "1.9": p__('creativity-level', 'Transcendent'),
+              "2.0": p__('creativity-level', 'Boundless'),
+            } %}
+
+							{% for level, label in levels %}
+								<label>
+									<input type="radio" name="temperature" value="{{ level }}" class="radio-button"/>
+
+									<span>
+										{{ label }}
+									</span>
+								</label>
+							{% endfor %}
+						</div>
+					</div>
+
+					<div>
+						{% if workspace.subscription.plan.config.writer.is_enabled is defined and workspace.subscription.plan.config.writer.is_enabled %}
+							<button type="submit" class="w-full button button-accent" :processing="isProcessing">
+
+								<svg width="24" height="24" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="spinner">
+									<style>
+										.spinner_S1WN {
+											animation: spinner_MGfb 0.8s linear infinite;
+											animation-delay: -0.8s
+										}
+
+										.spinner_Km9P {
+											animation-delay: -0.65s
+										}
+
+										.spinner_JApP {
+											animation-delay: -0.5s
+										}
+
+										@keyframes spinner_MGfb {
+
+											93.75%,
+											100% {
+												opacity: .2
+											}
+										}
+									</style>
+									<circle class="spinner_S1WN" cx="4" cy="12" r="3"/>
+									<circle class="spinner_S1WN spinner_Km9P" cx="12" cy="12" r="3"/>
+									<circle class="spinner_S1WN spinner_JApP" cx="20" cy="12" r="3"/>
+								</svg>
+
+								<span class="inline-flex gap-1 items-center" x-show="!isProcessing">
+									<i class="ti ti-sparkles"></i>
+
+									{{ p__('button', 'Generate') }}
+								</span>
+							</button>
+						{% else %}
+							<a href="app/billing" class="w-full button button-dimmed">
+								<i class="ti ti-lock-up"></i>
+
+								{{ p__('button', 'Upgrade plan') }}
+							</a>
+						{% endif %}
+					</div>
+				</form>
+			</x-form>
+		</section>
+
+		<template x-if="docs.length > 0 && docs[index]">
+			<div class="relative">
+				<div class="py-0 rounded-b-none border-b-0 opacity-0 transition-all duration-500 scale-90 box" :class="docs.length > 2 ? 'h-4 opacity-100' : 'h-0 opacity-0'"></div>
+
+				<div class="py-0 rounded-b-none border-b-0 opacity-0 transition-all duration-500 scale-95 box" :class="docs.length > 1 ? 'h-4 opacity-100' : 'h-0 opacity-0'"></div>
+
+				<div class="flex flex-col gap-4 box" data-density="comfortable">
+					<template x-if="docs.length > 1">
+						<div class="flex gap-1 items-center text-xs text-content-dimmed">
+							<button type="button" :disabled="index==0" @click="index--" ; class="hover:text-content">
+								<i class="text-xs ti ti-chevron-left"></i>
+							</button>
+
+							<span>
+								<span x-text="index+1"></span>
+								<span>/</span>
+								<span x-text="docs.length"></span>
+							</span>
+
+							<button type="button" :disabled="index+1 >= docs.length" @click="index++" ; class="hover:text-content">
+								<i class="text-xs ti ti-chevron-right"></i>
+							</button>
+						</div>
+					</template>
+
+					<div class="flex gap-4 justify-between items-start">
+						<template x-if="docs[index].id">
+							<div class="grow">
+								<div class="text-xl autogrow-textarea font-editor-heading" :data-replicated-value="docs[index].title">
+									<textarea placeholder="{{ __('Untitled resource') }}" autocomplete="off" x-model="docs[index].title" rows="1" @input.debounce.750ms="saveDocument(docs[index])" class="block px-0 py-0 w-full bg-transparent border-0 ring-0 transition-colors appearance-none outline-none resize-none placeholder:text-content-dimmed placeholder:opacity-50 read-only:text-content-dimmed" name="title"></textarea>
+								</div>
+
+								<div class="mt-1">
+									<x-uuid x-text="docs[index].id"></x-uuid>
+								</div>
+							</div>
+						</template>
+
+						<template x-if="!docs[index].id">
+							<div class="flex flex-col gap-3 grow">
+								<div class="w-2/3 h-6 loading"></div>
+
+								<div class="mb-1">
+									<div class="w-full h-4 max-w-64 loading"></div>
+								</div>
+							</div>
+						</template>
+
+						<div class="flex gap-2 items-center shrink-0">
+							<button type="button" @click="showForm = !showForm" :class="{'text-content-dimmed': showForm}" x-tooltip.raw="{{ __("Toggle form") }}">
+								<i class="text-2xl ti ti-section"></i>
+							</button>
+
+							{% if workspace.subscription.plan.config.writer.is_enabled is defined and workspace.subscription.plan.config.writer.is_enabled %}
+								<button type="button" @click="submit(docs[index].params)" x-tooltip.raw="{{ __("Regenerate") }}" :disabled="isProcessing">
+									<i class="text-2xl ti ti-rotate"></i>
+								</button>
+							{% endif %}
+						</div>
+					</div>
+
+					<hr>
+
+					<template x-if="docs[index].content">
+						<x-markdown class="block editor" x-effect="$el.setContent(docs[index].content)" :animate="isProcessing"></x-markdown>
+					</template>
+
+					<template x-if="!docs[index].content">
+						<div class="flex flex-col gap-2 my-1">
+							<div class="h-4 loading"></div>
+							<div class="h-4 loading"></div>
+							<div class="w-2/3 h-4 loading"></div>
+						</div>
+					</template>
+
+					<template x-if="docs[index] && docs[index].id">
+						<div class="flex flex-col gap-4 mt-4 md:items-center md:flex-row">
+							<div class="flex gap-4 items-center me-auto">
+								{% include "snippets/audience.twig" with {ref: 'docs[index]'} %}
+
+								<span class="flex gap-1 items-center text-sm text-content-dimmed">
+									<i class="text-base ti ti-coins"></i>
+									<x-credit :data-value="docs[index].cost" format="{{ __(":count credits") }}"></x-credit>
+								</span>
+							</div>
+
+							<div class="flex gap-4 items-center">
+								<button @click="copyDocumentContents(docs[index])" class="transition-all text-content-dimmed hover:text-content">
+									<i class="text-xl ti ti-copy"></i>
+								</button>
+
+								<div class="relative" @click.outside="$refs.downloadOptions.removeAttribute('data-open')">
+
+									<button @click="$refs.downloadOptions.toggleAttribute('data-open')" class="transition-all text-content-dimmed hover:text-content">
+										<i class="text-xl ti ti-download"></i>
+									</button>
+
+									<div class="menu menu-tr" x-ref="downloadOptions" @click="$el.removeAttribute('data-open')">
+
+										<ul class="text-sm">
+											<li>
+												<button class="flex gap-2 items-center px-4 py-2 w-full text-start hover:bg-intermediate" @click="download(docs[index], 'word')">
+													<i class="text-lg text-content-dimmed ti ti-letter-w"></i>
+
+													{{ p__('button', 'Word document') }}
+												</button>
+											</li>
+
+											<li>
+												<button class="flex gap-2 items-center px-4 py-2 w-full text-start hover:bg-intermediate" @click="download(docs[index], 'html')">
+													<i class="text-lg text-content-dimmed ti ti-brand-html5"></i>
+													{{ p__('button', 'HTML file') }}
+												</button>
+											</li>
+
+											<li>
+												<button class="flex gap-2 items-center px-4 py-2 w-full text-start hover:bg-intermediate" @click="download(docs[index], 'markdown')">
+													<i class="text-lg text-content-dimmed ti ti-markdown"></i>
+													{{ p__('button', 'Markdown') }}
+												</button>
+											</li>
+
+											<li>
+												<button class="flex gap-2 items-center px-4 py-2 w-full text-start hover:bg-intermediate" @click="download(docs[index], 'text')">
+													<i class="text-lg text-content-dimmed ti ti-txt"></i>
+													{{ p__('button', 'Text') }}
+												</button>
+											</li>
+										</ul>
+									</div>
+								</div>
+
+								<button @click="modal.open('delete-modal')" class="transition-all text-content-dimmed hover:text-content">
+									<i class="text-xl ti ti-trash group-hover:text-failure"></i>
+								</button>
+							</div>
+						</div>
+					</template>
+				</div>
+			</div>
+		</template>
+	</div>
+
+	<modal-element name="delete-modal">
+		<template x-if="docs[index]">
+			<form class="flex flex-col gap-6 items-center modal" @submit.prevent="deleteDocument(docs[index])">
+				<div class="flex relative justify-center items-center mx-auto w-24 h-24 rounded-full text-failure/25">
+					<svg class="absolute top-0 left-0 w-full h-full" width="112" height="112" viewbox="0 0 112 112" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<circle cx="56" cy="56" r="55.5" stroke="currentColor" stroke-dasharray="8 8"/>
+					</svg>
+
+					<div class="flex justify-center items-center w-20 h-20 text-4xl rounded-full transition-all bg-failure/25 text-failure">
+						<i class="text-4xl ti ti-trash"></i>
+					</div>
+				</div>
+
+				<div class="flex flex-col gap-2 items-center text-center">
+					<div class="text-lg text-center">
+						{{ __('Do you really want to delete the document?') }}
+					</div>
+
+					<p class="text-sm text-content-dimmed">
+						{{ __('All associated content and files will be permanently removed. This action cannot be reverted once confirmed.') }}
+					</p>
+				</div>
+
+				<div class="flex gap-4 justify-center items-center">
+					<button class="button button-outline" @click="modal.close()" type="button">
+						{{ p__('button', 'No, cancel') }}
+					</button>
+
+					<button class="button button-failure" type="submit" :processing="isDeleting">
+						{% include "/snippets/spinner.twig" %}
+
+						{{ p__('button', 'Yes, delete') }}
+					</button>
+				</div>
+			</form>
+		</template>
+	</modal-element>
+{% endblock %}

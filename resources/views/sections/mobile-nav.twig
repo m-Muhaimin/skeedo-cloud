@@ -1,0 +1,166 @@
+<nav x-data x-ref="menu">
+	<div class="flex justify-between items-center p-4">
+		<div class="flex gap-4 items-center">
+			<a href="{{ view_namespace == 'admin' ? 'admin' : 'app' }}">
+				<img src="{{ option.brand.logo_dark ?? '/assets/logo-light.svg' }}" alt="{{ option.site.name ?? 'Logo' }}" class="hidden group-data-[mode=dark]/html:block max-w-[120px]">
+				<img src="{{ option.brand.logo ?? '/assets/logo-dark.svg' }}" alt="{{ option.site.name ?? 'Logo' }}" class="block group-data-[mode=dark]/html:hidden  max-w-[120px]">
+			</a>
+		</div>
+
+		<div class="flex gap-2 items-center">
+			{% if mobile_head_button is defined %}
+				<a href="{{ mobile_head_button.link }}" class="p-0 w-8 h-8 rounded-full button button-outline md:hidden">
+					<i class="text-base ti ti-plus"></i>
+				</a>
+			{% endif %}
+
+			<button @click="document.documentElement.dataset.mobileMenu !== 'account' ? document.documentElement.dataset.mobileMenu='account' : delete document.documentElement.dataset.mobileMenu">
+				<x-avatar class="w-8 h-8 group-data-[mobile-menu=account]/html:outline-offset-2 group-data-[mobile-menu=account]/html:outline-1 group-data-[mobile-menu=account]/html:outline-line" title="{{ user.first_name ~ " " ~ user.last_name }}" src="{{ user.avatar }}"></x-avatar>
+			</button>
+
+			<button class="text-content-dimmed group-data-[mobile-menu=nav]/html:text-content ms-2" @click=" document.documentElement.dataset.mobileMenu !=='nav' ? document.documentElement.dataset.mobileMenu='nav' : delete document.documentElement.dataset.mobileMenu">
+				<i class="text-2xl ti ti-menu-deep group-data-[mobile-menu=nav]/html:hidden rotate-180 block"></i>
+				<i class="hidden text-2xl ti ti-x group-data-[mobile-menu=nav]/html:inline"></i>
+			</button>
+		</div>
+	</div>
+
+	<hr class="-mt-px"/>
+
+	<div class="hidden group-data-[mobile-menu=nav]/html:block py-4">
+		{% include "snippets/navigation.twig" %}
+	</div>
+
+	<div class="hidden group-data-[mobile-menu=account]/html:flex flex-col gap-4">
+		<div class="border-b border-line-dimmed">
+			<div class="flex gap-4 justify-between items-center px-4">
+				<a href="app/account" class="flex gap-3 items-center py-4 w-full text-start">
+					<x-avatar class="bg-accent text-accent-content" title="{{ user.first_name ~ " " ~ user.last_name }}" src="{{ user.avatar }}"></x-avatar>
+
+					<div class="max-w-[156px]">
+						<div class="overflow-hidden text-sm font-semibold text-ellipsis">
+							{{ user.first_name }}
+							{{ user.last_name }}
+						</div>
+
+						<div class="overflow-hidden text-xs text-content-dimmed text-ellipsis">
+							{{ user.email }}</div>
+					</div>
+				</a>
+
+				{% if option.color_scheme.modes is not defined or option.color_scheme.modes|length > 1 %}
+					<mode-switcher>
+						<button type="button" class="w-10 h-10 text-content-dimmed hover:text-content" @click.stop>
+							<i class="text-lg ti ti-moon group-data-[mode=dark]/html:hidden"></i>
+							<i class="text-lg ti ti-sun hidden group-data-[mode=dark]/html:block"></i>
+						</button>
+					</mode-switcher>
+				{% endif %}
+			</div>
+
+			{% if view_namespace == 'app' %}
+				<hr>
+
+				<div class="flex gap-4 justify-between items-center px-4">
+					<a href="app/workspace" class="flex gap-3 items-center py-4 w-full">
+						<x-avatar :title="$store.workspace.name.substring(0,1)"></x-avatar>
+
+						<div class="max-w-[120px] whitespace-nowrap">
+							<div class="overflow-hidden text-sm font-semibold text-ellipsis" x-text="$store.workspace.name">
+								{{ workspace.name }}
+							</div>
+
+							{% if workspace.subscription %}
+								<div class="overflow-hidden text-xs text-content-dimmed text-ellipsis">
+									{{ workspace.subscription.plan.title }}
+								</div>
+							{% endif %}
+						</div>
+					</a>
+
+					<button type="button" class="w-10 h-10 text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Switch workspace') }}" @click="modal.open('workspace-switch')">
+						<i class="text-lg ti ti-switch-horizontal"></i>
+					</button>
+				</div>
+
+			{% endif %}
+		</div>
+
+		<ul class="text-sm flex flex-col gap-0.5">
+			{% if user.role == 'admin' %}
+				{% if view_namespace == 'admin' %}
+					<li>
+						<a href="app" class="flex gap-2 items-center px-4 py-1 hover:bg-intermediate hover:text-intermediate-content">
+							<i class="text-lg ti ti-sparkles"></i>
+							{{ p__('button', 'Switch to app') }}
+						</a>
+					</li>
+				{% else %}
+					<li>
+						<a href="admin" class="flex gap-2 items-center px-4 py-1 hover:bg-intermediate hover:text-intermediate-content">
+							<i class="text-lg ti ti-lock-cog"></i>
+							{{ p__('button', 'Switch to admin') }}
+						</a>
+					</li>
+				{% endif %}
+			{% endif %}
+
+			{% if view_namespace == 'app' %}
+				<li>
+					<a href="app/billing" class="flex gap-2 items-center px-4 py-1 hover:bg-intermediate hover:no-underline">
+						<i class="text-lg ti ti-credit-card"></i>
+						{{ p__('button', 'Billing') }}
+					</a>
+				</li>
+			{% endif %}
+
+			<li>
+				<a href="app/account" class="flex gap-2 items-center px-4 py-1 hover:bg-intermediate hover:text-intermediate-content">
+					<i class="text-lg ti ti-user-circle"></i>
+					{{ p__('button', 'Account') }}
+				</a>
+			</li>
+
+			{% if option.affiliates is defined and option.affiliates.is_enabled and view_namespace == 'app' %}
+				<li>
+					<a href="app/affiliates" class="flex gap-2 items-center px-4 py-1 hover:bg-intermediate hover:text-intermediate-content">
+						<i class="text-lg ti ti-coins"></i>
+
+						{{ p__('button', 'Affiliates') }}
+					</a>
+				</li>
+			{% endif %}
+
+			<li>
+				<a href="logout" class="flex gap-2 items-center px-4 py-1 hover:bg-intermediate hover:text-intermediate-content">
+					<i class="text-lg ti ti-logout"></i>
+					{{ p__('button', 'Logout') }}
+				</a>
+			</li>
+		</ul>
+
+		<hr>
+
+		<ul class="flex flex-col gap-2 px-4 py-1 text-xs text-content-dimmed">
+			{% if option.policies.tos is defined and option.policies.tos is not empty %}
+				<li>
+					<a href="policies/terms" class="hover:text-content hover:underline">
+						{{ p__('button', 'Terms of services') }}
+					</a>
+				</li>
+			{% endif %}
+
+			{% if option.policies.privacy is defined and option.policies.privacy is not empty %}
+				<li>
+					<a href="policies/privacy" class="hover:text-content hover:underline">
+						{{ p__('button', 'Privacy policy') }}
+					</a>
+				</li>
+			{% endif %}
+
+			{% if option.policies.refund is defined and option.policies.refund is not empty %}
+				<li><a href="policies/refund" class="hover:text-content hover:underline">{{ p__('button', 'Refund policy') }}</a></li>
+			</ul>
+		{% endif %}
+	</div>
+</nav>

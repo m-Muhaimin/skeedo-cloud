@@ -1,0 +1,250 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% set xdata = 'settings' %}
+{% block title p__('title', 'Chat configuration') %}
+
+{% set services = config.model.registry.directory|filter(service => service.models|filter(model => model.type == 'llm')|length > 0) %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {link: 'admin/settings/features', label: 'Features'} %}
+
+		<h1 class="mt-4">{{ p__('heading', 'Chat') }}</h1>
+	</div>
+
+	<x-form>
+		<form class="flex flex-col gap-8" @submit.prevent="submit" x-ref="form" x-data="{chat: {name: null, avatar: `{{ option.features.chat.avatar ?? '' }}`, is_enabled: null, is_visible: null}}">
+			<div class="flex flex-col gap-2">
+				<section class="flex flex-col gap-6 box" data-density="comfortable">
+					<h2>{{ p__('heading', 'General') }}</h2>
+
+					<div class="flex justify-between items-center p-3 rounded-lg bg-intermediate">
+						{{ p__('label', 'Status') }}
+
+						<label class="inline-flex gap-2 items-center cursor-pointer">
+							<input type="checkbox" name="features[chat][is_enabled]" class="hidden peer" {{ option.features.chat.is_enabled is defined and option.features.chat.is_enabled ? 'checked' : '' }} x-model.fill="chat.is_enabled">
+
+							<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+							<span class="text-content-dimmed peer-checked:hidden">
+								{{ p__('input-value', 'Disabled') }}
+							</span>
+
+							<span class="hidden text-success peer-checked:inline">
+								{{ p__('input-value', 'Enabled') }}
+							</span>
+						</label>
+					</div>
+				</section>
+
+				<section class="flex flex-col gap-6 box" data-density="comfortable">
+					<h2>{{ p__('heading', 'Default chat bot') }}</h2>
+
+					<div>
+						<div class="flex justify-between items-center p-3 rounded-lg bg-intermediate">
+							{{ p__('label', 'Visibility') }}
+
+							<label class="inline-flex gap-2 items-center cursor-pointer">
+								<input type="checkbox" name="features[chat][is_visible]" class="hidden peer" {{ option.features.chat.is_visible is defined and option.features.chat.is_visible ? 'checked' : '' }} x-model.fill="chat.is_visible">
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+								<span class="text-content-dimmed peer-checked:hidden">
+									{{ p__('input-value', 'Hidden') }}
+								</span>
+
+								<span class="hidden text-success peer-checked:inline">
+									{{ p__('input-value', 'Visible') }}
+								</span>
+							</label>
+						</div>
+
+						<ul class="info mt-2">
+							{%- set page -%}
+							<a href="app/assistants" class="text-content hover:underline" target="_blank">{{ __('assistants page') }}</a>
+							{%- endset -%}
+
+							<li>
+								{{ __('This setting controls the visibility of the default chat bot in the :page.', {':page': page})|raw }}
+							</li>
+						</ul>
+					</div>
+
+					<div class="grid grid-cols-2 gap-6">
+						<div>
+							<label>{{ p__('label', 'Name') }}</label>
+							<input type="text" name="features[chat][name]" class="mt-2 input" autocomplete="off" placeholder="{{ __('Include a name for the default chat bot') }}" value="{{ option.features.chat.name ?? '' }}" x-model.fill="chat.name"/>
+						</div>
+
+						<div>
+							<label>{{ p__('label', 'Model') }}</label>
+
+							<select name="features[chat][default_model]" class="mt-2 input">
+								{% for service in services %}
+									{% for model in service.models|filter(model => model.type == 'llm') %}
+										<option value="{{ model.key }}" {{ option.features.chat.default_model is defined and option.features.chat.default_model == model.key ? 'selected' : '' }}>
+											{{ model.name }}
+										</option>
+									{% endfor %}
+								{% endfor %}
+							</select>
+						</div>
+					</div>
+
+					<div class="relative p-6 mt-2 box" x-data="{file:null}">
+						<div class="flex relative z-10 flex-col gap-6 justify-between items-start sm:flex-row">
+							<div class="flex gap-2 items-center">
+								<x-avatar icon="sparkles" :src="file ? URL.createObjectURL(file) : chat.avatar"></x-avatar>
+
+								<div>
+									<div class="font-bold" x-text="chat.name || `{{ __(" ai") }}`"></div>
+									<div class="text-xs text-content-dimmed">
+										{{ __('Chat bot name') }}</div>
+								</div>
+							</div>
+
+							<button type="button" class="w-full button button-sm button-dimmed sm:w-auto" @click="$refs.file.click()">{{ p__('button', 'Browse files') }}</button>
+						</div>
+
+						<input type="file" @change="file = $refs.file.files[0];" name="features[chat][avatar]" class="hidden" accept="image/*" x-ref="file">
+					</div>
+				</section>
+
+				<section class="flex flex-col gap-6 box" data-density="comfortable">
+					<h2>{{ p__('heading', 'Capabilities') }}</h2>
+
+					<div class="grid gap-2">
+						<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+							<div>
+								<div class="flex gap-2 items-center text-sm">
+									{{ __('File analysis') }}
+								</div>
+
+								<div class="font-normal text-content-dimmed">
+									{{ __('Chat with PDF, Doc and other text based documents') }}
+								</div>
+							</div>
+
+							<div class="ms-auto">
+								<input type="checkbox" class="hidden peer" name="features[tools][embedding_search][is_enabled]" {{ option.features.tools.embedding_search.is_enabled is defined and option.features.tools.embedding_search.is_enabled ? 'checked' : '' }}>
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</div>
+						</label>
+
+						<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+							<div>
+								<div class="flex gap-2 items-center text-sm">
+									{{ __('Google search') }}
+
+									{% if option.serper.api_key is not defined or option.serper.api_key is empty %}
+										<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Missing Serper API key') }}"></i>
+									{% endif %}
+								</div>
+
+								<div class="font-normal text-content-dimmed">
+									{{ __('Search with Serper API') }}
+								</div>
+							</div>
+
+							<div class="ms-auto">
+								<input type="checkbox" class="hidden peer" name="features[tools][google_search][is_enabled]" {{ option.features.tools.google_search.is_enabled is defined and option.features.tools.google_search.is_enabled ? 'checked' : '' }}>
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</div>
+						</label>
+
+						<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+							<div>
+								<div class="flex gap-2 items-center text-sm">
+									{{ __('Youtube') }}
+
+									{% if option.searchapi.api_key is not defined or option.searchapi.api_key is empty %}
+										<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Missing Search API key') }}"></i>
+									{% endif %}
+								</div>
+
+								<div class="font-normal text-content-dimmed">
+									{{ __('Get meta data from Youtube') }}
+								</div>
+							</div>
+
+							<div class="ms-auto">
+								<input type="checkbox" class="hidden peer" name="features[tools][youtube][is_enabled]" {{ option.features.tools.youtube.is_enabled is defined and option.features.tools.youtube.is_enabled ? 'checked' : '' }}>
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</div>
+						</label>
+
+						<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+							<div>
+								<div class="flex gap-2 items-center text-sm">
+									{{ __('Web browsing') }}
+								</div>
+
+								<div class="font-normal text-content-dimmed">
+									{{ __('Scrap web pages for information') }}
+								</div>
+							</div>
+
+							<div class="ms-auto">
+								<input type="checkbox" class="hidden peer" name="features[tools][web_scrap][is_enabled]" {{ option.features.tools.web_scrap.is_enabled is defined and option.features.tools.web_scrap.is_enabled ? 'checked' : '' }}>
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</div>
+						</label>
+
+						<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+							<div>
+								<div class="flex gap-2 items-center text-sm">
+									{{ __('Image generation') }}
+								</div>
+
+								<div class="font-normal text-content-dimmed">
+									{{ __('Generate images based on prompts') }}
+								</div>
+							</div>
+
+							<div class="ms-auto">
+								<input type="checkbox" class="hidden peer" name="features[tools][generate_image][is_enabled]" {{ option.features.tools.generate_image.is_enabled is defined and option.features.tools.generate_image.is_enabled ? 'checked' : '' }}>
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</div>
+						</label>
+
+						<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+							<div>
+								<div class="flex gap-2 items-center text-sm">
+									{{ __('Memory') }}
+								</div>
+
+								<div class="font-normal text-content-dimmed">
+									{{ __("Get and save user's memory") }}
+								</div>
+							</div>
+
+							<div class="ms-auto">
+								<input type="checkbox" class="hidden peer" name="features[tools][memory][is_enabled]" {{ option.features.tools.memory.is_enabled|default(false) ? 'checked' : '' }}>
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</div>
+						</label>
+					</div>
+				</section>
+			</div>
+
+			<div class="flex gap-4 justify-end">
+				<a href="admin/settings" class="button button-outline">
+					{{ p__('button', 'Cancel') }}
+				</a>
+
+				<button class="button button-accent" type="submit" :processing="isProcessing">
+					{% include "/snippets/spinner.twig" %}
+
+					{{ p__('button', 'Save changes') }}
+				</button>
+			</div>
+		</form>
+	</x-form>
+{% endblock %}

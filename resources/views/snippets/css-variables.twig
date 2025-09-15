@@ -1,0 +1,71 @@
+<style>
+  :root {
+    /* Typography */
+    --font-family-primary: 'Inter', sans-serif;
+    --font-family-secondary: 'Inter', sans-serif;
+    --font-family-editor: 'Inter', sans-serif;
+    --font-family-editor-heading: 'Noto Serif';
+
+    /* Theme colors */
+    --color-accent: rgb({{ option.color_scheme.accent.rgb ?? '211 243 107' }});
+    --color-accent-content: rgb({{ option.color_scheme.accent_content.rgb ?? '63 66 70' }});
+
+    --color-main: rgb(255, 255, 255);
+
+    --color-content: rgb(63, 66, 70);
+    --color-content-dimmed: rgb(172, 174, 175);
+    --color-content-super-dimmed: rgb(207, 208, 208);
+
+    --color-line: rgb(227, 228, 228);
+    --color-line-dimmed: rgb(245, 246, 246);
+    --color-line-super-dimmed: rgb(250, 251, 251);
+
+    --color-intermediate: rgb(245, 246, 246);
+    --color-intermediate-content: rgb(63, 66, 70);
+    --color-intermediate-content-dimmed: rgb(172, 174, 175);
+
+    --color-button: rgb(63, 66, 70);
+    --color-button-content: rgb(255, 255, 255);
+
+    --color-button-dimmed: rgb(245, 246, 246);
+    --color-button-dimmed-content: rgb(63, 66, 70);
+
+    --color-button-accent: var(--color-accent);
+    --color-button-accent-content: var(--color-accent-content);
+
+    --color-gradient-from: rgb(231, 255, 155);
+    --color-gradient-to: rgb(207, 230, 255);
+    --color-gradient-content: rgb(63, 66, 70);
+
+    /* --------------- */
+    --color-info: rgb(0, 166, 251);
+    --color-success: rgb(48, 200, 98);
+    --color-failure: rgb(254, 81, 87);
+    --color-alert: rgb(254, 212, 73);
+
+    --color-test: rgb(255, 200, 255);
+  }
+
+  :root[data-mode="dark"] {
+    /* Theme colors */
+    --color-main: rgb(38, 40, 43);
+
+    --color-content: rgb(245, 246, 246);
+    --color-content-dimmed: rgb(172, 174, 175);
+    --color-content-super-dimmed: rgb(144, 145, 148);
+
+    --color-line: rgb(96, 98, 101);
+    --color-line-dimmed: rgb(63, 66, 70);
+    --color-line-super-dimmed: rgb(44, 46, 49);
+
+    --color-intermediate: rgb(25, 26, 28);
+    --color-intermediate-content: rgb(245, 246, 246);
+    --color-intermediate-content-dimmed: rgb(172, 174, 175);
+
+    --color-button: rgb(245, 246, 246);
+    --color-button-content: rgb(38, 40, 43);
+
+    --color-button-dimmed: rgb(96, 98, 101);
+    --color-button-dimmed-content: rgb(255, 255, 255);
+  }
+</style>

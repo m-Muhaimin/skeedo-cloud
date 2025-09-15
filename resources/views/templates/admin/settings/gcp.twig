@@ -1,0 +1,101 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% set xdata = 'settings' %}
+{% block title p__('title', 'Google Cloud Platform Settings') %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {link: 'admin/settings', label: 'Settings'} %}
+
+		<h1 class="mt-4">{{ p__('heading', 'Google Cloud Platform Settings') }}</h1>
+	</div>
+
+	<x-form>
+		<form class="flex flex-col gap-8" @submit.prevent="submit" x-ref="form" data-path="/gcp" x-data="{
+					open: {{ option.gcp.credentials is defined and option.gcp.credentials is not empty ? 'false' : 'true' }},
+					file: null
+				}">
+			<div class="flex flex-col gap-2">
+				<section class="flex flex-col gap-6 box" data-density="comfortable">
+					<h2>{{ p__('heading', 'Service account') }}</h2>
+
+					<div>
+						{% if option.gcp.credentials is defined and option.gcp.credentials is not empty %}
+							<template x-if="!open">
+								<div class="box">
+									<div class="flex items-center gap-4">
+										<span class="flex items-center justify-center w-10 h-10 rounded-lg bg-intermediate text-intermediate-content">
+											<i class="text-2xl ti ti-key"></i>
+										</span>
+
+										<div>
+											<div class="font-medium">
+												{{ __('Credentials key file exists') }}
+											</div>
+
+											<x-copy class="flex items-center mt-1 badge" data-copy="{{ option.gcp.credentials.private_key_id }}">
+												<span class="font-bold">
+													{{ p__('label', 'Key') }}
+												</span>
+
+												<span>
+													{{ option.gcp.credentials.private_key_id }}
+												</span>
+											</x-copy>
+										</div>
+
+										<button type="button" class="ms-auto button button-outline button-sm" @click="$refs.file.click()">
+											{{ p__('button', 'Upload new credentials') }}
+										</button>
+									</div>
+								</div>
+							</template>
+						{% endif %}
+
+						<div class="box" x-show="open">
+							<div class="flex items-center gap-4">
+								<span class="flex items-center justify-center w-10 h-10 bg-intermediate text-intermediate-content" :class="file ? 'rounded-lg' : 'rounded-full'">
+									<i class="ti" :class="file ? 'ti-json' : 'ti-paperclip'"></i>
+								</span>
+
+								<div>
+									<div class="font-medium">
+										<template x-if="!file">
+											<span>{{ __('Choose a credentials file') }}</span>
+										</template>
+										<template x-if="file">
+											<span x-text="file.name"></span>
+										</template>
+									</div>
+
+									<div class="text-sm text-content-dimmed">
+										{{ __('JSON file only') }}
+									</div>
+								</div>
+
+								<button type="button" class="ms-auto button button-outline button-sm" @click="$refs.file.click()" :disabled="isProcessing" x-text="file ? `{{ p__('button', 'Change file') }}` : `{{ p__('button', 'Choose file') }}`"></button>
+
+								<input type="file" name="file" required @change="file = $refs.file.files[0]; open=true" class="hidden" accept="application/json" x-ref="file">
+							</div>
+						</div>
+					</div>
+				</section>
+			</div>
+
+			<template x-if="open">
+				<div class="flex justify-end gap-4">
+					<a href="admin/settings" class="button button-outline">
+						{{ p__('button', 'Cancel') }}
+					</a>
+
+					<button class="button button-accent" type="submit" :processing="isProcessing">
+						{% include "/snippets/spinner.twig" %}
+
+						{{ p__('button', 'Save changes') }}
+					</button>
+				</div>
+			</template>
+		</form>
+	</x-form>
+{% endblock %}

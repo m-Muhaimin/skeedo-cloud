@@ -1,0 +1,177 @@
+{% extends "/layouts/main.twig" %}
+
+{% set active_menu = '/admin/affiliates' %}
+
+{% set xdata %}
+list("affiliates")
+{% endset %}
+
+{% block title p__('title', 'Affiliates')|title %}
+
+{% block template %}
+	{# Header #}
+	<h1>{{ p__('heading', 'Affiliates') }}</h1>
+
+	<div class="flex flex-col gap-1">
+		<section class="box" x-data="stats">
+			<div class="flex gap-4">
+				<div class="flex flex-col gap-1">
+					<div class="text-xs text-content-dimmed">
+						{{ __('Clicks') }}
+					</div>
+
+					<template x-if="!stats">
+						<span class="my-1 h-6 w-18 loading"></span>
+					</template>
+
+					<template x-if="stats">
+						<x-credit class="text-2xl font-bold" :data-value="stats.affiliates.clicks.metric"></x-credit>
+					</template>
+				</div>
+
+				<div class="w-px bg-line-dimmed"></div>
+
+				<div class="flex flex-col gap-1">
+					<div class="flex gap-1 items-center text-xs text-content-dimmed">
+						{{ __('Referrals') }}
+
+						<i class="text-base leading-4 ti ti-info-square-rounded-filled text-content-dimmed" x-tooltip.raw="{{ __('Total number of users who signed up using referral links') }}"></i>
+					</div>
+
+					<template x-if="!stats">
+						<span class="my-1 h-6 w-18 loading"></span>
+					</template>
+
+					<template x-if="stats">
+						<x-credit class="text-2xl font-bold" :data-value="stats.affiliates.referrals.metric"></x-credit>
+					</template>
+				</div>
+			</div>
+
+			<p class="mt-4 text-xs text-content-dimmed">
+				{{ __('These values represent all-time totals.') }}
+			</p>
+		</section>
+
+		{# Filters #}
+		{% include "/snippets/filters.twig" with { 
+			total: __('Total :count accounts'),
+			sort: [
+				{
+					value: null,
+					label: p__('label', 'Default')
+				},
+			
+				{
+					value: 'clicks',
+					label: p__('label', 'Clicks')
+				},
+			
+				{
+					value: 'referrals',
+					label: p__('label', 'Referrals')
+				},
+
+				{
+					value: 'withdrawn',
+					label: p__('label', 'Payouts')
+				}
+			],
+			filters: [
+			]
+		} %}
+	</div>
+
+
+	{# List #}
+	<div class="group/list" :data-state="state">
+		<div class="hidden group-data-[state=empty]/list:block">
+			{% include "sections/empty.twig" with { title: p__('heading', 'Empty result set'), message: __('There are no affiliate accounts yet.'), reset: __('There are no affiliate accounts matching your search.') } %}
+		</div>
+
+		<div class="hidden md:grid grid-cols-12 gap-3 items-center px-3 py-2 text-content-dimmed text-xs group-data-[state=empty]/list:hidden">
+			<div class="col-span-5">{{ p__('label', 'Account') }}</div>
+			<div class="col-span-2">{{ p__('label', 'Clicks') }}</div>
+			<div class="col-span-2">{{ p__('label', 'Referrals') }}</div>
+			<div class="col-span-2">{{ p__('label', 'Paid') }}</div>
+			<div class="col-span-1"></div>
+		</div>
+
+		<ul class="text-sm flex flex-col gap-1 group-data-[state=empty]:hidden">
+			{% for i in range(1,5) %}
+				<li class="hidden grid-cols-12 gap-3 items-center md:p-3 box hover:border-line animate-pulse group-data-[state=initial]/list:grid">
+					<div class="flex col-span-5 gap-3 items-center">
+
+						<div class="avatar"></div>
+
+						<div>
+							<div>
+								<span class="inline-block w-32 h-6 rounded-lg bg-line-dimmed"></span>
+								<span class="inline-block w-32 h-6 rounded-lg bg-line-dimmed"></span>
+							</div>
+						</div>
+					</div>
+
+					<div class="col-span-2">
+						<span class="inline-block w-20 h-6 rounded-lg bg-line-dimmed"></span>
+					</div>
+
+					<div class="col-span-2">
+						<span class="inline-block w-20 h-6 rounded-lg bg-line-dimmed"></span>
+					</div>
+
+					<div class="col-span-2">
+						<span class="inline-block w-20 h-6 rounded-lg bg-line-dimmed"></span>
+					</div>
+
+					<div class="col-span-1 justify-self-end">
+						<div class="relative group">
+							<button>
+								<i class="text-2xl ti ti-dots-vertical text-content-dimmed"></i>
+							</button>
+						</div>
+					</div>
+				</li>
+			{% endfor %}
+
+			<template x-for="user in resources" :key="user.id">
+				<li class="grid relative grid-cols-12 gap-3 items-center p-3 box hover:border-line" x-data>
+					<a :href="`admin/users/${user.id}`" class="absolute top-0 left-0 w-full h-full cursor-pointer"></a>
+
+					<div class="flex col-span-11 gap-3 items-center md:col-span-5">
+						<x-avatar :title="`${user.first_name} ${user.last_name}`" :src="user.avatar" :status="user.is_online ? 'online' : 'offline'"></x-avatar>
+
+						<div class="font-bold" x-text="`${user.first_name} ${user.last_name}`"></div>
+					</div>
+
+					<div class="col-span-2">
+						<x-credit :data-value="user.affiliate.clicks"></x-credit>
+					</div>
+
+					<div class="col-span-2">
+						<x-credit :data-value="user.affiliate.referrals"></x-credit>
+					</div>
+
+					<div class="col-span-2">
+						<x-money :data-value="user.affiliate.withdrawn" currency="{{ currency.code }}" minor-units="{{ currency.fraction_digits }}"></x-money>
+					</div>
+
+					<div class="col-span-1 justify-self-end">
+						<div class="relative" @click.outside="$refs.context.removeAttribute('data-open')">
+
+							<button class="relative z-10" @click="$refs.context.toggleAttribute('data-open')">
+								<i class="text-2xl ti ti-dots-vertical text-content-dimmed hover:text-intermediate-content"></i>
+							</button>
+
+							<div class="menu" x-ref="context">
+								<ul>
+									<li><a :href="`admin/users/${user.id}`" class="flex gap-2 items-center px-4 py-2 hover:no-underline hover:bg-intermediate"><i class="ti ti-pencil"></i>{{ p__('button', 'Edit') }}</a></li>
+								</ul>
+							</div>
+						</div>
+					</div>
+				</li>
+			</template>
+		</ul>
+	</div>
+{% endblock %}

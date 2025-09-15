@@ -1,0 +1,810 @@
+{% extends "/layouts/main.twig" %}
+
+{% set groups = [
+	{
+    heading: p__('heading', 'Text Models'),
+    type: 'llm',
+  },
+	{
+    heading: p__('heading', 'Image Models'),
+    type: 'image',
+  },
+	{	
+		heading: p__('heading', 'Voice Models'),
+		type: 'tts',
+	},
+	{
+		heading: p__('heading', 'Video Models'),
+		type: 'video',
+	}
+] %}
+
+{% set xdata %}
+plansnapshot({{ plan_snapshot|json_encode }})
+{% endset %}
+
+{% block title p__('title', 'Plan snapshot details')|title %}
+
+{% block template %}
+	<div class="flex flex-col gap-8">
+		<div>
+			{% include "snippets/back.twig" with {link: 'admin', label: 'Dashboard'} %}
+
+			<h1 class="mt-4">
+				{{ p__('heading', 'Plan snapshot') }}:
+
+				<span class="font-normal text-intermediate-content" x-text="snapshot.title"></span>
+			</h1>
+
+			<div class="mt-2">
+				<x-uuid x-text="snapshot.id"></x-uuid>
+			</div>
+		</div>
+
+		<div class="flex flex-col gap-2">
+			<section class="flex flex-col gap-6 box" data-density="comfortable">
+				<div class="flex gap-6 justify-between items-center">
+					<div>
+						<div class="flex gap-2 items-center">
+							<h2>{{ p__('heading', 'Details') }}</h2>
+						</div>
+
+						<p class="text-sm text-content-dimmed">
+							{{ __('Snapshot created on %s', '<x-time :datetime="snapshot.created_at"></x-time>')|raw }}
+						</p>
+					</div>
+
+					<button type="button" class="button button-sm button-outline" @click="modal.open('confirm-modal')">
+						{{ p__('button', 'Resync') }}
+					</button>
+				</div>
+
+				<div class="flex flex-col gap-6">
+					<div>
+						<div class="flex flex-wrap gap-y-6 gap-x-10 items-center">
+							<div class="min-w-min">
+								<div class="label">{{ p__('label', 'Original plan') }}</div>
+								<div>
+									<template x-if="snapshot.plan">
+										<a :href="`admin/plans/${snapshot.plan.id}`" class="inline-flex gap-1 items-center group">
+											<span class="group-hover:underline" x-text="snapshot.plan.title"></span>
+											<i class="text-base ti ti-corner-right-up text-content-dimmed"></i>
+										</a>
+									</template>
+
+									<template x-if="!snapshot.plan">
+										<span class="text-content-dimmed">{{ __('Deleted') }}</span>
+									</template>
+								</div>
+							</div>
+
+							<div class="min-w-min">
+								<div class="label">
+									{{ p__('label', 'Price') }}
+								</div>
+
+								<div>
+									<span x-text="snapshot.price"></span>
+								</div>
+							</div>
+
+							<div class="min-w-min">
+								<div class="label">
+									{{ p__('label', 'Plan type') }}
+								</div>
+
+								<template x-if="snapshot.billing_cycle == 'monthly'">
+									<div>{{ __('Monthly') }}</div>
+								</template>
+
+								<template x-if="snapshot.billing_cycle == 'yearly'">
+									<div>{{ __('Yearly') }}</div>
+								</template>
+
+								<template x-if="snapshot.billing_cycle == 'lifetime'">
+									<div>{{ __('Lifetime') }}</div>
+								</template>
+
+								<template x-if="snapshot.billing_cycle == 'one-time'">
+									<div>{{ __('Add-on credits') }}</div>
+								</template>
+							</div>
+						</div>
+
+						<div>
+							<div class="mt-4">
+								<div class="flex gap-1 items-center text-sm font-bold">
+									<i class="text-lg ti ti-info-square-rounded"></i>
+									{{ __('Important') }}
+								</div>
+
+								<p class="mt-2 text-sm">
+									{{ __('The displayed price here is in minor units. The actual price is calculated at the time of order creation, taking into account this value and the billing currency specified in the billing settings.') }}
+								</p>
+							</div>
+						</div>
+					</div>
+
+					<hr>
+
+					<div class="flex flex-wrap gap-y-6 gap-x-10 items-center">
+						<div class="min-w-min">
+							<div class="label" x-text="snapshot.billing_cycle == 'one-time' ? `{{ p__('label', 'Add-on credits') }}` : `{{ p__('label', 'Monthly credits') }}`"></div>
+
+							<div>
+								<x-credit :data-value="snapshot.credit_count"></x-credit>
+							</div>
+						</div>
+
+						<div class="min-w-min">
+							<div class="label">
+								{{ p__('label', 'Member cap') }}
+							</div>
+
+							<div>
+								<span x-text="snapshot.member_cap === null ? `{{ __('Unlimited') }}` : snapshot.member_cap"></span>
+							</div>
+						</div>
+
+						<template x-if="snapshot.billing_cycle != 'one-time' && snapshot.config.voiceover.is_enabled">
+							<div class="min-w-min">
+								<div class="label">
+									{{ p__('label', 'Cloned voice cap') }}
+								</div>
+
+								<div>
+									<span x-text="snapshot.config.voiceover.clone_cap === null ? `{{ __('Unlimited') }}` : snapshot.config.voiceover.clone_cap"></span>
+								</div>
+							</div>
+						</template>
+					</div>
+
+					<template x-if="snapshot.description">
+						<hr>
+					</template>
+
+					<template x-if="snapshot.description">
+						<div>
+							<div class="label">{{ p__('label', 'Description') }}</div>
+							<div x-text="snapshot.description"></div>
+						</div>
+					</template>
+				</div>
+			</section>
+
+			<template x-if="snapshot.billing_cycle != 'one-time'">
+				<section class="flex flex-col gap-6 box" data-density="comfortable">
+					<h2>{{ p__('heading', 'Tools') }}</h2>
+
+					<div class="grid gap-6 md:grid-cols-2">
+						<label class="flex gap-4 items-center cursor-auto box">
+							<div>
+								<div class="flex gap-2 items-center label">
+									{{ p__('heading', 'Writer') }}
+
+									{% if option.features.writer.is_enabled is not defined or option.features.writer.is_enabled == false %}
+										<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Disabled globally') }}"></i>
+									{% endif %}
+								</div>
+
+								<p class="font-normal text-content-dimmed">
+									{{ p__('writer-tool-description', 'Write SEO optimized blogs, sales emails and more...') }}
+								</p>
+							</div>
+
+							<div class="ms-auto">
+								<input type="checkbox" class="hidden peer" disabled x-model="snapshot.config.writer.is_enabled">
+
+								<span class="block relative w-10 h-6 rounded-3xl opacity-50 pointer-events-none bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</div>
+						</label>
+
+						<label class="flex gap-4 items-center cursor-auto box">
+							<div>
+								<div class="flex gap-2 items-center label">
+									{{ p__('heading', 'Coder') }}
+
+									{% if option.features.coder.is_enabled is not defined or option.features.coder.is_enabled == false %}
+										<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Disabled globally') }}"></i>
+									{% endif %}
+								</div>
+								<p class="font-normal text-content-dimmed">
+									{{ p__('coder-tool-description', 'Ready to write code at the speed of light?') }}
+								</p>
+							</div>
+
+							<div class="ms-auto">
+								<input type="checkbox" class="hidden peer" disabled x-model="snapshot.config.coder.is_enabled">
+
+								<span class="block relative w-10 h-6 rounded-3xl opacity-50 pointer-events-none bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</div>
+						</label>
+
+						<label class="flex gap-4 items-center cursor-auto box">
+							<div>
+								<div class="flex gap-2 items-center label">
+									{{ p__('heading', 'Video') }}
+
+									{% if option.features.video.is_enabled is not defined or option.features.video.is_enabled == false %}
+										<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Disabled globally') }}"></i>
+									{% endif %}
+								</div>
+								<p class="font-normal text-content-dimmed">
+									{{ p__('video-tool-description', 'Create videos from text and images.') }}
+								</p>
+							</div>
+
+							<div class="ms-auto">
+								<input type="checkbox" class="hidden peer" disabled x-model="snapshot.config.video.is_enabled">
+
+								<span class="block relative w-10 h-6 rounded-3xl opacity-50 pointer-events-none bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</div>
+						</label>
+
+						<label class="flex gap-4 items-center cursor-auto box">
+							<div>
+								<div class="flex gap-2 items-center label">
+									{{ p__('heading', 'Imagine') }}
+
+									{% if option.features.imagine.is_enabled is not defined or option.features.imagine.is_enabled == false %}
+										<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Disabled globally') }}"></i>
+									{% endif %}
+								</div>
+								<p class="font-normal text-content-dimmed">
+									{{ p__('imagine-tool-description', 'Visualize what you dream of. Create images from text.') }}
+								</p>
+							</div>
+
+							<div class="ms-auto">
+								<input type="checkbox" class="hidden peer" disabled x-model="snapshot.config.imagine.is_enabled">
+
+								<span class="block relative w-10 h-6 rounded-3xl opacity-50 pointer-events-none bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</div>
+						</label>
+
+						<label class="flex gap-4 items-center cursor-auto box">
+							<div>
+								<div class="flex gap-2 items-center label">
+									{{ p__('heading', 'Transcriber') }}
+
+									{% if option.features.transcriber.is_enabled is not defined or option.features.transcriber.is_enabled == false %}
+										<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Disabled globally') }}"></i>
+									{% endif %}
+								</div>
+								<p class="font-normal text-content-dimmed">
+									{{ p__('transcriber-tool-description', 'Instantly transcribe spoken words into text.')  }}
+								</p>
+							</div>
+
+							<div class="ms-auto">
+								<input type="checkbox" class="hidden peer" disabled x-model="snapshot.config.transcriber.is_enabled">
+
+								<span class="block relative w-10 h-6 rounded-3xl opacity-50 pointer-events-none bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</div>
+						</label>
+
+						<label class="flex gap-4 items-center cursor-auto box">
+							<div>
+								<div class="flex gap-2 items-center label">
+									{{ p__('heading', 'Voiceover') }}
+
+									{% if option.features.voiceover.is_enabled is not defined or option.features.voiceover.is_enabled == false %}
+										<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Disabled globally') }}"></i>
+									{% endif %}
+								</div>
+								<p class="font-normal text-content-dimmed">
+									{{ p__('voiceover-tool-description', 'Convert your texts into lifelike speech') }}
+								</p>
+							</div>
+
+							<div class="ms-auto">
+								<input type="checkbox" class="hidden peer" disabled x-model="snapshot.config.voiceover.is_enabled">
+
+								<span class="block relative w-10 h-6 rounded-3xl opacity-50 pointer-events-none bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</div>
+						</label>
+
+						<label class="flex gap-4 items-center cursor-auto box">
+							<div>
+								<div class="flex gap-2 items-center label">
+									{{ p__('heading', 'Chat') }}
+
+									{% if option.features.chat.is_enabled is not defined or option.features.chat.is_enabled == false %}
+										<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Disabled globally') }}"></i>
+									{% endif %}
+								</div>
+								<p class="font-normal text-content-dimmed">
+									{{ p__('chat-tool-description', 'Chat with AI assistants') }}
+								</p>
+							</div>
+
+							<div class="ms-auto">
+								<input type="checkbox" class="hidden peer" disabled x-model="snapshot.config.chat.is_enabled">
+
+								<span class="block relative w-10 h-6 rounded-3xl opacity-50 pointer-events-none bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</div>
+						</label>
+
+						<label class="flex gap-4 items-center cursor-auto box">
+							<div>
+								<div class="flex gap-2 items-center label">
+									{{ p__('heading', 'Voice isolator') }}
+
+									{% if option.features.voice_isolator.is_enabled is not defined or option.features.voice_isolator.is_enabled == false %}
+										<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Disabled globally') }}"></i>
+									{% endif %}
+								</div>
+								<p class="font-normal text-content-dimmed">
+									{{ p__('voice-isolator-tool-description', 'Isolate voice from background noise.')  }}
+								</p>
+							</div>
+
+							<div class="ms-auto">
+								<input type="checkbox" class="hidden peer" disabled x-model="snapshot.config.voice_isolator.is_enabled">
+
+								<span class="block relative w-10 h-6 rounded-3xl opacity-50 pointer-events-none bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</div>
+						</label>
+
+						<label class="flex gap-4 items-center cursor-auto box">
+							<div>
+								<div class="flex gap-2 items-center label">
+									{{ p__('heading', 'Classifier') }}
+
+									{% if option.features.classifier.is_enabled is not defined or option.features.classifier.is_enabled == false %}
+										<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Disabled globally') }}"></i>
+									{% endif %}
+								</div>
+								<p class="font-normal text-content-dimmed">
+									{{ p__('classifier-tool-description', 'Classify content as potentially harmful across several categories.')  }}
+								</p>
+							</div>
+
+							<div class="ms-auto">
+								<input type="checkbox" class="hidden peer" disabled x-model="snapshot.config.classifier.is_enabled">
+
+								<span class="block relative w-10 h-6 rounded-3xl opacity-50 pointer-events-none bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</div>
+						</label>
+
+						<label class="flex gap-4 items-center cursor-auto box">
+							<div>
+								<div class="flex gap-2 items-center label">
+									{{ p__('heading', 'Composer') }}
+
+									{% if option.features.composer.is_enabled is not defined or option.features.composer.is_enabled == false %}
+										<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Disabled globally') }}"></i>
+									{% endif %}
+								</div>
+								<p class="font-normal text-content-dimmed">
+									{{ p__('composer-tool-description', 'Create music and sounds.')  }}
+								</p>
+							</div>
+
+							<div class="ms-auto">
+								<input type="checkbox" class="hidden peer" disabled x-model="snapshot.config.composer.is_enabled">
+
+								<span class="block relative w-10 h-6 rounded-3xl opacity-50 pointer-events-none bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</div>
+						</label>
+					</div>
+				</section>
+			</template>
+
+			<template x-if="snapshot.billing_cycle != 'one-time'">
+				<section class="flex flex-col gap-6 box" data-density="comfortable">
+					<h2>{{ p__('heading', 'Capabilities') }}</h2>
+
+					<div class="grid gap-2">
+						<label class="flex gap-4 items-center cursor-auto box">
+							<div>
+								<div class="flex gap-2 items-center text-sm">
+									{{ __('File analysis') }}
+
+									{% if option.features.tools.embedding_search.is_enabled is not defined or option.features.tools.embedding_search.is_enabled == false %}
+										<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Feature is disabled globally') }}"></i>
+									{% endif %}
+								</div>
+
+								<div class="font-normal text-content-dimmed">
+									{{ __('Chat with PDF, Doc and other text based documents') }}
+								</div>
+							</div>
+
+							<div class="ms-auto">
+								<input type="checkbox" class="hidden peer" value="google_search" x-model="snapshot.config.tools['embedding_search']" disabled>
+
+								<span class="block relative w-10 h-6 rounded-3xl opacity-50 pointer-events-none bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</div>
+						</label>
+
+						<label class="flex gap-4 items-center cursor-auto box">
+							<div>
+								<div class="flex gap-2 items-center text-sm">
+									{{ __('Google search') }}
+
+									{% if option.serper.api_key is not defined or option.serper.api_key is empty %}
+										<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Missing Serper API key') }}"></i>
+									{% elseif option.features.tools.google_search.is_enabled is not defined or option.features.tools.google_search.is_enabled == false %}
+										<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Feature is disabled globally') }}"></i>
+									{% endif %}
+								</div>
+
+								<div class="font-normal text-content-dimmed">
+									{{ __('Search with Serper API') }}
+								</div>
+							</div>
+
+							<div class="ms-auto">
+								<input type="checkbox" class="hidden peer" value="google_search" x-model="snapshot.config.tools['google_search']" disabled>
+
+								<span class="block relative w-10 h-6 rounded-3xl opacity-50 pointer-events-none bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</div>
+						</label>
+
+						<label class="flex gap-4 items-center cursor-auto box">
+							<div>
+								<div class="flex gap-2 items-center text-sm">
+									{{ __('Youtube') }}
+
+									{% if option.searchapi.api_key is not defined or option.searchapi.api_key is empty %}
+										<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Missing Search API key') }}"></i>
+									{% elseif option.features.tools.youtube.is_enabled is not defined or option.features.tools.youtube.is_enabled == false %}
+										<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Feature is disabled globally') }}"></i>
+									{% endif %}
+								</div>
+
+								<div class="font-normal text-content-dimmed">
+									{{ __('Get meta data from Youtube') }}
+								</div>
+							</div>
+
+							<div class="ms-auto">
+								<input type="checkbox" class="hidden peer" value="youtube" x-model="snapshot.config.tools['youtube']" disabled>
+
+								<span class="block relative w-10 h-6 rounded-3xl opacity-50 pointer-events-none bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</div>
+						</label>
+
+						<label class="flex gap-4 items-center cursor-auto box">
+							<div>
+								<div class="flex gap-2 items-center text-sm">
+									{{ __('Web browsing') }}
+
+									{% if option.features.tools.web_scrap.is_enabled is not defined or option.features.tools.web_scrap.is_enabled == false %}
+										<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Feature is disabled globally') }}"></i>
+									{% endif %}
+								</div>
+
+								<div class="font-normal text-content-dimmed">
+									{{ __('Scrap web pages for information') }}
+								</div>
+							</div>
+
+							<div class="ms-auto">
+								<input type="checkbox" class="hidden peer" value="web_scrap" x-model="snapshot.config.tools['web_scrap']" disabled>
+
+								<span class="block relative w-10 h-6 rounded-3xl opacity-50 pointer-events-none bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</div>
+						</label>
+
+						<label class="flex gap-4 items-center cursor-auto box">
+							<div>
+								<div class="flex gap-2 items-center text-sm">
+									{{ __('Image generation') }}
+
+									{% if option.features.tools.generate_image.is_enabled is not defined or option.features.tools.generate_image.is_enabled == false %}
+										<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Feature is disabled globally') }}"></i>
+									{% endif %}
+								</div>
+
+								<div class="font-normal text-content-dimmed">
+									{{ __('Generate images based on prompts') }}}
+								</div>
+							</div>
+
+							<div class="ms-auto">
+								<input type="checkbox" class="hidden peer" value="generate_image" x-model="snapshot.config.tools['generate_image']" disabled>
+
+								<span class="block relative w-10 h-6 rounded-3xl opacity-50 pointer-events-none bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</div>
+						</label>
+
+						<label class="flex gap-4 items-center cursor-auto box">
+							<div>
+								<div class="flex gap-2 items-center text-sm">
+									{{ __('Memory') }}
+
+									{% if option.features.tools.memory.is_enabled is not defined or option.features.tools.memory.is_enabled == false %}
+										<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Feature is disabled globally') }}"></i>
+									{% endif %}
+								</div>
+
+								<div class="font-normal text-content-dimmed">
+									{{ __("Get and save user's memory") }}
+								</div>
+							</div>
+
+							<div class="ms-auto">
+								<input type="checkbox" class="hidden peer" value="memory" x-model="snapshot.config.tools['memory']" disabled>
+
+								<span class="block relative w-10 h-6 rounded-3xl opacity-50 pointer-events-none bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</div>
+						</label>
+					</div>
+				</section>
+			</template>
+
+			<template x-if="snapshot.billing_cycle != 'one-time'">
+				<section class="flex flex-col gap-6 box" data-density="comfortable">
+					<h2>{{ p__('heading', 'Models') }}</h2>
+					{# <h3>{{ p__('heading', 'Text Models') }}</h3> #}
+
+					<div class="grid gap-6 md:grid-cols-2">
+						<div>
+							<label class="flex gap-2 items-center">
+								{{ p__('label', 'Writer model') }}
+
+								<i class="text-base leading-5 ti ti-alert-square-rounded-filled text-failure" x-show="!snapshot.config.writer.is_enabled" x-cloak x-tooltip.raw="{{ __('Writer tool is disabled') }}"></i>
+							</label>
+
+							<select class="mt-2 input" x-model="snapshot.config.writer.model" disabled>
+								{% for service in config.model.registry.directory %}
+									{% for model in service.models %}
+										{% if model.type == 'llm' and model.config.writer %}
+											<option value="{{ model.key }}">
+												{{ service.name }}
+												/
+												{{ model.name }}
+											</option>
+										{% endif %}
+									{% endfor %}
+								{% endfor %}
+							</select>
+						</div>
+
+						<div>
+							<label class="flex gap-2 items-center">
+								{{ p__('label', 'Coder model') }}
+
+								<i class="text-base leading-5 ti ti-alert-square-rounded-filled text-failure" x-show="!snapshot.config.coder.is_enabled" x-cloak x-tooltip.raw="{{ __('Coder tool is disabled') }}"></i>
+							</label>
+
+							<select class="mt-2 input" x-model="snapshot.config.coder.model" disabled>
+								{% for service in config.model.registry.directory %}
+									{% for model in service.models %}
+										{% if model.type == 'llm' and model.config.coder %}
+											<option value="{{ model.key }}">
+												{{ service.name }}
+												/
+												{{ model.name }}
+											</option>
+										{% endif %}
+									{% endfor %}
+								{% endfor %}
+							</select>
+						</div>
+
+						<div>
+							<label>{{ p__('label', 'Title generator model') }}</label>
+
+							<select class="mt-2 input" x-model="snapshot.config.titler.model" disabled>
+								{% for service in config.model.registry.directory %}
+									{% for model in service.models %}
+										{% if model.type == 'llm' and model.config.titler %}
+											<option value="{{ model.key }}">
+												{{ service.name }}
+												/
+												{{ model.name }}
+											</option>
+										{% endif %}
+									{% endfor %}
+								{% endfor %}
+							</select>
+						</div>
+
+						<div>
+							<label>{{ p__('label', 'Embeddings model') }}</label>
+
+							<select class="mt-2 input" x-model="snapshot.config.embedding_model" disabled>
+								{% for service in config.model.registry.directory %}
+									{% for model in service.models %}
+										{% if model.type == 'embedding' %}
+											<option value="{{ model.key }}">
+												{{ service.name }}
+												/
+												{{ model.name }}
+											</option>
+										{% endif %}
+									{% endfor %}
+								{% endfor %}
+							</select>
+
+							<ul class="flex flex-col gap-1 mt-3 text-xs text-content-dimmed">
+								<li>
+									{{ __('Selected model will be used for File Insight capability') }}
+								</li>
+							</ul>
+						</div>
+					</div>
+
+					{% for group in groups %}
+						<hr class="my-2">
+
+						<h3 class="flex gap-2 items-center">{{ group.heading }}</h3>
+
+						<div class="grid gap-6 md:grid-cols-2">
+							{% for service in config.model.registry.directory %}
+								{% for model in service.models|filter(model => model.type == group.type) %}
+									<label class="flex gap-4 items-center cursor-auto box">
+										<div>
+											<div class="flex gap-2 items-center text-sm">
+												{{ model.name }}
+
+												{% if option[service.key]|default(null) is empty and service.key != 'ollama' and not service.custom|default(false) %}
+													<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('%s integration is not configured', service.name) }}"></i>
+												{% endif %}
+											</div>
+
+											<div class="font-normal text-content-dimmed">{{ service.name }}</div>
+										</div>
+
+										<div class="ms-auto">
+											<input type="checkbox" class="hidden peer" value="{{ model.key }}" x-model="snapshot.config.models['{{ model.key }}']">
+
+											<span class="block relative w-10 h-6 rounded-3xl opacity-50 pointer-events-none bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+										</div>
+									</label>
+								{% endfor %}
+							{% endfor %}
+						</div>
+					{% endfor %}
+				</section>
+			</template>
+
+			<template x-if="snapshot.billing_cycle != 'one-time'">
+				<section class="flex flex-col gap-6 box" data-density="comfortable" x-init="snapshot.config.assistants !== null ? fetchAssistants() : null">
+					<h2 class="md:col-span-2">{{ p__('heading', 'Assistants') }}</h2>
+
+					<div class="flex gap-2 items-center p-3 rounded-lg bg-intermediate">
+						{{ p__('label', 'All assistants') }}
+
+						<template x-if="snapshot.config.assistants !== null && assistants == null">
+							{% include "snippets/spinner.twig" %}
+						</template>
+
+						<label class="inline-flex gap-2 items-center ms-auto cursor-auto">
+							<input type="checkbox" name="status" class="hidden peer" disabled :checked="snapshot.config.assistants === null">
+
+							<span class="block relative w-10 h-6 rounded-3xl opacity-50 transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+						</label>
+					</div>
+
+					<template x-if="snapshot.config.assistants != null && assistants != null">
+						<div class="grid gap-6 md:grid-cols-2">
+							<template x-for="assistant in assistants" :key="assistant.id">
+								<label class="flex gap-3 items-center text-sm cursor-auto box">
+									<x-avatar :title="assistant.name" :src="assistant.avatar"></x-avatar>
+
+									<div>
+										<div class="font-bold" x-text="assistant.name"></div>
+										<template x-if="assistant.expertise">
+											<div class="text-content-dimmed" x-text="assistant.expertise"></div>
+										</template>
+									</div>
+
+									<input type="checkbox" class="hidden peer" :value="assistant.id" disabled :checked="snapshot.config.assistants != null && snapshot.config.assistants.includes(assistant.id)">
+
+									<i class="text-2xl hidden ms-auto opacity-50 ti ti-square-rounded-check-filled peer-checked:inline"></i>
+									<i class="text-2xl ms-auto opacity-50 ti ti-square-rounded peer-checked:hidden"></i>
+								</label>
+							</template>
+						</div>
+					</template>
+				</section>
+			</template>
+
+			<template x-if="snapshot.billing_cycle != 'one-time'">
+				<section class="flex flex-col gap-6 box" data-density="comfortable" x-init="snapshot.config.presets !== null ? fetchPresets() : null">
+					<h2 class="md:col-span-2">{{ p__('heading', 'Templates') }}</h2>
+
+					<div class="flex gap-2 items-center p-3 rounded-lg bg-intermediate">
+						{{ p__('label', 'All templates') }}
+
+						<template x-if="snapshot.config.presets !== null && presets == null">
+							{% include "snippets/spinner.twig" %}
+						</template>
+
+						<label class="inline-flex gap-2 items-center ms-auto cursor-auto">
+							<input type="checkbox" name="status" class="hidden peer" disabled :checked="snapshot.config.presets === null">
+
+							<span class="block relative w-10 h-6 rounded-3xl opacity-50 transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+						</label>
+					</div>
+
+					<template x-if="snapshot.config.presets != null && presets != null">
+						<div class="grid gap-6 md:grid-cols-2">
+							<template x-for="preset in presets" :key="preset.id">
+								<label class="flex gap-3 items-center text-sm cursor-auto box">
+									<x-avatar :style="{backgroundColor: preset.color, color: '#fff'}" :title="preset.title" :icon="preset.image"></x-avatar>
+
+									<div>
+										<div class="font-bold" x-text="preset.title"></div>
+										<template x-if="preset.expertise">
+											<div class="text-content-dimmed" x-text="preset.category?.title"></div>
+										</template>
+									</div>
+
+									<input type="checkbox" class="hidden peer" :value="preset.id" disabled :checked="snapshot.config.presets != null && snapshot.config.presets.includes(preset.id)">
+
+									<i class="text-2xl hidden ms-auto opacity-50 ti ti-square-rounded-check-filled peer-checked:inline"></i>
+									<i class="text-2xl ms-auto opacity-50 ti ti-square-rounded peer-checked:hidden"></i>
+								</label>
+							</template>
+						</div>
+					</template>
+				</section>
+			</template>
+
+			<template x-if="orders.length > 0">
+				<section class="flex flex-col gap-6 box" data-density="comfortable">
+					<div class="flex gap-2 items-center">
+						<h2>{{ p__('heading', 'Latest orders') }}</h2>
+
+						<a class="badge" :href="`admin/orders?plan_snapshot=${snapshot.id}&sort=created_at:desc`">
+							{{ p__('button', 'View all') }}
+						</a>
+					</div>
+
+					<div>
+						<div class="hidden md:grid grid-cols-12 gap-3 items-center px-3 py-2 text-content-dimmed text-xs group-data-[state=empty]/list:hidden">
+							<div class="col-span-3">{{ p__('label', 'Order') }}</div>
+							<div class="col-span-2">{{ p__('label', 'Status') }}</div>
+							<div class="col-span-2">{{ p__('label', 'Credits') }}</div>
+							<div class="col-span-2">{{ p__('label', 'Total') }}</div>
+							<div class="col-span-2">{{ p__('label', 'Created') }}</div>
+							<div class="col-span-1"></div>
+						</div>
+
+						<div class="text-sm flex flex-col gap-1 group-data-[state=empty]:hidden">
+							<template x-for="order in orders" :key="order.id">
+								{% include "snippets/cards/order.twig" with {ref: 'order', type: 'admin'} %}
+							</template>
+						</div>
+					</div>
+				</section>
+			</template>
+		</div>
+	</div>
+
+	<modal-element name="confirm-modal">
+		<form class="flex flex-col gap-8 modal" @submit.prevent="resync">
+			<div class="flex justify-between items-center">
+				<h2 class="text-xl">{{ p__('heading', 'Confirmation') }}</h2>
+
+				<button class="flex justify-center items-center w-8 h-8 rounded-full border border-transparent bg-line-dimmed hover:border-line" @click="modal.close()" type="button">
+					<i class="text-xl ti ti-x"></i>
+				</button>
+			</div>
+
+			<div>
+				<div class="flex gap-1 items-center text-sm font-bold">
+					<i class="text-lg ti ti-info-square-rounded"></i>
+					{{ __('Important') }}
+				</div>
+
+				<p class="mt-2 text-sm">
+					{{ __('This action will resync the snapshot configuration with the latest plan configuration. All subscriptions on this plan snapshot will have their configuration updated to the latest configuration. Price and billing cycle changes will not be applied.') }}
+				</p>
+			</div>
+
+			<div class="flex items-center">
+				<button class="w-full button" type="submit" :processing="isProcessing">
+					{% include "/snippets/spinner.twig" %}
+
+					{{ p__('button', 'Resync configuration') }}
+				</button>
+			</div>
+		</form>
+	</modal-element>
+{% endblock %}

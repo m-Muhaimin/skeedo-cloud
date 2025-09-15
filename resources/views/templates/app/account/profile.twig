@@ -1,0 +1,30 @@
+{% extends "/layouts/main.twig" %}
+
+{% block title p__('title', 'Profile')|title %}
+{% set xdata %}
+account({{ user|json_encode }})
+{% endset %}
+
+{% set apiEnabled = false %}
+{% if user.role == 'admin' and option.features.admin_api.is_enabled is defined and option.features.admin_api.is_enabled %}
+	{% set apiEnabled = true %}
+{% elseif option.features.api.is_enabled is defined and option.features.api.is_enabled %}
+	{% set apiEnabled = true %}
+{% endif %}
+
+{% block template %}
+	<x-form>
+		<form class="flex flex-col gap-8" @submit.prevent="submit" x-ref="form">
+			<div>
+				{% include "snippets/back.twig" with {link: 'app/account', label: p__('button', 'Account')} %}
+
+				<h1 class="mt-4">{{ p__('heading', 'Profile') }}</h1>
+				<x-uuid>{{ user.id }}</x-uuid>
+			</div>
+
+			<div class="flex flex-col gap-2">
+				{% include "sections/account/profile.twig" %}
+			</div>
+		</form>
+	</x-form>
+{% endblock %}

@@ -1,0 +1,289 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+        "$schema": {
+            "type": "string"
+        },
+        "directory": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "icon": {
+                        "type": "string",
+                        "format": "uri-reference"
+                    },
+                    "rates": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "key": {
+                                    "type": "string"
+                                },
+                                "unit": {
+                                    "type": "string"
+                                },
+                                "type": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ],
+                                    "examples": [
+                                        "input",
+                                        "output",
+                                        "image",
+                                        "all"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "key",
+                                "unit"
+                            ],
+                            "additionalProperties": false
+                        },
+                        "minItems": 1
+                    },
+                    "models": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "provider": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "icon": {
+                                            "type": "string",
+                                            "format": "uri-reference"
+                                        }
+                                    },
+                                    "required": [
+                                        "name"
+                                    ],
+                                    "additionalProperties": false
+                                },
+                                "type": {
+                                    "type": "string",
+                                    "enum": [
+                                        "llm",
+                                        "image",
+                                        "transcription",
+                                        "embedding",
+                                        "tts",
+                                        "video",
+                                        "voice-isolation",
+                                        "composition",
+                                        "capability"
+                                    ]
+                                },
+                                "key": {
+                                    "type": "string"
+                                },
+                                "name": {
+                                    "type": "string"
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "maxLength": 255
+                                },
+                                "icon": {
+                                    "type": "string",
+                                    "format": "uri-reference"
+                                },
+                                "custom": {
+                                    "type": "boolean"
+                                },
+                                "enabled": {
+                                    "type": "boolean"
+                                },
+                                "deprecated": {
+                                    "type": "boolean"
+                                },
+                                "modalities": {
+                                    "type": "object",
+                                    "properties": {
+                                        "input": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "text",
+                                                    "image",
+                                                    "audio",
+                                                    "video"
+                                                ]
+                                            },
+                                            "uniqueItems": true
+                                        },
+                                        "output": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "text",
+                                                    "image",
+                                                    "audio",
+                                                    "video"
+                                                ]
+                                            },
+                                            "uniqueItems": true
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                },
+                                "capabilities": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "enum": [
+                                            "tools",
+                                            "reasoning"
+                                        ]
+                                    },
+                                    "uniqueItems": true
+                                },
+                                "attributes": {
+                                    "type": "object",
+                                    "properties": {
+                                        "preview": {
+                                            "type": "boolean"
+                                        },
+                                        "turbo": {
+                                            "type": "boolean"
+                                        },
+                                        "reasoning_level": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 5
+                                        },
+                                        "performance": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 5
+                                        },
+                                        "intelligence": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 5
+                                        },
+                                        "speed": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 5
+                                        },
+                                        "context_window": {
+                                            "type": "integer"
+                                        },
+                                        "max_output_tokens": {
+                                            "type": "integer"
+                                        },
+                                        "knowledge_cutoff": {
+                                            "type": "integer",
+                                            "description": "Timestamp in seconds",
+                                            "minimum": 0
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                },
+                                "rates": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "key": {
+                                                "type": "string"
+                                            },
+                                            "unit": {
+                                                "type": "string"
+                                            },
+                                            "type": {
+                                                "type": [
+                                                    "string",
+                                                    "null"
+                                                ],
+                                                "examples": [
+                                                    "input",
+                                                    "output",
+                                                    "image",
+                                                    "all"
+                                                ]
+                                            }
+                                        },
+                                        "required": [
+                                            "key",
+                                            "unit"
+                                        ],
+                                        "additionalProperties": false
+                                    }
+                                },
+                                "multiplier": {
+                                    "type": "number"
+                                },
+                                "config": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            },
+                            "required": [
+                                "type",
+                                "key",
+                                "name"
+                            ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "custom": {
+                        "type": "boolean"
+                    },
+                    "server": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "headers": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "key": {
+                                    "type": "string"
+                                },
+                                "value": {
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "key",
+                                "value"
+                            ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "api_key": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "key",
+                    "name",
+                    "models"
+                ],
+                "additionalProperties": false
+            }
+        }
+    },
+    "required": [
+        "directory"
+    ],
+    "additionalProperties": false
+}

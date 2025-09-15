@@ -1,0 +1,227 @@
+{% extends "/layouts/main.twig" %}
+
+{% set active_menu = '/admin/status' %}
+{% set xdata = 'settings' %}
+
+{% block title p__('title', 'Status')|title %}
+
+{% block template %}
+	<h1>{{ p__('heading', 'Status') }}</h1>
+
+	<form @submit.prevent="submit" x-ref="form" class="flex flex-col gap-2">
+		<div class="flex gap-4 items-center box">
+			<x-avatar class="{{ debug ? 'text-alert bg-alert/10' : 'text-success bg-success/10' }}" icon="{{ debug ? 'alert-triangle-filled' : 'square-rounded-check-filled' }}"></x-avatar>
+
+			<div>
+				<h3>{{ p__('heading', 'Debug mode') }}</h3>
+
+				<p class="text-sm text-content-dimmed">
+					{{ __('Disable for production') }}
+				</p>
+			</div>
+
+			<label class="inline-flex gap-2 items-center ms-auto cursor-pointer">
+				<input type="checkbox" name="env[DEBUG]" class="hidden peer" {{ debug ? 'checked' : '' }} @change="submit">
+
+				<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+				<span class="text-content-dimmed peer-checked:hidden">
+					{{ __('Disabled') }}
+				</span>
+
+				<span class="hidden text-success peer-checked:inline">
+					{{ __('Enabled') }}
+				</span>
+			</label>
+		</div>
+
+		<div class="flex gap-4 items-center box">
+			<x-avatar class="{{ cache ? 'text-success bg-success/10' : 'text-alert bg-alert/10' }}" icon="{{ cache ? 'square-rounded-check-filled' : 'alert-triangle-filled' }}"></x-avatar>
+
+			<div>
+				<div class="flex gap-4 items-center">
+					<h3>{{ p__('heading', 'Caching') }}</h3>
+
+					<div x-data="settings">
+						<button type="button" class="badge" :processing="isProcessing" @click="clearCache">
+							<i class="w-5 text-base ti ti-trash" :class="{'hidden': isProcessing}"></i>
+
+							{% include "/snippets/spinner.twig" %}
+
+							{{ p__('button', 'Clear cache') }}
+						</button>
+					</div>
+				</div>
+
+				<p class="text-sm text-content-dimmed">
+					{{ __('Turn on for production') }}
+				</p>
+			</div>
+
+			<label class="inline-flex gap-2 items-center ms-auto cursor-pointer">
+				<input type="checkbox" name="env[CACHE]" class="hidden peer" {{ cache ? 'checked' : '' }} @change="submit">
+
+				<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+				<span class="text-content-dimmed peer-checked:hidden">
+					{{ __('Off') }}
+				</span>
+
+				<span class="hidden text-success peer-checked:inline">
+					{{ __('On') }}
+				</span>
+			</label>
+		</div>
+
+		<div class="flex gap-4 items-center box">
+			<x-avatar class="{{ environment == 'prod' ? 'text-success bg-success/10' : 'text-failure bg-failure/10' }}" icon="{{ environment == 'prod' ? 'square-rounded-check-filled' : 'square-rounded-x-filled' }}"></x-avatar>
+
+			<div>
+				<h3>{{ p__('heading', 'Environment') }}</h3>
+				<p class="text-sm text-content-dimmed">
+					{{ environment }}
+				</p>
+			</div>
+		</div>
+
+		<div class="flex gap-4 items-center box">
+			<x-avatar class="{{ database ? 'text-success bg-success/10' : 'text-failure bg-failure/10' }}" icon="{{ database ? 'square-rounded-check-filled' : 'square-rounded-x-filled' }}"></x-avatar>
+
+			<div>
+				<h3>{{ p__('heading', 'Database') }}</h3>
+				<p class="text-sm text-content-dimmed">
+					{{ database ? __('Connection established') : __('Connection failed') }}
+				</p>
+			</div>
+		</div>
+
+		<div class="flex gap-4 items-center box">
+			{% if option.cron.last_run is not defined %}
+				{% set status = 'text-failure bg-failure/10' %}
+				{% set icon = 'square-rounded-x-filled' %}
+				{% set message = __('Never run. Ensure the cron job is set up.') %}
+			{% elseif option.cron.last_run|date('U') < 'now'|date('U') - 300 %}
+				{% set status = 'text-alert bg-alert/10' %}
+				{% set icon = 'alert-triangle-filled' %}
+				{% set message = __('Last run more than 5 minutes ago. Ensure the cron job is set up.') %}
+			{% else %}
+				{% set status = 'text-success bg-success/10' %}
+				{% set icon = 'square-rounded-check-filled' %}
+
+				{% set time %}
+				<x-time datetime="{{ option.cron.last_run }}" type="datetime"></x-time>
+				{% endset %}
+
+				{% set message = __('Last run on %s', time) %}
+			{% endif %}
+			<x-avatar class="{{ status }}" icon="{{ icon }}"></x-avatar>
+
+			<div>
+				<div class="flex gap-2 mb-1 items-center">
+					<h3>{{ p__('heading', 'Cron') }}</h3>
+					<a href="https://docs.aikeedo.com/get-started/initial-setup" class="badge" target="_blank">
+						<i class="ti ti-external-link"></i>
+						{{ __('Docs') }}
+					</a>
+				</div>
+				<p class="text-sm text-content-dimmed">
+					{{ message|raw }}
+				</p>
+			</div>
+		</div>
+
+		<div class="flex gap-4 items-center box">
+			<x-avatar class="{{ file_uploads ? 'text-success bg-success/10' : 'text-failure bg-failure/10' }}" icon="{{ file_uploads ? 'square-rounded-check-filled' : 'square-rounded-x-filled' }}"></x-avatar>
+
+			<div>
+				<h3>{{ p__('heading', 'File uploads') }}</h3>
+				<p class="text-sm text-content-dimmed">
+					{{ file_uploads ? __('On') : __('Off') }}
+				</p>
+			</div>
+		</div>
+
+		<div class="flex gap-4 items-center box">
+			<x-avatar class="text-content-dimmed" icon="info-square-rounded-filled"></x-avatar>
+
+			<div>
+				<h3>{{ p__('heading', 'Post max size') }}</h3>
+				<p class="text-sm text-content-dimmed">
+					{{ post_max_size }}
+				</p>
+			</div>
+		</div>
+
+		<div class="flex gap-4 items-center box">
+			<x-avatar class="text-content-dimmed" icon="info-square-rounded-filled"></x-avatar>
+
+			<div>
+				<h3>{{ p__('heading', 'Upload max filesize') }}</h3>
+				<p class="text-sm text-content-dimmed">
+					{{ upload_max_filesize }}
+				</p>
+			</div>
+		</div>
+
+		<div class="flex gap-4 items-center box">
+			<x-avatar class="text-content-dimmed" icon="info-square-rounded-filled"></x-avatar>
+
+			<div>
+				<h3>{{ p__('heading', 'Memory limit') }}</h3>
+				<p class="text-sm text-content-dimmed">
+					{{ memory_limit }}
+				</p>
+			</div>
+		</div>
+
+		<div class="flex gap-4 items-center box">
+			<x-avatar class="text-content-dimmed" icon="info-square-rounded-filled"></x-avatar>
+
+			<div>
+				<h3>{{ p__('heading', 'Disk space') }}</h3>
+				<p class="text-sm text-content-dimmed">
+					{{ __('%1$s of %2$s is free', disk_free_space == null ? '-' : disk_free_space, disk_total_space == null ? '-' : disk_total_space) }}
+				</p>
+			</div>
+		</div>
+
+		<div class="flex gap-4 items-center box">
+			<x-avatar class="text-content-dimmed" icon="info-square-rounded-filled"></x-avatar>
+
+			<div>
+				<div class="flex gap-2 mb-1 items-center">
+					<h3>{{ p__('heading', 'License') }}</h3>
+
+					<a href="/admin/license" class="badge">
+						{{ __('Change license') }}
+					</a>
+				</div>
+
+				<p class="text-sm text-content-dimmed">
+					{% if license %}
+						<span x-text="'{{ environment == 'demo' ? 'hidden-in-demo' : license }}'.slice(0,4) + '*'.repeat(10) + '{{ environment == 'demo' ? 'hidden-in-demo' : license }}'.slice(-4)"></span>
+					{% else %}
+						{{ __('Couldn’t identify the license') }}
+					{% endif %}
+				</p>
+			</div>
+
+			{% if license %}
+				<x-copy class="ms-auto text-content-dimmed hover:text-content" data-copy="{{ environment == 'demo' ? 'hidden-in-demo' : license }}">
+					<i class="ti ti-copy text-2xl"></i>
+				</x-copy>
+			{% endif %}
+		</div>
+
+		<div class="flex gap-4 items-center box">
+			<x-avatar class="text-content-dimmed" icon="info-square-rounded-filled"></x-avatar>
+
+			<div>
+				<h3>{{ p__('heading', 'Version') }}</h3>
+				<p class="text-sm text-content-dimmed">
+					{{ version }}
+				</p>
+			</div>
+		</div>
+	</form>
+{% endblock %}

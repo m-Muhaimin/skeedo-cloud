@@ -1,0 +1,615 @@
+{% extends "/layouts/main.twig" %}
+
+{% set xdata %}
+checkout(
+{{ (plan ?? {})|json_encode() }},
+{{ voice_count }},
+{{ is_custom ? 'true' : 'false' }}
+)
+{% endset %}
+
+{% block title p__('title', 'Checkout')|title %}
+
+{% block template %}
+	{% if workspace.owner.id == user.id %}
+		<div>
+			{% include "snippets/back.twig" with {link: 'app/billing/plans', label: p__('button', 'Plans')} %}
+			<h1 class="mt-4">{{ p__('heading', 'Checkout') }}</h1>
+		</div>
+
+		<div class="gap-5" x-cloak :class="proceed == true ? 'flex flex-col md:flex-row' : 'grid md:grid-cols-2'">
+			{% set canTrial = plan.price > 0 and plan.billing_cycle in ['monthly', 'yearly'] and workspace.is_eligible_for_trial and option.billing.trial_period_days is defined and option.billing.trial_period_days > 0 %}
+
+			<div :class="proceed == true ? 'md:w-96 shrink-0' : ''">
+				<div class="flex flex-col gap-4 p-8 box">
+					<x-avatar icon="{{ plan.billing_cycle in ['monthly', 'yearly'] ? 'refresh' : 'cash' }}" class="bg-button text-button-content"></x-avatar>
+
+					<h2>
+						{% if plan.billing_cycle in ['monthly', 'yearly'] %}
+							{{ __('Subscription') }}
+							{% if canTrial and option.billing.trial_without_payment is defined and option.billing.trial_without_payment %}
+								<span class="font-normal text-content-dimmed">
+									({{ __('Trail only') }})
+								</span>
+							{% endif %}
+						{% else %}
+							{{ __('Add-on credits') }}
+						{% endif %}
+					</h2>
+
+					<div class="flex justify-between">
+						<div>
+							<h3 class="text-xl">{{ is_custom ? __('Custom amount') : plan.title }}</h3>
+
+							<div class="text-sm text-content-dimmed">
+								<x-credit data-value="{{ plan.credit_count }}" format="{{ plan.credit_count is same as null ? __('Unlimited credits') : n__(":count credit", ":count credits", plan.credit_count, plan.credit_count) }}"></x-credit>
+							</div>
+						</div>
+
+						<div class="text-end">
+							<div class="text-xl font-bold">
+								<x-money :data-value="plan.price" currency="{{ currency.code }}" minor-units="{{ currency.fraction_digits }}" fraction="auto"></x-money>
+							</div>
+
+							<div class="text-sm text-content-dimmed">
+								{% if plan.billing_cycle == 'monthly' %}
+									{{ p__('billing-cycle', 'Per month') }}
+								{% elseif plan.billing_cycle == 'yearly' %}
+									{{ p__('billing-cycle', 'Per year') }}
+								{% else %}
+									{{ p__('billing-cycle', 'One time') }}
+								{% endif %}
+							</div>
+						</div>
+					</div>
+
+					{% if is_custom == false and plan.price > 0 and (canTrial and option.billing.trial_without_payment is defined and option.billing.trial_without_payment) == false %}
+						<x-form>
+							<form action="#" class="flex flex-col gap-2" @submit.prevent="applyCoupon">
+								<div class="flex gap-2 px-3 mt-2 h-12 rounded-lg border border-line" :class="plan.coupon ? 'bg-line-dimmed' : ''">
+									<template x-if="plan.discount">
+										<span class="flex items-center text-sm font-bold uppercase text-content">{{ p__('text', 'Coupon') }}:</span>
+									</template>
+
+									<input type="text" maxlength="24" :readonly="applying || plan.coupon" class="flex items-center p-0 text-sm font-normal uppercase bg-transparent rounded-none border-none appearance-none outline-hidden grow placeholder:text-content-super-dimmed focus:ring-0" x-model="coupon.code" required placeholder="{{ p__('label', 'Coupon code') }}" @input="coupon.error = null">
+
+									<template x-if="!plan.coupon">
+										<button type="submit" class="text-sm font-bold uppercase group text-content-dimmed hover:text-content" :processing="applying">
+											<template x-if="!applying">
+												<span>{{ p__('button', 'Apply') }}</span>
+											</template>
+
+											<template x-if="applying">
+												{% include "/snippets/spinner.twig" %}
+											</template>
+										</button>
+									</template>
+
+									<template x-if="plan.coupon">
+										<button type="button" class="text-sm font-bold uppercase group text-content-dimmed hover:text-content" :processing="applying" @click="removeCoupon">
+											<template x-if="!applying">
+												<i class="ti ti-x"></i>
+											</template>
+
+											<template x-if="applying">
+												{% include "/snippets/spinner.twig" %}
+											</template>
+										</button>
+									</template>
+								</div>
+
+								<template x-if="coupon.error">
+									<p class="text-xs text-failure">
+										{{ __('Coupon code is not valid') }}
+									</p>
+								</template>
+
+								<template x-if="['monthly', 'yearly'].includes(plan.billing_cycle) && plan.coupon?.cycle_count != null">
+									<p class="text-xs text-content-dimmed">
+										{% set count %}
+										<span x-text="plan.coupon.cycle_count"></span>
+										{% endset %}
+
+										<template x-if="plan.coupon.cycle_count == 1">
+											<span>
+												{{ __('Coupon code is valid for the first payment of the subscription.') }}
+											</span>
+										</template>
+
+										<template x-if="plan.coupon.cycle_count != 1">
+											<span>
+												{{ __('Coupon code is valid for the first :count payments of the subscription.')|replace({':count': count})|raw }}
+											</span>
+										</template>
+									</p>
+								</template>
+							</form>
+						</x-form>
+					{% endif %}
+
+					<hr>
+
+					<div>
+						<div class="flex justify-between">
+							<div>{{ __('Subtotal') }}</div>
+							<div>
+								<x-money :data-value="plan.price" currency="{{ currency.code }}" minor-units="{{ currency.fraction_digits }}" fraction="auto"></x-money>
+							</div>
+						</div>
+
+						{% if is_custom == false %}
+							<div class="flex justify-between">
+								<div>
+									{{ __('Discount') }}
+
+									<template x-if="['monthly', 'yearly'].includes(plan.billing_cycle) && plan.coupon?.cycle_count != null">
+										<span class="text-xs text-content-dimmed">
+											{% set count %}
+											<span x-text="plan.coupon.cycle_count"></span>
+											{% endset %}
+
+											<template x-if="plan.coupon.cycle_count == 1">
+												<span>
+													({{ __('For first payment only') }})
+												</span>
+											</template>
+
+											<template x-if="plan.coupon.cycle_count != 1">
+												<span>
+													({{ __('For first :count payments only')|replace({':count': count})|raw }})
+												</span>
+											</template>
+
+										</span>
+									</template>
+								</div>
+								{% if canTrial and option.billing.trial_without_payment is defined and option.billing.trial_without_payment %}
+									<div>
+										<x-money :data-value="plan.price" currency="{{ currency.code }}" minor-units="{{ currency.fraction_digits }}" fraction="auto"></x-money>
+									</div>
+								{% else %}
+									<div>
+										<x-money :data-value="plan.discount ?? 0" currency="{{ currency.code }}" minor-units="{{ currency.fraction_digits }}" fraction="auto"></x-money>
+									</div>
+								{% endif %}
+							</div>
+						{% endif %}
+					</div>
+
+					<hr>
+
+					<div class="flex justify-between text-xl">
+						<div>{{ __('Total') }}</div>
+
+						{% if canTrial and option.billing.trial_without_payment is defined and option.billing.trial_without_payment %}
+							<div class="font-bold">
+								<x-money :data-value="0" currency="{{ currency.code }}" minor-units="{{ currency.fraction_digits }}" fraction="auto"></x-money>
+							</div>
+						{% else %}
+							<div class="font-bold">
+								<x-money :data-value="plan.sale_price ?? plan.price" currency="{{ currency.code }}" minor-units="{{ currency.fraction_digits }}" fraction="auto"></x-money>
+							</div>
+						{% endif %}
+					</div>
+
+					{% if plan.price > 0 and canTrial %}
+						<p class="text-sm text-content-dimmed">
+							{{ n__("You're eligible for %s day free trial.", "You're eligible for %s days free trial.", option.billing.trial_period_days, option.billing.trial_period_days ) }}
+
+							{% if option.billing.trial_without_payment is defined and option.billing.trial_without_payment %}
+								{{ __("After trial expires your subscription will be stopped. You won't be charged.") }}
+							{% else %}
+								{{ __("You'll be charged after your trial expires.") }}
+							{% endif %}
+						</p>
+					{% endif %}
+				</div>
+			</div>
+
+			<template x-if="proceed == 'member_cap'">
+				<div class="flex flex-col gap-4 p-8 box">
+					<x-avatar icon="arrow-down"></x-avatar>
+
+					<h2>{{ __('Member limit exceeded') }}</h2>
+
+					<p class="text-sm">
+						{{ 
+							__(':plan plan allows only :count members. Your workspace has total of :total members or invitations. Remove some members or invitations to proceed.')|replace({
+								':plan': plan.title,
+								':count': plan.member_cap,
+								':total': workspace.users|length + workspace.invitations|length
+							}) 
+						}}
+					</p>
+
+					<div class="mt-auto">
+						<a href="app/workspace" class="button button-sm">
+							<i class="ti ti-building"></i>
+
+							{{ p__('button', 'Workspace overview') }}
+						</a>
+					</div>
+
+					<p class="text-xs text-content-dimmed">
+						{{ __('The workspace owner does not count towards the member limit.') }}
+					</p>
+				</div>
+			</template>
+
+			<template x-if="proceed == 'voice_cap'">
+				<div class="flex flex-col gap-4 p-8 box">
+					<x-avatar icon="arrow-down"></x-avatar>
+
+					<h2>{{ __('Cloned voice limit exceeded') }}</h2>
+
+					<p class="text-sm">
+						{{ 
+							__(':plan plan allows only :count cloned voices. Your workspace has total of :total cloned voices. Remove some cloned voices to proceed.')|replace({
+								':plan': plan.title,
+								':count': plan.config.voiceover.clone_cap,
+								':total': voice_count
+							}) 
+						}}
+					</p>
+
+					<div class="mt-auto">
+						<a href="app/voiceover/voices?owner=workspace" class="button button-sm">
+							<i class="ti ti-voice"></i>
+
+							{{ p__('button', 'View cloned voices') }}
+						</a>
+					</div>
+				</div>
+			</template>
+
+			<div class="flex flex-col gap-8 py-8 grow" x-init="showAddressForm = ({{ option.billing.address_enabled is defined and option.billing.address_enabled ? 'true' : 'false' }} && !$store.workspace.address)" x-cloak x-show="proceed == true">
+				{% if option.billing.address_enabled is defined and option.billing.address_enabled %}
+					<div class="flex flex-col gap-4">
+						<h2>
+							<span class="font-mono text-content-dimmed">1.</span>
+							{{ p__('text', 'Billing address') }}
+						</h2>
+
+						<template x-if="!showAddressForm">
+							<button class="flex gap-6 justify-between items-center text-start box group" @click="showAddressForm=true">
+								<address class="text-sm not-italic font-medium font-primary">
+									<div>
+										<span x-text="$store.workspace.address.line1"></span>
+
+										<template x-if="$store.workspace.address.line2">
+											<span x-text="`, ${$store.workspace.address.line2}`"></span>
+										</template>
+									</div>
+
+									<div>
+										<span x-text="$store.workspace.address.city"></span>
+
+										<template x-if="$store.workspace.address.state">
+											<span x-text="`, ${$store.workspace.address.state}`"></span>
+										</template>
+										<span x-text="`, ${$store.workspace.address.zip}`"></span>
+										,
+										<span x-text="$store.workspace.address.country"></span>
+									</div>
+								</address>
+
+								<i class="text-2xl ti ti-pencil text-content-dimmed group-hover:text-content"></i>
+							</button>
+						</template>
+
+						<template x-if="showAddressForm">
+							<x-form>
+								<form class="flex flex-col gap-6" @submit.prevent="saveAddress($store.workspace.id, $el);" x-data="{country: $store.workspace.address?.country}">
+									<div>
+										<label for="line1">{{ p__('label', 'Address line 1') }}</label>
+										<input type="text" class="mt-2 input" id="line1" name="address[line1]" required placeholder="{{ __('Street address') }}" :value="$store.workspace.address?.line1">
+									</div>
+
+									<div>
+										<label for="line2">{{ p__('label', 'Address line 2') }}</label>
+										<input type="text" class="mt-2 input" id="line2" name="address[line2]" placeholder="{{ __('Apt., suite, unit number etc.') }}" :value="$store.workspace.address?.line2">
+									</div>
+
+									<div class="flex gap-6">
+										<div class="grow">
+											<label for="country">{{ p__('label', 'Country') }}</label>
+
+											<select name="address[country]" id="country" required class="mt-2 input" @change="country=$el.value">
+												<option value="" disabled selected>
+													{{ __('Select country') }}
+												</option>
+												{% for code,name in countries %}
+													<option value="{{ code }}" :selected="'{{ code }}' == $store.workspace.address?.country">
+														{{ name }}</option>
+												{% endfor %}
+											</select>
+										</div>
+
+										<template x-if="country == 'US'">
+											<div class="grow">
+												<label for="state">{{ p__('label', 'State') }}</label>
+
+												<select name="address[state]" id="state" required class="mt-2 input">
+													<option value="" disabled selected>
+														{{ __('Select state') }}
+													</option>
+
+													{% for code,name in states %}
+														<option value="{{ code }}" :selected="'{{ code }}' == $store.workspace.address?.state">
+															{{ name }}
+														</option>
+													{% endfor %}
+												</select>
+											</div>
+										</template>
+									</div>
+
+									<div class="grid grid-cols-2 gap-6">
+										<div>
+											<label for="city">{{ p__('label', 'City') }}</label>
+											<input type="text" class="mt-2 input" id="city" name="address[city]" required :value="$store.workspace.address?.city">
+										</div>
+
+										<div class="grow">
+											<label for="zip">{{ p__('label', 'Zip') }}</label>
+
+											<input type="text" class="mt-2 input" id="zip" name="address[zip]" required :value="$store.workspace.address?.zip">
+										</div>
+									</div>
+
+									<div>
+										<label for="phone_number">{{ p__('label', 'Phone number') }}</label>
+										<input type="text" class="mt-2 input" id="phone_number" name="address[phone_number]" required :value="$store.workspace.address?.phone_number">
+									</div>
+
+									<div>
+										<button type="submit" class="w-full button" :processing="processing" :disabled="processing">
+											{% include "/snippets/spinner.twig" %}
+
+											{{ p__('button', 'Next') }}
+										</button>
+									</div>
+								</form>
+							</x-form>
+						</template>
+					</div>
+				{% endif %}
+
+				<div class="flex flex-col gap-4" x-show="!showAddressForm">
+					<h2>
+						{% if option.billing.address_enabled is defined and option.billing.address_enabled %}
+							<span class="font-mono text-content-dimmed">2.</span>
+						{% endif %}
+
+						{{ p__('text', 'Payment') }}
+					</h2>
+
+					{% if plan.price > 0 %}
+						{% if canTrial and option.billing.trial_without_payment is defined and option.billing.trial_without_payment %}
+							<form @submit.prevent="purchase()">
+								<button type="submit" class="w-full button" :processing="processing">
+									{% include "/snippets/spinner.twig" %}
+
+									{{ p__('button', 'Start free trial') }}
+								</button>
+							</form>
+						{% else %}
+							{% set sections = 0 %}
+							{% if card_gateway %}
+								{% set sections = sections + 1 %}
+								<div x-show="!offlinePayment">
+									{% include card_gateway.name|lower == 'stripe' ? '/sections/checkout/stripe.twig' : "/sections/checkout/card-form.twig" %}
+								</div>
+							{% endif %}
+
+
+							{% if gateways|length > 0 or crypto_gateways|length > 0 %}
+								{% set sections = sections + 1 %}
+
+								{% if sections > 1 %}
+									<div class="flex relative justify-center my-4 text-sm" x-show="!offlinePayment">
+										<span class="relative z-10 px-2 bg-main text-content-dimmed">{{ p__('label', 'Or, pay with 3rd party provider') }}</span>
+										<span class="absolute left-0 top-1/2 w-full border-t -translate-y-1/2 border-line-dimmed"></span>
+									</div>
+								{% endif %}
+
+								<div class="flex flex-col gap-2" x-show="!offlinePayment">
+									{% set cls = 'grid-cols-1' %}
+									{% if gateways|length % 3 == 0 %}
+										{% set cls = 'grid-cols-3' %}
+									{% elseif gateways|length % 2 == 0 %}
+										{% set cls = 'grid-cols-2' %}
+									{% endif %}
+
+									<div class="flex flex-col gap-1">
+										{% if gateways|length > 0 %}
+											<div class="grid items-center gap-1 {{ cls }}">
+												{% for key, gateway in gateways %}
+													{% set style %}
+													{% if gateway.buttonBackgroundColor %}
+														style="background-color:
+														{{ gateway.buttonBackgroundColor }};
+																																																																																																																																																																																																																																outline-color:{{ gateway.buttonBackgroundColor }}; 
+																																																																																																																																																																																																																																color:{{ gateway.buttonTextColor }};"
+													{% endif %}
+													{% endset %}
+
+													<button type="button" class="button" {{ style }} @click="purchase(`{{ key }}`)" :disabled="processing" :processing="processing == `{{ key }}`">
+														{% if gateway.logo %}
+															<span class="[&_svg]:h-4 [&_svg]:w-auto [&_img]:h-4 [&_img]:w-auto">
+																{% if gateway.logo|slice(0,4) == "<svg" %}
+																	{{ gateway.logo|raw }}
+																{% else %}
+																	<img src="{{ gateway.logo }}" alt="{{ gateway.name }}"/>
+																{% endif %}
+															</span>
+														{% else %}
+															<h3>{{ gateway.name }}</h3>
+														{% endif %}
+
+														{% include "/snippets/spinner.twig" %}
+													</button>
+												{% endfor %}
+											</div>
+										{% endif %}
+
+										{% if crypto_gateways|length > 0  %}
+											<div class="flex flex-col gap-1">
+												{% for key, gateway in crypto_gateways %}
+													{% set style %}
+													{% if crypto_gateways|length and gateway.buttonBackgroundColor %}
+														style="background-color:
+														{{ gateway.buttonBackgroundColor }};
+																																																																																																																																																																																																																																outline-color:{{ gateway.buttonBackgroundColor }}; 
+																																																																																																																																																																																																																																color:{{ gateway.buttonTextColor }};"
+													{% else %}
+														style="background-color: #1a1a1a;
+																																																																																																																																																																																																																																outline-color:#1a1a1a; 
+																																																																																																																																																																																																																																color:#fff;"
+													{% endif %}
+													{% endset %}
+
+													<button type="button" class="button" {{ style }} @click="purchase(`{{ key }}`)" :disabled="processing" :processing="processing == `{{ key }}`">
+														{% if crypto_gateways|length > 1 %}
+															{% if gateway.logo %}
+																<span class="[&_svg]:h-4 [&_svg]:w-auto [&_img]:h-4 [&_img]:w-auto">
+																	{% if gateway.logo|slice(0,4) == "<svg" %}
+																		{{ gateway.logo|raw }}
+																	{% else %}
+																		<img src="{{ gateway.logo }}" alt="{{ gateway.name }}"/>
+																	{% endif %}
+																</span>
+															{% else %}
+																<h3>{{ gateway.name }}</h3>
+															{% endif %}
+														{% else %}
+															{{ p__('label', 'Pay with crypto') }}
+
+															<span class="flex items-center gap-1">
+																<img src="/assets/icons/crypto/btc.svg" alt="Bitcoin" class="w-5 h-5">
+																<img src="/assets/icons/crypto/eth.svg" alt="Ethereum" class="w-5 h-5">
+																<img src="/assets/icons/crypto/usdt.svg" alt="Tether" class="w-5 h-5">
+															</span>
+														{% endif %}
+
+														{% include "/snippets/spinner.twig" %}
+													</button>
+												{% endfor %}
+											</div>
+										{% endif %}
+									</div>
+
+									<template x-if="error && !offlinePayment">
+										<p class="flex gap-1 items-start text-xs list-disc list-inside text-failure">
+											<i class="-mt-1 text-base ti ti-square-rounded-x-filled"></i>
+											<span x-text="error"></span>
+										</p>
+									</template>
+
+									<template x-if="!error || offlinePayment">
+										<p class="flex gap-1 justify-center items-center text-xs list-disc list-inside text-content-dimmed">
+											<i class="text-base ti ti-info-square-rounded"></i>
+											{{ __('You will be redirected to the chosen provider to finalize your purchase.') }}
+										</p>
+									</template>
+								</div>
+							{% endif %}
+
+							{% if offline_gateways|length > 0 %}
+								{% set sections = sections + 1 %}
+								{% if sections > 1 %}
+									<div class="flex relative justify-center my-4 text-sm" x-show="!offlinePayment">
+										<span class="relative z-10 px-2 bg-main text-content-dimmed">{{ p__('label', 'Or, pay with offline method') }}</span>
+										<span class="absolute left-0 top-1/2 w-full border-t -translate-y-1/2 border-line-dimmed"></span>
+									</div>
+								{% endif %}
+
+								<form class="flex flex-col gap-2" @submit.prevent="purchase(offlinePayment)">
+									<div class="flex flex-col gap-1">
+										{% if sections > 1 %}
+											<template x-if="offlinePayment">
+												<button type="button" class="flex gap-2 items-center p-3 rounded-lg border cursor-pointer border-line-dimmed hover:border-line text-content-dimmed hover:text-content" @click.prevent="offlinePayment = null">
+													<div class="flex gap-2 items-center text-sm">
+														<i class="text-2xl ti ti-arrow-up"></i>
+														{{ __("View other payment methods")}}
+													</div>
+												</button>
+											</template>
+										{% endif %}
+
+										{% for key, gateway in offline_gateways %}
+											<div class="flex gap-2 items-center p-3 rounded-lg border cursor-pointer" @click.prevent="offlinePayment === `{{ key }}` ? offlinePayment = null : offlinePayment = `{{ key }}`" :class="offlinePayment === `{{ key }}` ?  'border-line hover:border-intermediate-content bg-intermediate text-intermediate-content' : 'border-line-dimmed hover:border-line'">
+
+												<div class="flex gap-2 items-center text-sm">
+													{% if gateway.icon %}
+														<i class="text-2xl {{ gateway.icon }}"></i>
+													{% endif %}
+
+													{{ gateway.name }}
+												</div>
+
+												<i class="ms-auto text-2xl ti" :class="offlinePayment === `{{ key }}` ? 'ti-square-rounded-check-filled' : 'ti-square-rounded'"></i>
+											</div>
+										{% endfor %}
+									</div>
+
+									<template x-if="offlinePayment">
+										<div class="flex flex-col gap-2 text-center">
+											<button type="submit" class="w-full button" :processing="processing">
+												{% include "/snippets/spinner.twig" %}
+
+												{{ p__('button', 'Place order')}}
+											</button>
+
+											<template x-if="error && offlinePayment">
+												<p class="flex gap-1 items-start text-xs list-disc list-inside text-failure">
+													<i class="-mt-1 text-base ti ti-square-rounded-x-filled"></i>
+													<span x-text="error"></span>
+												</p>
+											</template>
+
+											<template x-if="!error">
+												<p class="flex gap-1 justify-center items-center text-xs list-disc list-inside text-content-dimmed">
+													<i class="text-base ti ti-info-square-rounded"></i>
+													{{ __('Payment details will be provided after placing the order.') }}
+												</p>
+											</template>
+										</div>
+									</template>
+								</form>
+							{% endif %}
+						{% endif %}
+
+					{% else %}
+						<form @submit.prevent="purchase()">
+							<button type="submit" class="w-full button" :processing="processing">
+								{% include "/snippets/spinner.twig" %}
+
+								{{ p__('button', 'Subscribe for free')}}
+							</button>
+						</form>
+					{% endif %}
+				</div>
+			</div>
+		</div>
+	{% else %}
+		<div class="flex flex-col gap-6 my-20">
+			<i class="text-5xl ti ti-lock"></i>
+
+			<div>
+				<h2>{{ p__('heading', 'Permission denied') }}</h2>
+
+				<p class="mt-1 text-sm">
+					{{ __("You don't have an access to this page.") }}
+				</p>
+			</div>
+
+			<div>
+				<a href="app" class="button button-sm button-outline">
+					<i class="ti ti-arrow-left"></i>
+					{{ p__('button', 'Go home page') }}
+				</a>
+			</div>
+		</div>
+	{% endif %}
+{% endblock %}

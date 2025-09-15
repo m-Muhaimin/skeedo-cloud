@@ -1,0 +1,128 @@
+{% set xdata %}
+customCredits({
+    currency: `{{ currency|json_encode }}`,
+    rate: '{{ option.billing.custom_credits.rate|default(0) }}',
+    max: '{{ option.billing.custom_credits.maximum_amount|default(0) }}',
+    min: '{{ option.billing.custom_credits.minimum_amount|default(0) }}'
+})
+{% endset %}
+
+<modal-element name="custom-credits" x-data="{{ xdata }}">
+	<form class="flex flex-col gap-8 modal" method="GET" action="/app/billing/checkout/custom" @submit="isProcessing = true">
+		<div class="flex justify-between items-center">
+			<h2 class="text-xl">{{ p__('heading', 'Purchase add-on credits') }}</h2>
+
+			<button class="flex justify-center items-center w-8 h-8 rounded-full border border-transparent bg-line-dimmed hover:border-line" @click="modal.close()" type="button">
+				<i class="text-xl ti ti-x"></i>
+			</button>
+		</div>
+
+		<div class="flex flex-col gap-4">
+			<div class="flex flex-col gap-2">
+				<div class="grid grid-cols-2 gap-4">
+					<div>
+						<label for="value">
+							{{ p__('label', 'Amount to spend') }}
+						</label>
+
+						<div class="relative mt-2">
+							<input type="hidden" name="amount" x-model="amount">
+							<input type="text" maxlength="17" id="value" x-model="value" class="pe-11 input" required autocomplete="off" x-mask:dynamic="$money($input, '.', ' ', {{ currency.fraction_digits }})"/>
+							<code class="absolute end-3 top-1/2 text-sm font-medium -translate-y-1/2 pointer-events-none text-content-dimmed">{{ currency.code }}</code>
+						</div>
+					</div>
+
+					<div>
+						<label for="value">
+							{{ p__('label', "You'll receive") }}
+						</label>
+
+						<div class="flex items-center justify-between mt-2 input">
+							<x-credit :data-value="amount * rate / Math.pow(10, currency.fraction_digits)"></x-credit>
+							<code class="text-sm font-medium text-content-dimmed uppercase">{{ __('credits') }}</code>
+						</div>
+					</div>
+				</div>
+
+				{% set min = null %}
+				{% set max = null %}
+
+				{% if option.billing.custom_credits.minimum_amount|default(0) > 0 %}
+					{% set min %}
+					<x-money :data-value="{{ option.billing.custom_credits.minimum_amount }}" currency="{{ currency.code }}" minor-units="{{ currency.fraction_digits }}"></x-money>
+					{% endset %}
+				{% endif %}
+
+				{% if option.billing.custom_credits.maximum_amount|default(0) > 0 %}
+					{% set max %}
+					<x-money :data-value="{{ option.billing.custom_credits.maximum_amount }}" currency="{{ currency.code }}" minor-units="{{ currency.fraction_digits }}"></x-money>
+					{% endset %}
+				{% endif %}
+
+				{% if min and max %}
+					<template x-if="invalidValue">
+						<ul class="info text-failure">
+							<li>
+								{{ __('Enter an amount between :min and :max', { ':min': min, ':max': max })|raw }}
+							</li>
+						</ul>
+					</template>
+				{% elseif min %}
+					<template x-if="invalidValue">
+						<ul class="info text-failure">
+							<li>
+								{{ __('Enter an amount greater than :min', { ':min': min })|raw }}
+							</li>
+						</ul>
+					</template>
+				{% elseif max %}
+					<template x-if="invalidValue">
+						<ul class="info text-failure">
+							<li>
+								{{ __('Enter an amount less than :max', { ':max': max })|raw }}
+							</li>
+						</ul>
+					</template>
+				{% endif %}
+			</div>
+
+			<button type="submit" class="button w-full" :processing="isProcessing" :disabled="invalidValue || amount <= 0 || isProcessing">
+				{% include "/snippets/spinner.twig" %}
+
+				{{ p__('button', 'Continue') }}
+			</button>
+
+			<p class="text-xs text-center">
+				<i class="ti ti-info-square-rounded"></i>
+				{{ __('Add-on credits are permanent, non-renewing extras for your subscription, used only after recurring credits run out.') }}
+			</p>
+
+			<div class="text-xs flex justify-center">
+				<a href="app/models" class="font-bold group text-content flex items-center gap-1" target="_blank">
+					<span class="group-hover:underline">
+						{{ __('View model pricing') }}
+					</span>
+
+					<i class="ti ti-external-link"></i>
+				</a>
+			</div>
+		</div>
+
+		<template x-if="packs.length > 0">
+			<hr>
+		</template>
+
+		<template x-if="packs.length > 0">
+			<p class="text-xs text-center text-content-dimmed">
+				{{ __('We also offer credit packs that may provide better value.') }}
+				<br>
+
+				{% set click %}
+				<a href="app/billing/packs" class="font-medium hover:underline text-content">{{ __('Click here') }}</a>
+				{% endset %}
+
+				{{ __(':click to see available options.', { ':click': click })|raw }}
+			</p>
+		</template>
+	</form>
+</modal-element>

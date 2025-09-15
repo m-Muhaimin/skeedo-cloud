@@ -1,0 +1,51 @@
+{% if placeholder is defined %}
+	<div class="flex flex-col items-center gap-4 box">
+		<div class="flex flex-col items-center gap-2">
+			<div class="avatar avatar-lg loading"></div>
+
+			<div class="flex flex-col items-center w-full">
+				<div class="h-5 my-0.5 loading w-20"></div>
+				<div class="h-4 my-0.5 loading w-32"></div>
+			</div>
+		</div>
+
+		<div class="flex flex-col items-center w-full">
+			<div class="my-0.5 w-full h-4 loading"></div>
+			<div class="my-0.5 w-2/3 h-4 loading"></div>
+		</div>
+	</div>
+{% else %}
+	<div class="group relative flex">
+		<a :href="assistant.granted ? `app/chat/${assistant.id}` : `app/billing`" class="flex relative flex-col gap-4 items-center text-center box w-full justify-center" :class="!assistant.granted ? 'opacity-50 group-hover:opacity-100' : ''">
+			<div class="flex flex-col items-center gap-2">
+				<x-avatar icon="box" :src="assistant.avatar" :title="assistant.name" class="avatar-lg"></x-avatar>
+
+				<div class="flex flex-col items-center">
+					<h3 class="line-clamp-1" x-text="assistant.name" :title="assistant.name"></h3>
+					<template x-if="assistant.expertise">
+						<div class="text-sm text-content-dimmed line-clamp-1" x-text="assistant.expertise"></div>
+					</template>
+				</div>
+			</div>
+
+			<template x-if="assistant.description">
+				<p class="text-sm text-content-dimmed line-clamp-3" x-text="assistant.description"></p>
+			</template>
+
+			<template x-if="$store.workspace.subscription?.plan.config.assistants != null && !$store.workspace.subscription?.plan.config.assistants.includes(assistant.id)">
+				<span class="flex items-center justify-center w-full gap-1">
+					<i class="ti ti-diamond"></i>
+					<span class="text-xs">{{ __('Upgrade plan') }}</span>
+				</span>
+			</template>
+		</a>
+
+		<template x-if="assistant.granted && !assistant.pinned">
+			<button type="button" class="ti ti-pin text-base opacity-0 group-hover:opacity-100 text-content-dimmed hover:text-content absolute top-7 right-4" x-tooltip.raw="{{ __('Pin') }}" @click.stop="togglePin(assistant)"></button>
+		</template>
+
+		<template x-if="assistant.granted && assistant.pinned">
+			<button type="button" class="ti ti-pinned-filled text-base text-content-dimmed hover:text-content absolute top-7 right-4" x-tooltip.raw="{{ __('Unpin') }}" @click.stop="togglePin(assistant)"></button>
+		</template>
+	</div>
+{% endif %}

@@ -1,0 +1,55 @@
+{% set section = nav.app.apps %}
+
+{% if section.items|length > 0 %}
+<div>
+  <h2>{{ p__('nav', section.label) }}</h2>
+
+  <div class="grid gap-1 mt-4 xs:grid-cols-2 md:grid-cols-3">
+    {% for item in section.items %}
+      <div class="flex relative flex-col gap-4 justify-start box hover:border-line">
+        {% set iconcls = 'flex items-center justify-center w-10 h-10 rounded-[45%] ' %}
+
+        {% if item.from or item.to %}
+          {% set iconcls = iconcls ~ 'text-white bg-black from-black to-black bg-linear-to-br' %}
+        {% else %}
+          {% set iconcls = iconcls ~ 'bg-intermediate text-intermediate-content' %}
+        {% endif %}
+
+        <div class="{{ iconcls }}" style="--tw-gradient-from: {{ item.from ?? item.to }}; --tw-gradient-to: {{ item.to ?? item.from ?? '#006ABF' }}">
+          {% if item.iconType.value == 'ti' %}
+            <i class="text-2xl ti ti-{{ item.icon }}"></i>
+          {% elseif item.iconType.value == 'svg' %}
+            {{ item.icon|raw }}
+          {% elseif item.iconType.value == 'src' %}
+            <img src="{{ item.icon }}" alt="{{ item.label }}">
+          {% elseif item.iconType.value == 'include' %}
+            {% include item.icon %}
+          {% endif %}
+        </div>
+
+        <div>
+          <h3 class="font-bold">{{ p__('nav', item.label) }}</h3>
+
+          {% if item.description %}
+            <p class="text-sm text-content-dimmed mt-1 min-h-[3.75rem]">
+              {{ p__('nav', item.description) }}
+            </p>
+          {% endif %}
+          </p>
+        </div>
+
+        <div class="mt-auto">
+          {% for tag in item.tags %}
+            <span
+              class="px-2 py-1 text-xs bg-transparent rounded-lg border border-line text-content">
+              {{ p__('nav', tag) }}
+            </span>
+          {% endfor %}
+        </div>
+
+        <a href="{{ item.url }}" class="absolute top-0 left-0 z-10 w-full h-full"></a>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}

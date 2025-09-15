@@ -1,0 +1,119 @@
+<template x-if="subscriptions.length > 0">
+	<section class="flex flex-col gap-6 box" data-density="comfortable">
+		<div class="flex gap-2 items-center">
+			<h2>{{ p__('heading', 'Subscriptions') }}</h2>
+
+			<a class="badge" :href="`admin/subscriptions?sort=created_at:desc`">
+				{{ p__('button', 'View all') }}
+			</a>
+		</div>
+
+		<div>
+			<div class="hidden md:grid grid-cols-12 gap-3 items-center px-3 py-2 text-content-dimmed text-xs group-data-[state=empty]/list:hidden">
+				<div class="col-span-5">{{ p__('label', 'Subscription') }}</div>
+				<div class="col-span-2">{{ p__('label', 'Plan') }}</div>
+				<div class="col-span-2">{{ p__('label', 'Price') }}</div>
+				<div class="col-span-2">{{ p__('label', 'Created') }}</div>
+				<div class="col-span-1"></div>
+			</div>
+
+			<ul class="text-sm flex flex-col gap-1 group-data-[state=empty]:hidden">
+				<template x-for="sub in subscriptions" :key="sub.id">
+					<li class="grid relative grid-cols-12 gap-3 items-center p-3 box hover:border-line" x-data>
+						<a :href="`admin/subscriptions/${sub.id}`" class="absolute top-0 left-0 w-full h-full cursor-pointer"></a>
+
+						<div class="flex col-span-11 gap-3 items-center md:col-span-5">
+							<x-avatar :title="sub.plan.title"></x-avatar>
+
+							<div>
+								<div class="flex gap-2 items-center">
+									<div class="font-bold" x-text="sub.plan.title"></div>
+
+									<template x-if="sub.status == 'active'">
+										<span class="badge badge-success">{{ p__('subscription-status', 'Active') }}</span>
+									</template>
+
+									<template x-if="sub.status == 'trialing'">
+										<span class="badge badge-info">{{ p__('subscription-status', 'Trialing') }}</span>
+									</template>
+
+									<template x-if="sub.status == 'canceled'">
+										<span class="badge">{{ p__('subscription-status', 'Canceled') }}</span>
+									</template>
+
+									<template x-if="sub.status == 'ended'">
+										<span class="badge badge-failure">{{ p__('subscription-status', 'Ended') }}</span>
+									</template>
+								</div>
+
+								<div class="mt-0.5 text-xs text-content-dimmed">
+									{% set name %}
+									<a :href="`admin/workspaces/${sub.workspace.id}`" x-text="sub.workspace.name" class="relative hover:underline text-content"></a>
+									{% endset %}
+
+									{{ __('Workspace: :name')|replace({':name' : name})|raw }}
+								</div>
+							</div>
+						</div>
+
+						<div class="hidden md:block md:col-span-2">
+							<div>
+								<div x-text="sub.plan.title"></div>
+
+								<template x-if="sub.plan.billing_cycle == 'monthly'">
+									<div class="mt-0.5 text-xs text-content-dimmed">
+										{{ p__('billing-cycle', 'Monthly') }}</div>
+								</template>
+
+								<template x-if="sub.plan.billing_cycle == 'yearly'">
+									<div class="mt-0.5 text-xs text-content-dimmed">
+										{{ p__('billing-cycle', 'Yearly') }}</div>
+								</template>
+
+								<template x-if="sub.plan.billing_cycle == 'lifetime'">
+									<div class="mt-0.5 text-xs text-content-dimmed">
+										{{ p__('billing-cycle', 'Lifetime') }}</div>
+								</template>
+							</div>
+						</div>
+
+						<div class="hidden md:block md:col-span-2">
+							<template x-if="sub.order">
+								<div>
+									<div class="font-bold">
+										<x-money :data-value="sub.plan.price" :currency="sub.order.currency.code" :minor-units="sub.order.currency.fraction_digits"></x-money>
+									</div>
+
+									<div class="mt-0.5 text-xs text-content-dimmed" x-text="sub.plan.billing_cycle == 'monthly' ? `{{ __('per month') }}` : sub.plan.billing_cycle == 'yearly' ? `{{ __('per year') }}` : `{{ __('one-time') }}`"></div>
+								</div>
+							</template>
+
+							<template x-if="!sub.order">
+								<span>-</span>
+							</template>
+						</div>
+
+						<div class="hidden md:block md:col-span-2">
+							<x-time :datetime="sub.created_at" data-type="date"></x-time>
+						</div>
+
+						<div class="col-span-1 justify-self-end">
+							<div class="relative" @click.outside="$refs.context.removeAttribute('data-open')">
+
+								<button class="relative z-10" @click="$refs.context.toggleAttribute('data-open')">
+									<i class="text-2xl ti ti-dots-vertical text-content-dimmed hover:text-intermediate-content"></i>
+								</button>
+
+								<div class="menu" x-ref="context">
+									<ul>
+										<li><a :href="`admin/subscriptions/${sub.id}`" class="flex gap-2 items-center px-4 py-2 hover:no-underline hover:bg-intermediate">{{ p__('button', 'Details') }}</a></li>
+									</ul>
+								</div>
+							</div>
+						</div>
+					</li>
+				</template>
+			</ul>
+		</div>
+	</section>
+</template>

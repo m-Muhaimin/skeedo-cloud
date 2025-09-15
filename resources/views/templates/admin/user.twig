@@ -1,0 +1,355 @@
+{% extends "/layouts/main.twig" %}
+
+{% set active_menu = '/admin/users' %}
+
+{% set xdata %}
+user({{ (current_user is defined ? current_user : {})|json_encode }})
+{% endset %}
+
+{% block title (current_user is defined ? p__('title', 'Edit user') : p__('title', 'New user'))|title %}
+
+{% block template %}
+	<x-form>
+		<form class="flex flex-col gap-8" @submit.prevent="submit">
+			<div>
+				{% include "snippets/back.twig" with {link: 'admin/users', label: 'Users'} %}
+
+				<h1 class="mt-4">
+					<span x-show="!user.id">{{ p__('heading', 'Add new user') }}</span>
+					<span x-show="user.id">
+						{{ p__('heading', 'Edit user') }}:
+						<span class="font-normal text-intermediate-content" x-text="`${user.first_name} ${user.last_name}`"></span>
+					</span>
+				</h1>
+
+				<template x-if="user.id">
+					<div class="mt-2">
+						<x-uuid x-text="user.id"></x-uuid>
+					</div>
+				</template>
+			</div>
+
+			<div class="flex flex-col gap-2">
+				<template x-if="user.id">
+					<section class="grid relative gap-6 box" data-density="comfortable">
+						<template x-if="user.longitude && user.latitude">
+							<div class="absolute inset-0 rounded-xl">
+								<iframe :src="`https://www.openstreetmap.org/export/embed.html?bbox=${user.longitude-0.05},${user.latitude-0.05},${user.longitude+0.05},${user.latitude+0.05}&layer=mapnik&show_controls=false`" class="w-full h-full rounded-xl border-none grayscale dark:mix-blend-hard-light" loading="lazy" scrolling="no" frameborder="0"></iframe>
+								<div class="absolute inset-0 bg-linear-to-tr to-transparent rounded-xl opacity-50 pointer-events-none from-main"></div>
+
+								<div class="absolute inset-0 bg-linear-to-r to-transparent via-20% rounded-xl rounded-r-none pointer-events-none from-main via-transparent"></div>
+								<div class="absolute inset-0 bg-linear-to-r via-80% via-transparent to-transparent rounded-xl from-main pointer-events-none"></div>
+							</div>
+						</template>
+
+						<div class="flex relative gap-4 items-center pointer-events-none" :class="{'pt-14': user.longitude && user.latitude}">
+							<x-avatar :title="`${user.first_name} ${user.last_name}`" :src="user.avatar" class="pointer-events-auto avatar-lg" x-tooltip.raw="{{ __('Profile images are provided by %s', 'Gravatar') }}"></x-avatar>
+
+							<div class="flex flex-col items-start">
+								<div class="flex gap-2 items-center">
+									<h2 class="pointer-events-auto" x-text="`${user.first_name} ${user.last_name}`"></h2>
+									<template x-if="user.ip">
+										<x-copy class="pointer-events-auto badge" x-text="`${user.ip}`" x-tooltip.raw="{{ __('The IP address used to register this account') }}"></x-copy>
+									</template>
+								</div>
+
+								<div class="flex gap-2 items-center text-sm pointer-events-auto text-content-dimmed" :class="{'bg-main px-1.5 py-0.5 rounded-md': user.longitude && user.latitude}">
+									<div class="hidden gap-1 items-center md:flex">
+										<span>{{ __('First seen') }}:</span>
+										<x-time :datetime="user.created_at"></x-time>
+									</div>
+
+									<x-time class="md:hidden" :datetime="user.created_at" data-type="date"></x-time>
+
+									<template x-if="user.country">
+										<i class="text-xs ti ti-point-filled"></i>
+									</template>
+
+									<template x-if="user.country">
+										<span x-text="(user.city_name ? user.city_name + (user.country ? ', ' : '') : '') + user.country.name"></span>
+									</template>
+								</div>
+							</div>
+						</div>
+					</section>
+				</template>
+
+				<section class="grid gap-6 md:grid-cols-2 box" data-density="comfortable">
+					<h2 class="md:col-span-2">{{ p__('heading', 'Profile') }}</h2>
+
+					<div>
+						<label for="first_name">{{ p__('label', 'First name') }}</label>
+
+						<input type="text" id="first_name" class="mt-2 input" autocomplete="off" :placeholder="user.first_name || `{{ __('User\'s first name') }}`" required x-model="model.first_name"/>
+					</div>
+
+					<div>
+						<label for="last_name">{{ p__('label', 'Last name') }}</label>
+
+						<input type="text" id="last_name" class="mt-2 input" autocomplete="off" :placeholder="user.last_name || `{{ __('User\'s last name') }}`" x-model="model.last_name" required/>
+					</div>
+
+					<div :class="user.id ? 'md:col-span-2' : ''">
+						<label for="email" class="inline-flex gap-2 items-center">{{ p__('label', 'Email') }}
+
+							<template x-if="user.is_email_verified">
+								<span class="text-xs text-success">{{ __('Verified') }}</span>
+							</template>
+						</label>
+
+						<input type="text" id="email" class="mt-2 input" autocomplete="off" {% if environment != 'demo' %} :placeholder="user.email || `{{ __('User\'s email')|e('html_attr')}}`" x-model="model.email" {% else %} value="Email is hidden in demo environment" {% endif %} :disabled="user.id ? true : false" required/>
+					</div>
+
+					<template x-if="!user.id">
+						<div>
+							<label for="password">{{ p__('label', 'Password') }}</label>
+
+							<div class="relative mt-2" x-data="{isVisible: false}">
+								<input :type="isVisible ? 'text' : 'password'" id="password" name="password" placeholder="{{ __('Type your password') }}" autocomplete="current-password" class="input pe-11" required x-model="model.password" minlength="6">
+
+								<button type="button" class="absolute end-3 top-1/2 text-2xl -translate-y-1/2 text-content-dimmed" @click="isVisible = !isVisible">
+									<i class="block ti" :class="{'ti-eye-closed' : isVisible, 'ti-eye':!isVisible}"></i>
+								</button>
+							</div>
+
+							<ul class="info mt-2">
+								<li>
+									{{ __('Password must be at least 6 characters long.') }}
+								</li>
+							</ul>
+						</div>
+					</template>
+
+					<fieldset>
+						<label for="phone_number">{{ p__('label', 'Phone number') }}</label>
+						<x-phone-input class="block relative" x-ref="el" x-data="{country: null}" @input="country = $refs.el.dataset.country">
+							<div class="flex absolute left-3 top-1/2 justify-center items-center w-6 h-6 text-2xl -translate-y-1/2 text-content-dimmed">
+								<template x-if="!country">
+									<i class="ti ti-world"></i>
+								</template>
+
+								<template x-if="country">
+									<x-avatar class="w-6 h-6" :title="country" :src="`https://flagcdn.com/${country.toLowerCase()}.svg`"></x-avatar>
+								</template>
+							</div>
+
+							<input type="tel" id="phone_number" maxlength="30" name="phone_number" class="pl-12 input" {% if environment != 'demo' %} :placeholder="user.phone_number || `{{ __('Type user\'s phone number') }}`" x-model="model.phone_number" {% else %} value="Phone number is hidden in demo environment" {% endif %}>
+						</x-phone-input>
+					</fieldset>
+
+					<div>
+						<label for="workspace-cap" class="flex gap-2 items-center">
+							{{ p__('label', 'Owned workspace cap') }}
+						</label>
+
+						<input type="number" id="workspace-cap" class="mt-2 input" autocomplete="off" placeholder="{{ __('Unlimited') }}" min="0" x-model="model.workspace_cap"/>
+
+						<ul class="info mt-2">
+							<li>
+								{{ __('This setting limits the number of workspaces a user can own.') }}
+							</li>
+
+							<li>
+								{{ __('Leave blank for unlimited.') }}
+
+								{%- set global_setting -%}
+								<a href="admin/settings/accounts" target="_blank" class="text-content hover:underline">{{ p__('button', 'global setting') }}</a>
+								{%- endset -%}
+
+								{{ __('Set to 0 to sync with the :global_setting.', {':global_setting': global_setting})|raw }}
+							</li>
+						</ul>
+					</div>
+				</section>
+
+				<template x-if="model.id != '{{ user.id }}'">
+					<section class="grid grid-cols-1 gap-6 box" data-density="comfortable">
+
+						<h2>{{ p__('heading', 'Account details') }}</h2>
+
+						<div>
+							<label>{{ p__('label', 'Role') }}</label>
+
+							<div class="flex gap-2 items-center mt-2">
+								<label>
+									<input type="radio" name="role" value="0" class="radio-button" x-model="model.role" :checked="!model.role || model.role == 0"/>
+
+									<span>{{ p__('input-value', 'User') }}</span>
+								</label>
+
+								<label>
+									<input type="radio" name="role" value="1" class="radio-button" x-model="model.role" :checked="model.role == 1"/>
+
+									<span>{{ p__('input-value', 'Admin') }}</span>
+								</label>
+							</div>
+						</div>
+
+						<div class="flex justify-between items-center p-3 rounded-lg bg-intermediate">
+							{{ p__('label', 'Status') }}
+
+							<label class="inline-flex gap-2 items-center cursor-pointer">
+								<input type="checkbox" name="status" class="hidden peer" :checked="model.status == 1" x-model="model.status">
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+								<span class="text-content-dimmed peer-checked:hidden">
+									{{ p__('input-value', 'Inactive') }}
+								</span>
+
+								<span class="hidden text-success peer-checked:inline">
+									{{ p__('input-value', 'Active') }}
+								</span>
+							</label>
+						</div>
+					</section>
+				</template>
+
+				<template x-if="user.id">
+					<section class="grid gap-6 md:grid-cols-2 box" data-density="comfortable">
+						<h2 class="md:col-span-2">{{ p__('heading', 'Workspaces') }}</h2>
+
+						<template x-for="(ws, index) in user.owned_workspaces.concat(user.workspaces)" :key="ws.id">
+							<a :href="`admin/workspaces/${ws.id}`" class="flex gap-3 items-center border box bg-intermediate text-intermediate-content hover:border-line border-intermediate">
+
+								<x-avatar :title="ws.name" class="bg-main text-content"></x-avatar>
+
+								<div>
+									<h3 x-text="ws.name"></h3>
+									<div class="text-sm text-content-dimmed" x-text="index<user.owned_workspaces.length ? `{{ p__('role', 'Owner') }}` : `{{ p__('role', 'Member') }}`"></div>
+								</div>
+							</a>
+						</template>
+					</section>
+				</template>
+
+				<template x-if="user.id">
+					<section class="flex flex-col gap-6 box" data-density="comfortable">
+						<div class="flex gap-2 items-center">
+							<h2>{{ p__('heading', 'Affiliate') }}</h2>
+
+							<x-copy class="badge" x-text="user.affiliate.code" x-tooltip.raw="{{ __('Affiliate code') }}"></x-copy>
+						</div>
+
+						<div class="flex flex-col gap-1">
+							<div class="flex flex-col gap-4 justify-between box md:items-center md:flex-row bg-intermediate text-intermediate-content">
+								{%- set link -%}
+								{{ option.site.is_secure ? 'https://' : 'http://' }}{{ option.site.domain }}/r/${user.affiliate.code}
+								{%- endset -%}
+
+								<div>
+									<div class="label">{{ __('Referral link') }}</div>
+									<div class="text-sm truncate">
+										<x-copy class="text-content-dimmed hover:text-content" x-text="`{{ link }}`"></x-copy>
+									</div>
+								</div>
+
+								<x-copy :data-copy="`{{ link }}`" class="button button-sm">
+									<i class="ti ti-copy"></i>
+									{{ p__('button', 'Copy link') }}
+								</x-copy>
+							</div>
+
+							<div class="flex gap-y-4 md:gap-4 box flex-wrap md:flex-nowrap">
+								<div class="flex flex-col gap-1 w-1/2 md:w-auto">
+									<div class="text-xs text-content-dimmed">{{ __('Balance') }}</div>
+									<x-money class="text-2xl font-bold" :data-value="user.affiliate.balance" :currency="user.affiliate.currency.code" :minor-units="user.affiliate.currency.fraction_digits"></x-money>
+								</div>
+
+								<div class="w-px bg-line-dimmed hidden md:block"></div>
+
+								<div class="flex flex-col gap-1 w-1/2 md:w-auto">
+									<div class="text-xs text-content-dimmed">{{ __('Pending') }}</div>
+
+									<div class="flex gap-1 items-center">
+										<x-money class="text-2xl font-bold" :data-value="user.affiliate.pending" :currency="user.affiliate.currency.code" :minor-units="user.affiliate.currency.fraction_digits"></x-money>
+
+										<template x-if="user.affiliate.pending > 0">
+											<a :href="`admin/affiliates/payouts?status=pending&user=${user.id}`" class="text-content-super-dimmed hover:text-content">
+												<i class="text-base ti ti-link"></i>
+											</a>
+										</template>
+									</div>
+								</div>
+
+								<div class="w-px bg-line-dimmed hidden md:block"></div>
+
+								<div class="flex flex-col gap-1 w-1/2 md:w-auto">
+									<div class="text-xs text-content-dimmed">{{ __('Paid') }}</div>
+
+									<div class="flex gap-1 items-center">
+										<x-money class="text-2xl font-bold" :data-value="user.affiliate.withdrawn" :currency="user.affiliate.currency.code" :minor-units="user.affiliate.currency.fraction_digits"></x-money>
+
+										<template x-if="user.affiliate.withdrawn > 0">
+											<a :href="`admin/affiliates/payouts?status=approved&user=${user.id}`" class="text-content-super-dimmed hover:text-content">
+												<i class="text-base ti ti-link"></i>
+											</a>
+										</template>
+									</div>
+								</div>
+
+								<div class="w-px bg-line-dimmed hidden md:block"></div>
+
+								<div class="flex flex-col gap-1 w-1/2 md:w-auto">
+									<div class="text-xs text-content-dimmed">{{ __('Clicks') }}</div>
+									<x-credit class="text-2xl font-bold" :data-value="user.affiliate.clicks"></x-credit>
+								</div>
+
+								<div class="w-px bg-line-dimmed hidden md:block"></div>
+
+								<div class="flex flex-col gap-1 w-1/2 md:w-auto">
+									<div class="text-xs text-content-dimmed">{{ __('Referrals') }}</div>
+
+									<div class="flex gap-1 items-center">
+										<x-credit class="text-2xl font-bold" :data-value="user.affiliate.referrals"></x-credit>
+
+										<template x-if="user.affiliate.referrals > 0">
+											<a :href="`admin/users?ref=${user.id}`" class="text-content-super-dimmed hover:text-content">
+												<i class="text-base ti ti-link"></i>
+											</a>
+										</template>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<div>
+							<a :href="`admin/affiliates/payouts?user=${user.id}`" class="button button-outline button-sm">
+								<i class="ti ti-credit-card"></i>
+								{{ p__('button', 'View payouts') }}
+							</a>
+						</div>
+
+						<template x-if="user.referred_by">
+							<hr/>
+						</template>
+
+						<template x-if="user.referred_by">
+							<p class="text-sm text-content-dimmed">
+								{% set ref %}
+								<a class="font-medium text-content hover:underline" :href="`admin/users/${user.referred_by.id}`" x-text="`${user.referred_by.first_name} ${user.referred_by.last_name}`"></a>
+								{% endset %}
+
+								{{ __('This user was referred by :ref', {':ref': ref})|raw }}
+							</p>
+						</template>
+					</section>
+				</template>
+			</div>
+
+			<div class="flex gap-4 justify-end">
+				<a href="admin/users" class="button button-outline">
+					{{ p__('button', 'Cancel') }}
+				</a>
+
+				<button type="submit" class="button button-accent" :processing="isProcessing">
+
+					{% include "/snippets/spinner.twig" %}
+
+					<span x-show="!user.id">{{ p__('button', 'Create user') }}</span>
+					<span x-show="user.id">{{ p__('button', 'Update user') }}</span>
+				</button>
+			</div>
+		</form>
+	</x-form>
+{% endblock %}

@@ -1,0 +1,110 @@
+<header class="flex justify-between items-center py-4 md:py-6">
+	<div>
+		<a href="app">
+			<img src="{{ option.brand.logo_dark ?? '/assets/logo-light.svg' }}" alt="{{ option.site.name ?? 'Logo' }}" class="hidden group-data-[mode=dark]/html:block max-w-[140px]">
+
+			<img src="{{ option.brand.logo ?? '/assets/logo-dark.svg' }}" alt="{{ option.site.name ?? 'Logo' }}" class="block group-data-[mode=dark]/html:hidden  max-w-[140px]">
+		</a>
+	</div>
+
+	<div class="flex gap-2 items-center">
+		{% if option.color_scheme.modes is not defined or option.color_scheme.modes|length > 1 %}
+			<mode-switcher>
+				<button class="flex justify-center items-center w-10 h-10 text-2xl rounded-full bg-intermediate hover:bg-accent hover:text-accent-content">
+					<i class="ti ti-moon group-data-[mode=dark]/html:hidden"></i>
+					<i class="ti ti-sun hidden group-data-[mode=dark]/html:block"></i>
+				</button>
+			</mode-switcher>
+		{% endif %}
+
+		{% if user is defined %}
+			<div class="flex relative items-center group" @click.outside="$refs.usermenu.removeAttribute('data-open')">
+
+				<div class="h-6 w-px bg-line-dimmed group-hover:opacity-0 group-data-open:opacity-0"></div>
+
+				<button class="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-intermediate group-data-open:bg-intermediate" @click="$refs.usermenu.toggleAttribute('data-open')">
+					<x-avatar class="bg-accent text-accent-content" title="{{ user.first_name ~ " " ~ user.last_name }}" src="{{ user.avatar }}"></x-avatar>
+					<i class="text-xl ti ti-chevron-down"></i>
+				</button>
+
+				<div class="w-60 menu" @click="$el.removeAttribute('data-open')" x-ref="usermenu">
+
+					<a href="app/account" class="flex gap-3 items-center p-4 w-full text-start hover:bg-intermediate hover:no-underline">
+						<x-avatar class="bg-accent text-accent-content" title="{{ user.first_name ~ " " ~ user.last_name }}" src="{{ user.avatar }}"></x-avatar>
+
+						<div class="max-w-[156px]">
+							<div class="overflow-hidden font-bold text-ellipsis">
+								{{ user.first_name }}
+								{{ user.last_name }}
+							</div>
+
+							<div class="overflow-hidden mt-1 text-sm text-content-dimmed text-ellipsis">
+								{{ user.email }}</div>
+						</div>
+					</a>
+
+					{% if user.role == 'admin' %}
+						<hr class="border-t border-line-dimmed">
+						<ul>
+							{% if view_namespace == 'admin' %}
+								<li>
+									<a href="app" class="flex gap-2 items-center px-4 py-2 hover:bg-intermediate hover:no-underline">
+										<i class="text-2xl ti ti-sparkles"></i>
+										{{ p__('button', 'Switch to app') }}
+									</a>
+								</li>
+							{% else %}
+								<li>
+									<a href="admin/presets" class="flex gap-2 items-center px-4 py-2 hover:bg-intermediate hover:no-underline">
+										<i class="text-2xl ti ti-lock-cog"></i>
+										{{ p__('button', 'Switch to admin') }}
+									</a>
+								</li>
+							{% endif %}
+						</ul>
+					{% endif %}
+
+					{% if view_namespace == 'app' %}
+						<hr class="border-t border-line-dimmed">
+
+						<ul>
+							<li><a href="app/documents" class="flex gap-2 items-center px-4 py-2 hover:bg-intermediate hover:no-underline"><i class="text-2xl ti ti-files"></i>{{ p__('button', 'Documents') }}</a></li>
+
+							<li><a href="app/billing" class="flex gap-2 items-center px-4 py-2 hover:bg-intermediate hover:no-underline"><i class="text-2xl ti ti-credit-card"></i>{{ p__('button', 'Billing') }}</a></li>
+						</ul>
+					{% endif %}
+
+					<hr class="border-t border-line-dimmed">
+
+					<ul>
+						<li><a href="app/account" class="flex gap-2 items-center px-4 py-2 hover:bg-intermediate hover:no-underline"><i class="text-2xl ti ti-user-circle"></i>{{ p__('button', 'Account') }}</a></li>
+
+						<li><a href="logout" class="flex gap-2 items-center px-4 py-2 hover:bg-intermediate hover:no-underline"><i class="text-2xl ti ti-logout"></i>{{ p__('button', 'Logout') }}</a></li>
+					</ul>
+				</div>
+			</div>
+		{% else %}
+			<div class="flex relative items-center group" @click.outside="$refs.locale.removeAttribute('data-open')">
+
+				<button class="flex justify-center items-center w-10 h-10 text-2xl rounded-full bg-intermediate hover:bg-accent hover:text-accent-content" @click="$refs.locale.hasAttribute('data-open') ? $refs.locale.removeAttribute('data-open') : $refs.locale.setAttribute('data-open', '')" aria-label="Language selector">
+					<i class="ti ti-world"></i>
+				</button>
+
+				<div class="w-auto menu" @click="$refs.locale.removeAttribute('data-open')" x-ref="locale">
+
+					<ul>
+						{% for locale in locales %}
+							{% if locale.enabled %}
+								<li>
+									<a href="/{{ locale.code }}" class="block px-4 py-2 w-full hover:bg-intermediate hover:no-underline" @click.prevent="document.cookie = `locale={{locale.code}}; expires=${new Date(new Date().getTime()+1000*60*60*24*365).toGMTString()}; path=/`; window.location.reload();">
+										{{ locale.label }}
+									</a>
+								</li>
+							{% endif %}
+						{% endfor %}
+					</ul>
+				</div>
+			</div>
+		{% endif %}
+	</div>
+</header>

@@ -1,0 +1,77 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% set xdata = 'settings' %}
+{% block title p__('title', 'OneSignal Configuration') %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {link: 'admin/settings', label: 'Settings'} %}
+
+		<h1 class="mt-4">OneSignal</h1>
+	</div>
+
+	<x-form>
+		<form class="flex flex-col gap-8" @submit.prevent="submit" x-ref="form" x-data="{
+								    status: {{ option.onesignal.is_enabled is defined and option.onesignal.is_enabled ? 'true' : 'false' }},
+								  }">
+			<div class="flex flex-col gap-2">
+				<section class="grid gap-6 box" data-density="comfortable">
+					<h2>{{ p__('heading', 'Configuration') }}</h2>
+
+					<div class="flex items-center justify-between p-3 rounded-lg bg-intermediate">
+						{{ p__('label', 'Status') }}
+
+						<label class="inline-flex items-center gap-2 cursor-pointer">
+							<input type="checkbox" name="onesignal[is_enabled]" class="hidden peer" {{ option.onesignal.is_enabled is defined and option.onesignal.is_enabled ? 'checked' : '' }} x-model="status">
+
+							<span class="h-6 w-10 rounded-3xl bg-line relative block peer-checked:bg-success transition-all after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+							<span class="text-content-dimmed peer-checked:hidden">
+								{{ __('Disabled') }}
+							</span>
+
+							<span class="hidden text-success peer-checked:inline">
+								{{ __('Enabled') }}
+							</span>
+						</label>
+					</div>
+
+					<div>
+						<label for="onesignal[app_id]">
+							{{ p__('label', 'App ID') }}
+						</label>
+
+						<input class="mt-2 input" id="onesignal[app_id]" name="onesignal[app_id]" type="text" autocomplete="off" placeholder="{{ __('Include your OneSignal App ID') }}" value="{{ environment == 'demo' ? 'hidden-in-demo' : option.onesignal.app_id ?? '' }}" :required="status">
+
+						<ul class="info mt-2">
+							<li>
+								{{ __("Can't find your App ID?") }}
+
+								<a href="https://documentation.onesignal.com/docs/keys-and-ids" target="_blank" class="text-content hover:underline">
+									{{ p__('button', 'Click here') }}
+								</a>
+							</li>
+
+							<li>
+								{{  __('Ensure to enable webpush in your OneSignal account with Custom Code setup.') }}
+							</li>
+						</ul>
+					</div>
+				</section>
+			</div>
+
+			<div class="flex justify-end gap-4">
+				<a href="admin/settings" class="button button-outline">
+					{{ p__('button', 'Cancel') }}
+				</a>
+
+				<button type="submit" class="button button-accent" :processing="isProcessing">
+					{% include "/snippets/spinner.twig" %}
+
+					{{ p__('button', 'Save changes') }}
+				</button>
+			</div>
+		</form>
+	</x-form>
+{% endblock %}

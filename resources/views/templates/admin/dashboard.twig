@@ -1,0 +1,34 @@
+{% extends "/layouts/main.twig" %}
+
+{% set active_menu = '/admin' %}
+{% set xdata = 'dashboard' %}
+{% block title p__('title', 'Dashboard')|title %}
+
+{% block template %}
+<div class="flex flex-col gap-8">
+  <div>
+    <h1 class="block text-base font-normal text-content-dimmed">
+      {% set fullname %}
+      <div class="block text-2xl font-bold text-content">
+        {{ user.first_name }} {{ user.last_name }}
+      </div>
+      {% endset %}
+
+      {{ p__('heading', 'Welcome %s', fullname)|raw }}
+    </h1>
+
+    <p class="mt-2 text-sm text-content-dimmed">
+      {{ __('Once you\'re done, you\'ll unlock a whole array of awesome tools.') }}
+    </p>
+  </div>
+
+  <div class="flex flex-col gap-2">
+    {% include "sections/admin/dashboard/get-started.twig" %}
+    {% include "sections/admin/dashboard/stats.twig" %}
+    {% include "sections/admin/dashboard/countries.twig" %}
+    {% include "sections/admin/dashboard/users.twig" %}
+    {% include "sections/admin/dashboard/subscriptions.twig" %}
+    {% include "sections/admin/dashboard/orders.twig" %}
+  </div>
+</div>
+{% endblock %}

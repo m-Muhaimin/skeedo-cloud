@@ -1,0 +1,83 @@
+<div class="grid gap-1 md:grid-cols-3">
+	<div class="flex gap-4 md:flex-col box md:col-span-2">
+		<i class="text-2xl flex items-center justify-center w-10 h-10 rounded-full ti ti-credit-card bg-button text-button-content shrink-0"></i>
+
+		<div class="flex flex-col gap-4">
+			<div class="flex flex-col gap-1">
+				{% if workspace.subscription %}
+					<p>
+						{{ __("Your workspace is currently subscribed to %s.")|format('<strong>' ~ workspace.subscription.plan.title ~ '</strong>')|raw }}
+					</p>
+
+					{% if workspace.subscription.cancel_at %}
+						<p class="text-sm text-content-dimmed">
+							{{ __("Subscription will be cancelled at %s", '<x-time datetime="' ~ workspace.subscription.cancel_at ~ '"></x-time>')|raw }}
+						</p>
+					{% elseif workspace.subscription.renew_at %}
+						<p class="text-sm text-content-dimmed">
+							{{ __("Usage renews at %s", '<x-time datetime="' ~ workspace.subscription.renew_at ~ '"></x-time>')|raw }}
+						</p>
+					{% endif %}
+				{% else %}
+					<p>
+						{{ __("Currently you don't have any active subscription.") }}
+					</p>
+
+					<p class="text-sm text-content-dimmed">
+						{{ __('Subscribe to one of the our plans to get access to all features and benefits.') }}
+					</p>
+				{% endif %}
+			</div>
+
+			<div class="mt-auto">
+				<a href="app/billing" class="button button-sm">
+					{{ p__('button', 'Billing overview') }}
+				</a>
+			</div>
+		</div>
+	</div>
+
+	<div class="flex gap-4 md:flex-col box">
+		<i class="text-2xl flex items-center justify-center w-10 h-10 rounded-full ti ti-square-rounded-letter-t text-gradient-content from-gradient-from to-gradient-to bg-linear-to-br shrink-0"></i>
+
+		<div class="flex flex-col gap-4">
+			<div>
+				<div class="text-lg font-bold flex items-center gap-1">
+					<x-credit data-value="{{ workspace.total_credit_count }}"></x-credit>
+
+					{% if workspace.total_credit_count < 0 %}
+						<i class="ti ti-info-square-rounded-filled text-content-dimmed hover:text-content text-sm" x-tooltip.raw="{{ __('Overuse deducted from next payment.') }}"></i>
+					{% endif %}
+				</div>
+
+				<div class="text-sm text-content-dimmed">
+					{{ workspace.total_credit_count < 0 ? __('Overused credits') : __('Total credits left') }}
+				</div>
+			</div>
+
+
+			{% if workspace.subscription %}
+				<div class="flex gap-2">
+					{% if option.billing.custom_credits.enabled|default(false) %}
+						<button type="button" @click="modal.open('custom-credits')" class="button button-outline button-sm">
+							<i class="ti {{ workspace.subscription.plan.price > 0 ? 'ti-click' : 'ti-cube-plus' }}"></i>
+
+							{{ p__('button', 'Buy additional credits') }}
+						</button>
+					{% else %}
+						<div class="mt-auto">
+							<a href="app/billing/packs" class="button button-outline button-sm">
+								<i class="ti ti-click"></i>
+								{{ p__('button', 'Buy additional credits') }}
+							</a>
+						</div>
+					{% endif %}
+				</div>
+			{% endif %}
+		</div>
+	</div>
+</div>
+
+{% if option.billing.custom_credits.enabled|default(false) %}
+	{% include "snippets/custom-credits.twig" %}
+{% endif %}

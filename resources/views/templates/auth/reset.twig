@@ -1,0 +1,63 @@
+{% extends "/layouts/minimal.twig" %}
+
+{% block title p__('title', 'Password reset')|title %}
+{% set xdata = 'auth' %}
+
+{% block template %}
+	<div class="box" data-density="comfortable">
+		<x-form>
+			<form @submit.prevent="submit" x-ref="form" data-api-path="/recovery/{{ id }}/{{ token }}" class="flex flex-col gap-5">
+				<div class="flex flex-col gap-2">
+					{% include "snippets/back.twig" with {link: 'login', label: p__('button', 'Back to login')} %}
+
+					<h1>
+						<span :class="{'hidden':success}">
+							{{ p__('heading', 'Reset password') }}
+						</span>
+
+						<template x-if="success">
+							<span>{{ p__('heading', 'Successfully completed!') }}</span>
+						</template>
+					</h1>
+				</div>
+
+				<template x-if="success">
+					<p class="mt-2 text-content-dimmed">
+						{{ __('Your password successfully changed. Please login your account to continue.') }}
+					</p>
+				</template>
+
+				<fieldset :class="{'hidden':success}">
+					<label for="new-password">
+						{{ p__('label', 'Enter new password') }}
+					</label>
+
+					<div class="relative" x-data="{isVisible: false}">
+						<input :type="isVisible ? 'text' : 'password'" id="new-password" name="password" placeholder="{{ __('Type your new password')|e('html_attr') }}" autocomplete="new-password" class="input pe-11" required>
+
+						<button type="button" class="absolute end-3 top-1/2 text-2xl -translate-y-1/2 text-content-dimmed" @click="isVisible = !isVisible">
+							<i class="block ti" :class="{'ti-eye-closed' : isVisible, 'ti-eye':!isVisible}"></i>
+						</button>
+					</div>
+				</fieldset>
+
+				<template x-if="!success">
+					<button type="submit" class="w-full button button-accent" :processing="isProcessing">
+
+						{% include "/snippets/spinner.twig" %}
+
+						{{ p__('button', 'Reset password') }}
+					</button>
+				</template>
+
+				<template x-if="success">
+					<a href="/login" class="w-full button button-accent">{{ __('Login to your account') }}</a>
+				</template>
+			</form>
+		</x-form>
+	</div>
+{% endblock %}
+
+{% block scripts %}
+	<script type="module" src="{{ '/resources/assets/js/auth/index.js'|asset }}"></script>
+{% endblock %}

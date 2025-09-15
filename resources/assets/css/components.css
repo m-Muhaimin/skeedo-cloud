@@ -1,0 +1,53 @@
+.tippy-content {
+  @apply text-xs flex items-center gap-2;
+
+  & kbd {
+    @apply bg-current/25 px-1 py-px rounded-sm font-bold;
+  }
+}
+
+.box {
+  @apply p-4 border border-line-dimmed rounded-2xl;
+
+  &[data-density='comfortable'] {
+    @apply p-8 sm:px-16 sm:py-12;
+  }
+
+  &.box-selected {
+    @apply bg-linear-to-tl from-transparent to-line-super-dimmed;
+  }
+}
+
+a.box,
+button.box,
+.box.cursor-pointer {
+  &:hover {
+    @apply border-line;
+  }
+}
+
+.loading {
+  @apply rounded-lg bg-line-dimmed animate-pulse;
+}
+
+a.full {
+  @apply absolute top-0 left-0 w-full h-full;
+}
+
+.gallery {
+  & li:nth-of-type(15n + 1) {
+    @apply col-span-2 row-span-2;
+  }
+}
+
+.sortable-ghost {
+  @apply animate-pulse opacity-80;
+}
+
+.sortable-chosen {
+  @apply bg-main;
+}
+
+ul.info {
+  @apply flex flex-col gap-1 text-xs list-disc list-inside text-content-dimmed px-3 py-1;
+}

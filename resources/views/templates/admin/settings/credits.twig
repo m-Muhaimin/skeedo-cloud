@@ -1,0 +1,139 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% set xdata = 'settings' %}
+{% block title p__('title', 'Credit ratios')|title %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {link: 'admin/settings', label: 'Settings'} %}
+
+		<h1 class="mt-4">{{ p__('heading', 'Credit ratios') }}</h1>
+	</div>
+
+	<x-form>
+		<form class="flex flex-col gap-8" @submit.prevent="submit" x-ref="form">
+			<div class="flex flex-col gap-2">
+				<section class="flex flex-col gap-6 box" data-density="comfortable">
+					<div>
+						<h2 class="col-span-2">{{ p__('heading', 'Credit ratio calculator') }}</h2>
+
+						<p class="text-content-dimmed text-sm">
+							{{ p__('description', 'Use the credit ratio calculator to define optimal credit conversion rates, set profit margins, and design pricing plans. Optimize your pricing strategy to maximize revenue while staying competitive.') }}
+						</p>
+					</div>
+
+					<div class="flex flex-col gap-4">
+						<div>
+							<a class="button button-sm" href="https://docs.aikeedo.com/get-started/commercial-resources" target="_blank">
+								{{ p__('button', 'Access price calculator') }}
+
+								<i class="text-base ti ti-external-link"></i>
+							</a>
+						</div>
+
+						<p class="text-content-dimmed text-xs">{{ p__('description', 'Available only for commercial license holders.') }}</p>
+					</div>
+
+				</section>
+
+				{% for service in config.model.registry.directory %}
+					<section class="grid grid-cols-2 gap-6 box" data-density="comfortable">
+						<h2 class="col-span-2">{{ service.name }}</h2>
+
+						{% set divider = false %}
+						{% if service.rates|default([])|length > 0 %}
+							{% for rate in service.rates %}
+								<div x-data="{ val: `{{ option.credit_rate[rate.key] ?? 'null' }}` }">
+									<label class="uppercase" for="{{ rate.key }}">
+										{{ service.name }}
+
+										{% if rate.type %}
+											<span class="text-content-dimmed">({{ rate.type }})</span>
+										{% endif %}
+									</label>
+
+									<div class="flex overflow-hidden mt-2 text-xs font-bold uppercase rounded-lg border border-line bg bg-intermediate text-intermediate-content-dimmed">
+										<div class="flex justify-between items-center px-3 w-28 shrink-0">
+											<span>{{ rate.unit }}</span>
+											<span class="text-base">1</span>
+										</div>
+
+										<div class="flex items-center ps-3 border-l grow bg-main border-line">
+											<span class="shrink-0">{{ p__('label', 'Credit') }}</span>
+
+											<input type="text" id="{{ rate.key }}" min="0" name="credit_rate[{{ rate.key }}]" class="text-end border-none input bg-main focus:ring-0 text-content" autocomplete="off" placeholder="{{ option.credit_rate[rate.key] ?? '' }}" value="{{ option.credit_rate[rate.key] ?? '' }}" x-mask:dynamic="$money($input, '.', '', 9)" required x-model="val"/>
+										</div>
+									</div>
+
+									<div class="mt-1 h-4 text-xs uppercase text-content-dimmed">
+										<template x-if="val != 0">
+											<span>
+												<x-credit :data-value="1/val" format="{{ __('1 credit = :count :unit')|replace({':unit': rate.unit}) }}"></x-credit>
+											</span>
+										</template>
+									</div>
+								</div>
+							{% endfor %}
+
+							{% if service.rates|length > 1 %}
+								<hr class="col-span-2 last-of-type:hidden">
+							{% endif %}
+						{% endif %}
+
+						{% for model in service.models|filter(model => model.rates|default([])|length > 0) %}
+							{% for rate in model.rates %}
+								<div x-data="{ val: `{{ option.credit_rate[rate.key] ?? 'null' }}` }">
+									<label class="uppercase" for="{{ rate.key }}">
+										{{ model.name }}
+
+										{% if rate.type %}
+											<span class="text-content-dimmed">({{ rate.type }})</span>
+										{% endif %}
+									</label>
+
+									<div class="flex overflow-hidden mt-2 text-xs font-bold uppercase rounded-lg border border-line bg bg-intermediate text-intermediate-content-dimmed">
+										<div class="flex justify-between items-center px-3 w-28 shrink-0">
+											<span>{{ rate.unit }}</span>
+											<span class="text-base">1</span>
+										</div>
+
+										<div class="flex items-center ps-3 border-l grow bg-main border-line">
+											<span class="shrink-0">{{ p__('label', 'Credit') }}</span>
+
+											<input type="text" id="{{ rate.key }}" min="0" name="credit_rate[{{ rate.key }}]" class="text-end border-none input bg-main focus:ring-0 text-content" autocomplete="off" placeholder="{{ option.credit_rate[rate.key] ?? '0' }}" value="{{ option.credit_rate[rate.key] ?? '' }}" x-mask:dynamic="$money($input, '.', '', 9)" required x-model="val"/>
+										</div>
+									</div>
+
+									<div class="mt-1 h-4 text-xs uppercase text-content-dimmed">
+										<template x-if="val != 0">
+											<span>
+												<x-credit :data-value="1/val" format="{{ __('1 credit = :count :unit')|replace({':unit': rate.unit}) }}"></x-credit>
+											</span>
+										</template>
+									</div>
+								</div>
+							{% endfor %}
+
+							{% if model.rates|length > 1 %}
+								<hr class="col-span-2 last:hidden">
+							{% endif %}
+						{% endfor %}
+					</section>
+				{% endfor %}
+			</div>
+
+			<div class="flex gap-4 justify-end">
+				<a href="admin/settings" class="button button-outline">
+					{{ p__('button', 'Cancel') }}
+				</a>
+
+				<button type="submit" class="button button-accent" :processing="isProcessing">
+					{% include "/snippets/spinner.twig" %}
+
+					{{ p__('button', 'Save changes') }}
+				</button>
+			</div>
+		</form>
+	</x-form>
+{% endblock %}

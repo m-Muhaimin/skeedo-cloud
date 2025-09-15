@@ -1,0 +1,159 @@
+{% extends "/layouts/main.twig" %}
+
+{% set active_menu = '/admin/assistants' %}
+
+{% set xdata %}
+assistant({{ (assistant is defined ? assistant : {})|json_encode }})
+{% endset %}
+
+{% block title (assistant is defined ? p__('title', 'Edit assistant') : p__('title', 'New assistant'))|title %}
+
+{% block template %}
+	<x-form>
+		<form class="flex flex-col gap-8" @submit.prevent="submit">
+			<div>
+				{% include "snippets/back.twig" with {link: 'admin/assistants', label: 'Assistants'} %}
+
+				<h1 class="mt-4">
+					<span x-show="!assistant.id">{{ p__('heading', 'Add new assistant') }}</span>
+					<span x-show="assistant.id">
+						{{ p__('heading', 'Edit assistant') }}:
+						<span class="font-normal text-intermediate-content" x-text="assistant.name"></span>
+					</span>
+				</h1>
+
+				<template x-if="assistant.id">
+					<div class="mt-2">
+						<x-uuid x-text="assistant.id"></x-uuid>
+					</div>
+				</template>
+			</div>
+
+			<div class="flex flex-col gap-2">
+				<section class="grid gap-6 md:grid-cols-2 box" data-density="comfortable">
+					<div class="flex gap-2 items-center md:col-span-2">
+						<h2>{{ p__('heading', 'Details') }}</h2>
+
+						<template x-if="assistant.id">
+							<a :href="`admin/assistants/${assistant.id}/dataset`" class="badge">
+								{{ p__('button', 'Dataset') }}
+
+								<i class="text-base ti ti-arrow-right"></i>
+							</a>
+						</template>
+
+						<template x-if="!assistant.id">
+							<div x-tooltip.raw="{{ __('Dataset will be available after creating assistant.') }}">
+								<button type="button" disabled class="badge">
+									{{ p__('button', 'Dataset') }}
+
+									<i class="text-base ti ti-arrow-right"></i>
+								</button>
+							</div>
+						</template>
+					</div>
+
+					<div>
+						<label for="name">{{ p__('label', 'Name') }}</label>
+						<input type="text" id="name" class="mt-2 input" autocomplete="off" :placeholder="assistant.name || `{{ __('Mail Guru') }}`" required x-model="model.name" maxlength="64"/>
+					</div>
+
+					<div>
+						<label for="expertise">{{ p__('label', 'Expertise') }}</label>
+						<input type="text" id="expertise" class="mt-2 input" autocomplete="off" :placeholder="assistant.expertise || `{{ __('Email assistant') }}`" x-model="model.expertise" maxlength="128"/>
+					</div>
+
+					<div class="md:col-span-2">
+						<label for="model">{{ p__('label', 'Default model') }}</label>
+
+						<select class="mt-2 input" id="model" x-model="model.model">
+							<option value="">
+								{{ p__('input-value', 'Default') }}
+							</option>
+
+							{% for service in config.model.registry.directory %}
+								{% for model in service.models %}
+									{% if model.type == 'llm' %}
+									<option value="{{ model.key }}">
+										{{ service.name }}
+										/
+										{{ model.name }}
+									</option>
+									{% endif %}
+								{% endfor %}
+							{% endfor %}
+						</select>
+
+						<ul class="info mt-2">
+							<li>
+								{{ __("The selected model will be automatically used when users start a chat with the assistant. Users can always switch to a different model through the chat settings.") }}
+							</li>
+						</ul>
+					</div>
+
+					<div class="md:col-span-2">
+						<label for="description">{{ p__('label', 'Description') }}</label>
+
+						<textarea id="description" rows="3" class="mt-2 input" autocomplete="off" :placeholder="assistant.description || ''" x-model="model.description" maxlength="255"></textarea>
+					</div>
+
+					<div class="md:col-span-2">
+						<label for="instructions">{{ p__('label', 'Instructions') }}</label>
+
+						<textarea id="instructions" rows="5" class="mt-2 input" autocomplete="off" :placeholder="assistant.instructions || ''" x-model="model.instructions"></textarea>
+					</div>
+
+					<div class="relative col-span-2 p-6 mt-2 box" x-data="{file:null}">
+						<div class="flex relative z-10 flex-col gap-6 justify-between items-start sm:flex-row">
+							<div class="flex gap-2 items-center">
+								<x-avatar icon="box" :src="model.file ? URL.createObjectURL(model.file) : assistant.avatar"></x-avatar>
+
+								<div>
+									<div class="font-bold" x-text="model.name || assistant.name || `{{ __(" ai") }}`"></div>
+
+									<div class="text-xs text-content-dimmed" x-text="model.expertise || assistant.expertise || `{{ __(" expertise") }}`"></div>
+								</div>
+							</div>
+
+							<button type="button" class="w-full button button-sm button-dimmed sm:w-auto" @click="$refs.file.click()">{{ p__('button', 'Browse files') }}</button>
+						</div>
+
+						<input type="file" @change="model.file = $refs.file.files[0];" class="hidden" accept="image/*" x-ref="file">
+					</div>
+
+					<div class="flex col-span-2 justify-between items-center p-3 rounded-lg bg-intermediate">
+						{{ p__('label', 'Status') }}
+
+						<label class="inline-flex gap-2 items-center cursor-pointer">
+							<input type="checkbox" name="status" class="hidden peer" :checked="model.status == 1" x-model="model.status">
+
+							<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+							<span class="text-content-dimmed peer-checked:hidden">
+								{{ p__('input-value', 'Inactive') }}
+							</span>
+
+							<span class="hidden text-success peer-checked:inline">
+								{{ p__('input-value', 'Active') }}
+							</span>
+						</label>
+					</div>
+				</section>
+			</div>
+
+			<div class="flex gap-4 justify-end">
+				<a href="admin/assistants" class="button button-outline">
+					{{ p__('button', 'Cancel') }}
+				</a>
+
+				<button type="submit" class="button button-accent" :processing="isProcessing">
+
+					{% include "/snippets/spinner.twig" %}
+
+					<span x-show="!assistant.id">{{ p__('button', 'Create assistant') }}</span>
+					<span x-show="assistant.id">{{ p__('button', 'Update assistant') }}</span>
+				</button>
+			</div>
+		</form>
+	</x-form>
+{% endblock %}

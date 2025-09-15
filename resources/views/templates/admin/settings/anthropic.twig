@@ -1,0 +1,94 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% set xdata = 'settings' %}
+{% block title p__('title', 'Anthropic / Claude AI Configuration') %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {link: 'admin/settings', label: 'Settings'} %}
+
+		<h1 class="mt-4">Anthropic / Claude AI</h1>
+	</div>
+
+	<x-form>
+		<form class="flex flex-col gap-8" @submit.prevent="submit" x-ref="form">
+			<div class="flex flex-col gap-2">
+				<section class="flex flex-col gap-6 box" data-density="comfortable">
+					<h2>{{ p__('heading', 'API') }}</h2>
+
+					<div>
+						<label for="anthropic.api_key">
+							{{ p__('label', 'API Key') }}
+						</label>
+
+						<div class="relative mt-2" x-data="{isVisible: false}">
+							<input class="pe-11 input" id="anthropic.api_key" name="anthropic[api_key]" :type="isVisible ? 'text' : 'password'" autocomplete="off" placeholder="{{ __('Include your Anthropic API key')|e('html_attr') }}" value="{{ environment == 'demo' ? 'hidden-in-demo' : option.anthropic.api_key ?? '' }}" required>
+
+							<button type="button" class="absolute end-3 top-1/2 text-2xl -translate-y-1/2 text-content-dimmed" @click="isVisible = !isVisible">
+								<i class="block ti" :class="{'ti-eye-closed' : isVisible, 'ti-eye':!isVisible}"></i>
+							</button>
+						</div>
+
+						<ul class="info mt-2">
+							<li>
+								{{ __("Can't find your API Key?") }}
+
+								<a href="https://console.anthropic.com/settings/keys" target="_blank" class="text-content hover:underline">
+									{{ p__('button', 'Click here') }}
+								</a>
+							</li>
+						</ul>
+					</div>
+
+					<div>
+						<div class="flex gap-2 items-center p-3 rounded-lg bg-intermediate">
+							<span>
+								{{ p__('label', 'Custom API keys') }}
+
+								(<abbr title="" x-tooltip.raw="{{ p__('label', 'Bring Your Own Key') }}" class="underline-offset-4 decoration-content-dimmed">{{ p__('label', 'BYOK') }}</abbr>)
+							</span>
+
+							<i class="text-base cursor-auto ti ti-test-pipe text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Experimental') }}"></i>
+
+							<label class="inline-flex gap-2 items-center ms-auto cursor-pointer">
+								<input type="checkbox" name="anthropic[custom_keys_enabled]" class="hidden peer" {{ option.anthropic.custom_keys_enabled is defined and option.anthropic.custom_keys_enabled ? 'checked' : '' }}>
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+								<span class="text-content-dimmed peer-checked:hidden">
+									{{ p__('input-value', 'Disabled') }}
+								</span>
+
+								<span class="hidden text-success peer-checked:inline">
+									{{ p__('input-value', 'Enabled') }}
+								</span>
+							</label>
+						</div>
+
+						<ul class="info mt-2">
+							<li>
+								{{ p__('label', 'Workspace owners can provide their own API key. When configured, the system-wide API key will not be used for that workspace.') }}
+							</li>
+							<li>
+								{{ p__('label', 'Custom API keys bypass workspace credit deductions for this specific service, but a valid subscription plan and credit balance are still required for other features and API services.') }}
+							</li>
+						</ul>
+					</div>
+				</section>
+			</div>
+
+			<div class="flex gap-4 justify-end">
+				<a href="admin/settings" class="button button-outline">
+					{{ p__('button', 'Cancel') }}
+				</a>
+
+				<button class="button button-accent" type="submit" :processing="isProcessing">
+					{% include "/snippets/spinner.twig" %}
+
+					{{ p__('button', 'Save changes') }}
+				</button>
+			</div>
+		</form>
+	</x-form>
+{% endblock %}

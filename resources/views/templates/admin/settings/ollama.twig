@@ -1,0 +1,163 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% set llm = config.model.registry.directory|filter(service => service.key == 'ollama')|first %}
+{% set xdata %}
+llm({{ (llm ?: {'key': 'ollama'})|json_encode }})
+{% endset %}
+
+{% block title p__('title', 'Ollama Configuration') %}
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {link: 'admin/settings', label: 'Settings'} %}
+
+		<h1 class="mt-4">Ollama</h1>
+	</div>
+
+	<x-form>
+		<form class="flex flex-col gap-8" @submit.prevent="submit" x-ref="form" data-path="/ollama">
+			<div class="flex flex-col gap-2">
+				<section class="flex flex-col gap-6 box" data-density="comfortable">
+					<h2>{{ p__('heading', 'API Server') }}</h2>
+
+					<div>
+						<label for="server">
+							{{ p__('label', 'Server address') }}
+						</label>
+
+						<input class="mt-2 input" type="url" id="server" autocomplete="off" placeholder="http://localhost:11434" x-model="llm.server" required>
+
+						<ul class="info mt-2">
+							<li>
+								{{ __('The server address must include the scheme, host, and port number. Example: http://localhost:11434') }}
+							</li>
+						</ul>
+					</div>
+				</section>
+
+				<template x-for="(model, index) in llm.models">
+					<section class="flex flex-col gap-6 box" data-density="comfortable">
+						<template x-if="index == 0">
+							<h2>{{ p__('heading', 'Models') }}</h2>
+						</template>
+
+						<div class="grid relative grid-cols-2 gap-6" x-data>
+							<div>
+								<label :for="`models[${index}].key`">
+									{{ p__('label', 'Key') }}
+								</label>
+
+								<input class="mt-2 input" type="text" :id="`models[${index}].key`" autocomplete="off" placeholder="ollama/llama2:latest" x-model="model.key" @input="$event.target.value = $event.target.value.startsWith('ollama/') ? $event.target.value : 'ollama/' + $event.target.value.replace('ollama', ''); setModelName($event.target.value, $refs.name)" required>
+
+								<ul class="info mt-2">
+									<li>
+										{{ __('The key is used to identify the model. It must be unique.') }}
+									</li>
+								</ul>
+							</div>
+
+							<div class="col-start-1">
+								<label :for="`models[${index}].name`">
+									{{ p__('label', 'Name') }}
+								</label>
+
+								<input class="mt-2 input" type="text" :id="`models[${index}].name`" autocomplete="off" placeholder="Llama 3.2" x-model="model.name" x-ref="name">
+
+								<ul class="info mt-2">
+									<li>
+										{{ __('The name will be shown to end users. If left empty, it will be generated from the key.') }}
+									</li>
+								</ul>
+							</div>
+
+							<div>
+								<label :for="`models[${index}].provider`">
+									{{ p__('label', 'Provider') }}
+								</label>
+
+								<input class="mt-2 input" type="text" :id="`models[${index}].provider`" autocomplete="off" placeholder="Meta" x-model="model.provider.name">
+
+								<ul class="info mt-2">
+									<li>
+										{{ __('The provider is the name of the model provider. Example: Meta, OpenAI, etc.') }}
+									</li>
+								</ul>
+							</div>
+						</div>
+
+						<hr class="my-4 md:my-6">
+
+						<div class="grid grid-cols-2 gap-6">
+							<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+								<div>
+									<div class="flex gap-2 items-center text-sm">
+										{{ __('Vision') }}
+									</div>
+
+									<div class="font-normal text-content-dimmed">
+										{{ __('Enable only if the model supports vision') }}
+									</div>
+								</div>
+
+								<div class="ms-auto">
+									<input type="checkbox" class="hidden peer" :checked="model.config.vision" @change="model.config.vision = $el.checked">
+
+									<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+								</div>
+							</label>
+
+							<div>
+								<label class="flex gap-4 items-center cursor-pointer box hover:border-line" x-tooltip.raw="{{ __("When enabled model will always use chat capabilities even if its not required. It's not recommended to enable this option.") }}">
+									<div>
+										<div class="flex gap-2 items-center text-sm">
+											{{ __('Tools') }}
+											<i class="text-base ti ti-alert-triangle-filled text-alert"></i>
+										</div>
+
+										<div class="font-normal text-content-dimmed">
+											{{ __('Enable only if the model supports tool calls') }}
+										</div>
+									</div>
+
+									<div class="ms-auto">
+										<input type="checkbox" class="hidden peer" :checked="model.config.tools" @change="model.config.tools = $el.checked">
+
+										<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+									</div>
+								</label>
+							</div>
+						</div>
+
+						<template x-if="llm.models.length > 1">
+							<div>
+								<button type="button" @click="removeModel(index)" class="button button-sm button-outline">
+									<i class="ti ti-circle-x-filled"></i>
+									{{ __('Remove model') }}
+								</button>
+							</div>
+						</template>
+					</section>
+				</template>
+
+				<div>
+					<button type="button" class="w-full button button-dimmed" @click="addModel">
+						<i class="ti ti-circle-plus"></i>
+						{{ p__('button', 'Add model') }}
+					</button>
+				</div>
+			</div>
+
+			<div class="flex gap-4 justify-end">
+				<a href="admin/settings" class="button button-outline">
+					{{ p__('button', 'Cancel') }}
+				</a>
+
+				<button class="button button-accent" type="submit" :processing="isProcessing">
+					{% include "/snippets/spinner.twig" %}
+
+					{{ p__('button', 'Save changes') }}
+				</button>
+			</div>
+		</form>
+	</x-form>
+{% endblock %}

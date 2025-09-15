@@ -1,0 +1,464 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% set xdata = 'settings' %}
+{% block title p__('title', 'Bank transfer settings')|title %}
+
+{% block template %}
+	{% set svgborder %}
+	<svg class="absolute top-0 left-0 w-full h-full rounded-lg text-line group-hover:text-line group-data-[selected]:hidden stroke-2 stroke-current" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+		<rect cx="56" width="100%" height="100%" stroke-dasharray="4 4" rx="8" ry="8"/>
+	</svg>
+	{% endset %}
+
+	<div>
+		{% include "snippets/back.twig" with {link: 'admin/settings/payments', label: 'Payments'} %}
+
+		<h1 class="mt-4">{{ p__('heading', 'Bank transfer settings') }}</h1>
+	</div>
+
+	<x-form>
+		<form @submit.prevent="submit" x-ref="form" autocomplete="off">
+			<div class="flex flex-col gap-8" x-data="{
+																									      domestic: {{ option.bank_transfer.domestic.is_enabled|default(false) ? 'true' : 'false' }},
+																									      international: {{ option.bank_transfer.international.is_enabled|default(false) ? 'true' : 'false' }},
+																									      domesticFile: `{{ option.bank_transfer.domestic.requisites ?? '' }}`,
+																									      internationalFile: `{{ option.bank_transfer.international.requisites ?? '' }}`,
+																									    }">
+				<div class="flex flex-col gap-2">
+					<section class="flex flex-col gap-6 box" data-density="comfortable">
+						<h2>{{ p__('heading', 'Details') }}</h2>
+
+						<div class="flex justify-between items-center p-3 rounded-lg bg-intermediate">
+							{{ p__('label', 'Status') }}
+
+							<label class="inline-flex gap-2 items-center cursor-pointer">
+								<input type="checkbox" name="bank_transfer[is_enabled]" class="hidden peer" {{ option.bank_transfer.is_enabled is defined and option.bank_transfer.is_enabled ? 'checked' : '' }}>
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+								<span class="text-content-dimmed peer-checked:hidden">
+									{{ __('Disabled') }}
+								</span>
+
+								<span class="hidden text-success peer-checked:inline">
+									{{ __('Enabled') }}
+								</span>
+							</label>
+						</div>
+
+						<div class="flex flex-col gap-2">
+							<label for="bank_transfer[enabled_for]">
+								{{ p__('label', 'Enabled for') }}
+							</label>
+
+							<select id="bank_transfer[enabled_for]" name="bank_transfer[enabled_for]" class="mt-2 input" required>
+								<option value="one-time" {{ option.bank_transfer.enabled_for|default('one-time') == 'one-time' ? 'selected' : '' }}>{{ p__('label', 'One time payments') }}
+									({{ p__('label', 'Recommended') }})</option>
+								<option value="annual" {{ option.bank_transfer.enabled_for|default('one-time') == 'annual' ? 'selected' : '' }}>{{ p__('label', 'One-time and annual payments') }}</option>
+								<option value="all" {{ option.bank_transfer.enabled_for|default('one-time') == 'all' ? 'selected' : '' }}>{{ p__('label', 'All payments') }}</option>
+							</select>
+						</div>
+					</section>
+
+					<section class="flex flex-col gap-6 box" data-density="comfortable">
+						<h2>{{ p__('heading', 'Domestic transfer') }}</h2>
+
+						<div class="flex justify-between items-center p-3 rounded-lg bg-intermediate">
+							{{ p__('label', 'Status') }}
+
+							<label class="inline-flex gap-2 items-center cursor-pointer">
+								<input type="checkbox" name="bank_transfer[domestic][is_enabled]" class="hidden peer" {# {{ option.bank_transfer.domestic.is_enabled is defined and option.bank_transfer.domestic.is_enabled ? 'checked' : '' }} #} x-model="domestic">
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+								<span class="text-content-dimmed peer-checked:hidden">
+									{{ __('Disabled') }}
+								</span>
+
+								<span class="hidden text-success peer-checked:inline">
+									{{ __('Enabled') }}
+								</span>
+							</label>
+						</div>
+
+						<template x-if="domestic">
+							<div class="flex flex-col gap-6">
+								<div class="flex flex-col gap-2">
+									<h3 class="mt-6">{{ p__('heading', 'Beneficiary details') }}</h3>
+									<hr/>
+								</div>
+
+								<div class="grid grid-cols-2 gap-6">
+									<div class="flex flex-col gap-2">
+										<label for="bank_transfer[domestic][beneficiary_name]">
+											{{ p__('label', 'Beneficiary name') }}
+											/
+											{{ p__('label', 'Account holder') }}
+										</label>
+
+										<input type="text" id="bank_transfer[domestic][beneficiary_name]" name="bank_transfer[domestic][beneficiary_name]" class="input" required value="{{ option.bank_transfer.domestic.beneficiary_name ?? '' }}"/>
+									</div>
+
+									<div class="flex flex-col gap-2">
+										<label for="bank_transfer[domestic][account_number]">
+											{{ p__('label', 'Account number') }}
+										</label>
+
+										<input type="text" id="bank_transfer[domestic][account_number]" name="bank_transfer[domestic][account_number]" class="input" required value="{{ option.bank_transfer.domestic.account_number ?? '' }}"/>
+									</div>
+								</div>
+
+								<div class="flex flex-col gap-2">
+									<label for="bank_transfer[domestic][beneficiary_address]">
+										{{ p__('label', 'Beneficiary address') }}
+									</label>
+
+									<input type="text" id="bank_transfer[domestic][beneficiary_address]" name="bank_transfer[domestic][beneficiary_address]" class="input" value="{{ option.bank_transfer.domestic.beneficiary_address ?? '' }}"/>
+								</div>
+
+								<div class="flex flex-col gap-2">
+									<h3 class="mt-6">{{ p__('heading', 'Bank details') }}</h3>
+									<hr/>
+								</div>
+
+								<div class="grid grid-cols-2 gap-6">
+									<div class="flex flex-col gap-2">
+										<label for="bank_transfer[domestic][bank_name]">
+											{{ p__('label', 'Bank name') }}
+										</label>
+
+										<input type="text" id="bank_transfer[domestic][bank_name]" name="bank_transfer[domestic][bank_name]" class="input" required value="{{ option.bank_transfer.domestic.bank_name ?? '' }}"/>
+									</div>
+
+									<div class="flex flex-col gap-2">
+										<label for="bank_transfer[domestic][routing_number]">
+											{{ p__('label', 'Routing number') }}
+										</label>
+
+										<input type="text" id="bank_transfer[domestic][routing_number]" name="bank_transfer[domestic][routing_number]" class="input" value="{{ option.bank_transfer.domestic.routing_number ?? '' }}"/>
+									</div>
+								</div>
+
+								<div class="flex flex-col gap-2">
+									<label for="bank_transfer[domestic][bank_address]">
+										{{ p__('label', 'Bank address') }}
+									</label>
+
+									<input type="text" id="bank_transfer[domestic][bank_address]" name="bank_transfer[domestic][bank_address]" class="input" value="{{ option.bank_transfer.domestic.bank_address ?? '' }}"/>
+								</div>
+
+								<div class="grid grid-cols-2 gap-6">
+									<div>
+										<label for="bank_transfer[domestic][currency]">
+											{{ p__('label', 'Currency') }}
+										</label>
+
+										<select id="bank_transfer[domestic][currency]" name="bank_transfer[domestic][currency]" class="mt-2 input" required>
+											<option value="" disabled selected>{{ p__('label', 'Select currency') }}</option>
+
+											{% for code, name in currencies %}
+												<option value="{{ code }}" {{ option.bank_transfer.domestic.currency is defined and code == option.bank_transfer.domestic.currency ? 'selected' : '' }}>
+													{{ name }}</option>
+											{% endfor %}
+										</select>
+									</div>
+
+									<div class="flex flex-col gap-2">
+										<label for="bank_transfer[domestic][bank_tin]">
+											{{ p__('label', 'Tax ID') }}
+										</label>
+
+										<input type="text" id="bank_transfer[domestic][bank_tin]" name="bank_transfer[domestic][bank_tin]" class="input" value="{{ option.bank_transfer.domestic.bank_tin ?? '' }}"/>
+									</div>
+								</div>
+
+								<div class="flex flex-col gap-2">
+									<label for="bank_transfer[domestic][memo]">
+										{{ p__('label', 'Reference / Memo') }}
+									</label>
+
+									<input type="text" id="bank_transfer[domestic][memo]" name="bank_transfer[domestic][memo]" class="input" value="{{ option.bank_transfer.domestic.memo ?? '' }}"/>
+								</div>
+
+								<div class="relative p-6" x-data="{file: null}">
+									{{ svgborder }}
+
+									<div class="flex relative z-10 flex-col gap-6 justify-between items-start sm:flex-row">
+										<template x-if="!file">
+											<div>
+												<div class="font-semibold">{{ p__('label', 'Bank requisites') }}</div>
+
+												<div class="mt-1 text-xs text-content-dimmed">
+													{{ p__('info', 'Upload download bank requisites as a file') }}
+												</div>
+											</div>
+										</template>
+
+										<template x-if="file">
+											<div>
+												<div class="font-semibold truncate" x-text="file.name"></div>
+
+												<div class="mt-1 text-xs text-intermediate-content" x-text="file.type"></div>
+											</div>
+										</template>
+
+										<button type="button" class="w-full button button-dimmed sm:w-auto" @click="$refs.file.click()">{{ p__('button', 'Browse files') }}</button>
+									</div>
+
+									<template x-if="domesticFile">
+										<div class="flex relative z-10 gap-2 items-center mt-4 text-xs text-content-dimmed">
+											<a href="{{ option.bank_transfer.domestic.requisites ?? '' }}" target="_blank" class="flex gap-1 items-center hover:text-content hover:no-underline">
+												{{ p__('button', 'View current') }}
+
+												<i class="text-xs ti ti-external-link"></i>
+											</a>
+
+											<i class="text-xs ti ti-point-filled"></i>
+
+											<button type="button" class="flex gap-1 items-center hover:text-content hover:no-underline" @click="$refs.file.value = null; domesticFile = null;">
+												<i class="text-xs ti ti-trash"></i>
+												{{ p__('button', 'Delete') }}
+											</button>
+										</div>
+									</template>
+
+									<template x-if="domesticFile === null">
+										<input type="hidden" name="bank_transfer[domestic][requisites]" value="">
+									</template>
+
+									<input type="file" @change="file = $refs.file.files[0];" name="bank_transfer[domestic][requisites]" id="file" class="hidden" x-ref="file">
+								</div>
+							</div>
+						</template>
+					</section>
+
+					<section class="flex flex-col gap-6 box" data-density="comfortable">
+						<h2>{{ p__('heading', 'International transfer') }}</h2>
+
+						<div class="flex justify-between items-center p-3 rounded-lg bg-intermediate">
+							{{ p__('label', 'Status') }}
+
+							<label class="inline-flex gap-2 items-center cursor-pointer">
+								<input type="checkbox" name="bank_transfer[international][is_enabled]" class="hidden peer" {# {{ option.bank_transfer.international.is_enabled is defined and option.bank_transfer.international.is_enabled ? 'checked' : '' }} #} x-model="international">
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+								<span class="text-content-dimmed peer-checked:hidden">
+									{{ __('Disabled') }}
+								</span>
+
+								<span class="hidden text-success peer-checked:inline">
+									{{ __('Enabled') }}
+								</span>
+							</label>
+						</div>
+
+						<template x-if="international">
+							<div class="flex flex-col gap-6">
+								<div class="flex flex-col gap-2">
+									<h3 class="mt-6">{{ p__('heading', 'Beneficiary details') }}</h3>
+									<hr/>
+								</div>
+
+								<div class="grid grid-cols-2 gap-6">
+									<div class="flex flex-col gap-2">
+										<label for="bank_transfer[international][beneficiary_name]">
+											{{ p__('label', 'Beneficiary name') }}
+											/
+											{{ p__('label', 'Account holder') }}
+										</label>
+
+										<input type="text" id="bank_transfer[international][beneficiary_name]" name="bank_transfer[international][beneficiary_name]" class="input" required value="{{ option.bank_transfer.international.beneficiary_name ?? '' }}"/>
+									</div>
+
+									<div class="flex flex-col gap-2">
+										<label for="bank_transfer[international][iban]">
+											{{ p__('label', 'IBAN') }}
+											/
+											{{ p__('label', 'Account number') }}
+										</label>
+
+										<input type="text" id="bank_transfer[international][iban]" name="bank_transfer[international][iban]" class="input" required value="{{ option.bank_transfer.international.iban ?? '' }}"/>
+									</div>
+								</div>
+
+								<div class="flex flex-col gap-2">
+									<label for="bank_transfer[international][beneficiary_address]">
+										{{ p__('label', 'Beneficiary address') }}
+									</label>
+
+									<input type="text" id="bank_transfer[international][beneficiary_address]" name="bank_transfer[international][beneficiary_address]" class="input" value="{{ option.bank_transfer.international.beneficiary_address ?? '' }}"/>
+								</div>
+
+								<div class="flex flex-col gap-2">
+									<h3 class="mt-6">{{ p__('heading', 'Bank details') }}</h3>
+									<hr/>
+								</div>
+
+								<div class="grid grid-cols-2 gap-6">
+									<div class="flex flex-col gap-2">
+										<label for="bank_transfer[international][bank_name]">
+											{{ p__('label', 'Bank name') }}
+										</label>
+
+										<input type="text" id="bank_transfer[international][bank_name]" name="bank_transfer[international][bank_name]" class="input" required value="{{ option.bank_transfer.international.bank_name ?? '' }}"/>
+									</div>
+
+									<div class="flex flex-col gap-2">
+										<label for="bank_transfer[international][swift_code]">
+											{{ p__('label', 'SWIFT/BIC Code') }}
+										</label>
+
+										<input type="text" id="bank_transfer[international][swift_code]" name="bank_transfer[international][swift_code]" class="input" required value="{{ option.bank_transfer.international.swift_code ?? '' }}"/>
+									</div>
+								</div>
+
+								<div class="flex flex-col gap-2">
+									<label for="bank_transfer[international][bank_address]">
+										{{ p__('label', 'Bank address') }}
+									</label>
+
+									<input type="text" id="bank_transfer[international][bank_address]" name="bank_transfer[international][bank_address]" class="input" value="{{ option.bank_transfer.international.bank_address ?? '' }}"/>
+								</div>
+
+								<div class="grid grid-cols-2 gap-6">
+									<div>
+										<label for="bank_transfer[international][currency]">
+											{{ p__('label', 'Currency') }}
+										</label>
+
+										<select id="bank_transfer[international][currency]" name="bank_transfer[international][currency]" class="mt-2 input" required>
+											<option value="" disabled selected>{{ p__('label', 'Select currency') }}</option>
+
+											{% for code, name in currencies %}
+												<option value="{{ code }}" {{ option.bank_transfer.international.currency is defined and code == option.bank_transfer.international.currency ? 'selected' : '' }}>
+													{{ name }}</option>
+											{% endfor %}
+										</select>
+									</div>
+
+									<div class="flex flex-col gap-2">
+										<label for="bank_transfer[international][bank_tin]">
+											{{ p__('label', 'Tax ID') }}
+										</label>
+
+										<input type="text" id="bank_transfer[international][bank_tin]" name="bank_transfer[international][bank_tin]" class="input" value="{{ option.bank_transfer.international.bank_tin ?? '' }}"/>
+									</div>
+								</div>
+
+								<div class="flex flex-col gap-2">
+									<label for="bank_transfer[international][memo]">
+										{{ p__('label', 'Reference / Memo') }}
+									</label>
+
+									<input type="text" id="bank_transfer[international][memo]" name="bank_transfer[international][memo]" class="input" value="{{ option.bank_transfer.international.memo ?? '' }}"/>
+								</div>
+
+								<div class="flex flex-col gap-2">
+									<h3 class="mt-6">{{ p__('heading', 'Correspondence / Intermediary bank') }}</h3>
+									<hr/>
+								</div>
+
+								<div class="grid grid-cols-2 gap-6">
+									<div class="flex flex-col gap-2">
+										<label for="bank_transfer[correspondent][bank_name]">
+											{{ p__('label', 'Bank name') }}
+										</label>
+
+										<input type="text" id="bank_transfer[correspondent][bank_name]" name="bank_transfer[correspondent][bank_name]" class="input" value="{{ option.bank_transfer.correspondent.bank_name ?? '' }}"/>
+									</div>
+
+									<div class="flex flex-col gap-2">
+										<label for="bank_transfer[correspondent][swift_code]">
+											{{ p__('label', 'SWIFT/BIC Code') }}
+										</label>
+
+										<input type="text" id="bank_transfer[correspondent][swift_code]" name="bank_transfer[correspondent][swift_code]" class="input" value="{{ option.bank_transfer.correspondent.swift_code ?? '' }}"/>
+									</div>
+								</div>
+
+								<div class="flex flex-col gap-2">
+									<label for="bank_transfer[correspondent][account_number]">
+										{{ p__('label', 'Account number') }}
+									</label>
+
+									<input type="text" id="bank_transfer[correspondent][account_number]" name="bank_transfer[correspondent][account_number]" class="input" value="{{ option.bank_transfer.correspondent.account_number ?? '' }}"/>
+								</div>
+
+								<div class="flex flex-col gap-2">
+									<label for="bank_transfer[correspondent][bank_address]">
+										{{ p__('label', 'Bank address') }}
+									</label>
+
+									<input type="text" id="bank_transfer[correspondent][bank_address]" name="bank_transfer[correspondent][bank_address]" class="input" value="{{ option.bank_transfer.correspondent.bank_address ?? '' }}"/>
+								</div>
+
+								<div class="relative p-6" x-data="{file: null}">
+									{{ svgborder }}
+
+									<div class="flex relative z-10 flex-col gap-6 justify-between items-start sm:flex-row">
+										<template x-if="!file">
+											<div>
+												<div class="font-semibold">{{ p__('label', 'Bank requisites') }}</div>
+
+												<div class="mt-1 text-xs text-content-dimmed">
+													{{ p__('info', 'Upload download bank requisites as a file') }}
+												</div>
+											</div>
+										</template>
+
+										<template x-if="file">
+											<div>
+												<div class="font-semibold truncate" x-text="file.name"></div>
+
+												<div class="mt-1 text-xs text-intermediate-content" x-text="file.type"></div>
+											</div>
+										</template>
+
+										<button type="button" class="w-full button button-dimmed sm:w-auto" @click="$refs.file.click()">{{ p__('button', 'Browse files') }}</button>
+									</div>
+
+									<template x-if="internationalFile">
+										<div class="flex relative z-10 gap-2 items-center mt-4 text-xs text-content-dimmed">
+											<a href="{{ option.bank_transfer.international.requisites ?? '' }}" target="_blank" class="flex gap-1 items-center hover:text-content hover:no-underline">
+												{{ p__('button', 'View current') }}
+
+												<i class="text-xs ti ti-external-link"></i>
+											</a>
+
+											<i class="text-xs ti ti-point-filled"></i>
+
+											<button type="button" class="flex gap-1 items-center hover:text-content hover:no-underline" @click="$refs.file.value = null; internationalFile = null;">
+												<i class="text-xs ti ti-trash"></i>
+												{{ p__('button', 'Delete') }}
+											</button>
+										</div>
+									</template>
+
+									<template x-if="internationalFile === null">
+										<input type="hidden" name="bank_transfer[international][requisites]" value="">
+									</template>
+
+									<input type="file" @change="file = $refs.file.files[0];" name="bank_transfer[international][requisites]" id="file" class="hidden" x-ref="file">
+								</div>
+							</div>
+						</template>
+					</section>
+				</div>
+
+				<div class="flex gap-4 justify-end">
+					<a href="admin/settings" class="button button-outline">
+						{{ p__('button', 'Cancel') }}
+					</a>
+
+					<button type="submit" class="button button-accent" :processing="isProcessing">
+						{% include "/snippets/spinner.twig" %}
+
+						{{ p__('button', 'Save changes') }}
+					</button>
+				</div>
+			</div>
+		</form>
+	</x-form>
+{% endblock %}

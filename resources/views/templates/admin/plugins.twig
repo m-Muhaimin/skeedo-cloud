@@ -1,0 +1,200 @@
+{% extends "/layouts/main.twig" %}
+
+{% set active_menu = '/admin/plugins' %}
+
+{% set strings = {
+  delete_success: __("Plugin has been deleted successfully.")
+} %}
+
+{% set xdata %}
+plugins({{ strings|json_encode()}})
+{% endset %}
+
+{% block title p__('title', 'Plugins')|title %}
+
+{% block template %}
+	{# Header #}
+	<div class="flex items-center justify-between">
+		<div>
+			<h1>{{ p__('heading', 'Plugins') }}</h1>
+
+			<template x-if="total !== null">
+				<div class="text-sm text-content-dimmed md:hidden">
+					{{ __('Total :count plugins')|replace({':count': '<span x-text="total"></span>'})|raw }}
+				</div>
+			</template>
+		</div>
+
+		<div class="flex items-center gap-2 md:hidden">
+			<button type="button" class="hidden w-8 h-8 avatar">
+				<i class="text-lg ti ti-adjustments-horizontal"></i>
+			</button>
+
+			<a href="admin/plugins/new" class="w-8 h-8 rounded-full button button-accent button-sm">
+				<i class="text-lg ti ti-plus"></i>
+			</a>
+		</div>
+
+		<a href="admin/plugins/new" class="hidden md:flex button button-accent button-sm">
+			<i class="text-lg ti ti-square-rounded-plus"></i>
+			{{ p__('button', 'Install plugin') }}
+		</a>
+	</div>
+
+	{# Filters #}
+	{% include "/snippets/filters.twig" with { 
+	total: __('Total :count plugins'),
+	filters: [
+		{
+			label: p__('label', 'Status'),
+			model: 'status',
+			options: [
+				{
+					value: 'inactive',
+					label: p__('status', 'Inactive')
+				},
+				{
+					value: 'active',
+					label: p__('status', 'Active')
+				}
+			]
+		}
+	]
+} %}
+
+	{# List #}
+	<div class="group/list" :data-state="state">
+		<div class="hidden group-data-[state=empty]/list:block">
+			{% include "sections/empty.twig" with { title: p__('heading', 'Empty result set'), message: __('There are no plugins yet.'), reset: __('There are no plugins matching your search.') } %}
+		</div>
+
+		<ul class="text-sm flex flex-col gap-1 group-data-[state=empty]:hidden">
+			{% for i in range(1,5) %}
+				<li class="hidden justify-between gap-3 p-8 box group-data-[state=initial]/list:flex" x-data>
+					<div>
+						<div class="flex items-center gap-4">
+							<div class="h-5 my-0.5 w-36 loading"></div>
+
+							<span class="flex items-center gap-1">
+								<span class="relative w-3 h-3 rounded-full text-content-dimmed loading">
+									<span class="absolute top-0 left-0 w-full h-full bg-current rounded-full opacity-20"></span>
+									<span class="absolute w-1.5 h-1.5 -translate-x-1/2 -translate-y-1/2 bg-current rounded-full top-1/2 left-1/2"></span>
+								</span>
+
+								<span class="h-4 loading w-14"></span>
+							</span>
+						</div>
+
+						<div class="h-5 mt-1 loading w-96"></div>
+
+						<div class="flex items-center gap-1 mt-6 text-xs text-content-dimmed">
+							<span class="inline-block h-4 w-14 loading"></span>
+							<span class="inline-block h-4 w-14 loading"></span>
+						</div>
+					</div>
+
+					<div>
+						<i class="text-2xl ti ti-dots-vertical text-content-dimmed"></i>
+					</div>
+				</li>
+			{% endfor %}
+
+			<template x-for="plugin in resources" :key="plugin.name">
+				<li class="flex justify-between gap-3 p-8 box" x-data>
+					<div>
+						<div class="flex items-center gap-4">
+							<h2>
+								<template x-if="plugin.default_url">
+									<a :href="plugin.default_url" class="font-bold text-content group flex items-center">
+										<span x-text="plugin.title || plugin.name" class="group-hover:underline"></span>
+										<i class="ti ti-chevron-right text-content-dimmed group-hover:text-content group-hover:translate-x-1 transition-all"></i>
+									</a>
+								</template>
+
+								<template x-if="!plugin.default_url">
+									<span x-text="plugin.title || plugin.name"></span>
+								</template>
+							</h2>
+
+							<button type="button" @click.prevent="toggleStatus(plugin)" class="flex items-center bg-transparent badge" :class="plugin.status == 'active' ? 'text-success' : 'text-content-dimmed'">
+								<span class="relative w-3 h-3 rounded-full">
+									<span class="absolute top-0 left-0 w-full h-full bg-current rounded-full opacity-20"></span>
+									<span class="absolute w-1.5 h-1.5 -translate-x-1/2 -translate-y-1/2 bg-current rounded-full top-1/2 left-1/2"></span>
+								</span>
+
+								<span x-text="plugin.status == 'active' ? `{{ p__('status', 'Active') }}` : `{{ p__('status', 'Inactive') }}`"></span>
+							</button>
+						</div>
+
+						<div class="mt-1 text-sm text-content-dimmed" x-text="plugin.tagline || plugin.description"></div>
+
+						<div class="mt-6 text-xs text-content-dimmed">
+							{% set version %}<span x-text="plugin.version || 'dev'"></span>
+							{% endset %}
+							{{  __('Version :version')|replace({":version": version})|raw }}
+
+							<template x-if="plugin.authors.length > 0">
+								<span>
+									|
+
+									<template x-if="plugin.authors[0].homepage">
+										{% set author %}<a :href="plugin.authors[0].homepage" target="_blank" class="font-bold text-content hover:underline" x-text="plugin.authors[0].name"></a>
+										{% endset %}
+										<span>{{ __('By :author')|replace({":author": author})|raw }}</span>
+									</template>
+
+									<template x-if="!plugin.authors[0].homepage && plugin.authors[0].email">
+										{% set author %}<a :href="`mailto:${plugin.authors[0].email}`" target="_blank" class="font-bold text-content hover:underline" x-text="plugin.authors[0].name"></a>
+										{% endset %}
+										<span>{{ __('By :author')|replace({":author": author})|raw }}</span>
+									</template>
+
+									<template x-if="!plugin.authors[0].homepage && !plugin.authors[0].email">
+										{% set author %}<strong class="font-bold text-content" x-text="plugin.authors[0].name"></strong>
+										{% endset %}
+										<span>{{ __('By :author')|replace({":author": author})|raw }}</span>
+									</template>
+								</span>
+							</template>
+						</div>
+					</div>
+
+					<div>
+						<div class="relative" @click.outside="$refs.context.removeAttribute('data-open')">
+
+							<button class="relative z-10" @click="$refs.context.toggleAttribute('data-open')">
+								<i class="text-2xl ti ti-dots-vertical text-content-dimmed hover:text-intermediate-content"></i>
+							</button>
+
+							<div class="menu" x-ref="context">
+								<ul>
+									<template x-if="plugin.default_url">
+										<li>
+											<a class="flex items-center w-full gap-2 px-4 py-2 hover:no-underline hover:bg-intermediate" :href="plugin.default_url">
+												<i class="ti ti-settings"></i>
+												{{ p__('button', 'Manage') }}
+											</a>
+										</li>
+									</template>
+
+									<li>
+										<button class="flex items-center w-full gap-2 px-4 py-2 hover:no-underline hover:bg-intermediate" @click.prevent="currentResource = plugin; modal.open('delete-modal')">
+											<i class="ti ti-trash"></i>
+
+											{{ p__('button', 'Delete') }}
+										</button>
+									</li>
+								</ul>
+							</div>
+						</div>
+					</div>
+				</li>
+			</template>
+		</ul>
+	</div>
+
+	{% include "sections/delete-modal.twig" with { 
+		message: __('Do you really want to delete :title plugin?'),
+		title: '`${currentResource.title}`'
+	} %}
+{% endblock %}

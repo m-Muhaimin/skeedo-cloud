@@ -1,0 +1,154 @@
+{% extends "/layouts/main.twig" %}
+
+{% set active_menu = '/admin/update' %}
+{% set xdata = 'update' %}
+{% block title p__('title', 'Update')|title %}
+
+{% block template %}
+	<div class="flex flex-col gap-8" @submit.prevent="">
+		<div>
+			{% include "snippets/back.twig" with {link: 'admin', label: 'Dashboard'} %}
+
+			<h1 class="mt-4">
+				{{ p__('title', 'Update') }}
+			</h1>
+		</div>
+
+		<div class="flex flex-col gap-2">
+			<section class="flex flex-col gap-6 box " data-density="comfortable">
+				<h2>{{ p__('heading', 'About') }}</h2>
+
+				<div class="flex gap-6">
+					<div>
+						<div class="label">{{ p__('label', 'License') }}</div>
+						<div class="flex mt-1">
+							<div>
+								{% if license %}
+									<x-copy class="flex items-center badge" data-copy="{{ environment == 'demo' ? 'hidden-in-demo' : license }}">
+
+										<span class="font-bold capitalize">
+											{{ p__('label', 'Key') }}
+										</span>
+
+										<span x-text="'{{ environment == 'demo' ? 'hidden-in-demo' : license }}'.slice(0,4) + '*'.repeat(10) + '{{ environment == 'demo' ? 'hidden-in-demo' : license }}'.slice(-4)"></span>
+									</x-copy>
+								{% else %}
+									<span class="text-xs">
+										{{ __('Couldn’t identify the license') }}
+									</span>
+								{% endif %}
+							</div>
+						</div>
+					</div>
+
+					<div>
+						<div class="label">{{ p__('label', 'Installed') }}</div>
+						<div class="flex mt-1">
+							<div>
+								<x-copy class="flex items-center badge" data-copy="{{ version }}">
+
+									<span class="font-bold capitalize">
+										{{ p__('label', 'Version') }}
+									</span>
+
+									<span>{{ version }}</span>
+								</x-copy>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<section class="p-8 box">
+				<div class="flex items-center gap-4">
+					<span class="flex items-center justify-center w-10 h-10 bg-intermediate text-intermediate-content" :class="file ? 'rounded-lg' : 'rounded-full'">
+						<i class="ti" :class="file ? 'ti-file-zip' : 'ti-paperclip'"></i>
+					</span>
+
+					<template x-if="file">
+						<div>
+							<div class="font-medium" x-text="file.name"></div>
+
+							<template x-if="error">
+								<div class="text-sm text-failure" x-text="error"></div>
+							</template>
+
+							<template x-if="!error">
+								<div class="text-sm text-content-dimmed" x-text="filesize"></div>
+							</template>
+						</div>
+					</template>
+
+					<template x-if="!file">
+						<div>
+							<div class="font-medium">
+								{{ __('Choose a file of the updated version') }}
+							</div>
+
+							<template x-if="error">
+								<div class="text-sm text-failure" x-text="error"></div>
+							</template>
+
+							<template x-if="!error">
+								<div class="text-sm text-content-dimmed">
+									{{ __('ZIP archive file only') }}
+								</div>
+							</template>
+						</div>
+					</template>
+
+					<button type="button" class="ms-auto button button-outline button-sm" @click="$refs.file.click()" :disabled="isProcessing" x-text="file ? `{{ p__('button', 'Change file') }}` : `{{ p__('button', 'Choose file') }}`"></button>
+
+					<template x-if="file">
+						<button type="button" class="button button-sm button-accent" :processing="isProcessing" :disabled="isProcessing" @click="modal.open('confirm-modal')">
+
+							{% include "/snippets/spinner.twig" %}
+							<span x-text="isProcessing ? `{{ p__('button', 'Installing...') }}` : `{{ p__('button', 'Install') }}`"></span>
+
+						</button>
+					</template>
+
+					<input type="file" @change="file = $refs.file.files[0]; error = null;" class="hidden" accept="application/zip, application/x-zip-compressed, multipart/x-zip" x-ref="file">
+				</div>
+			</section>
+		</div>
+	</div>
+
+	<modal-element name="confirm-modal">
+		<form class="flex flex-col gap-8 modal" @submit.prevent="submit">
+			<div class="flex items-center justify-between">
+				<h2 class="text-xl">{{ p__('heading', 'Confirmation') }}</h2>
+
+				<button class="flex items-center justify-center w-8 h-8 border border-transparent rounded-full bg-line-dimmed hover:border-line" @click="modal.close()" type="button">
+					<i class="text-xl ti ti-x"></i>
+				</button>
+			</div>
+
+			<div>
+				<div class="font-bold">{{ p__('audience', 'Backup') }}</div>
+				<div class="mt-2 text-sm underline">
+					{{ __('It is recommended to backup your data before updating.') }}
+				</div>
+			</div>
+
+			<div>
+				<div class="flex items-center gap-1 text-sm font-bold">
+					<i class="text-lg ti ti-info-square-rounded "></i>
+					{{ __('Important') }}
+				</div>
+
+				<p class="mt-2 text-sm">
+					{{ __("Update might take some time. During this time, the application will be unavailable. Don't close the browser tab or navigate away from this page.") }}
+				</p>
+			</div>
+
+			<div class="flex items-center">
+				<button class="w-full button" type="submit" :processing="isProcessing">
+					{% include "/snippets/spinner.twig" %}
+
+					{{ p__('button', 'I took a backup, proceed to update') }}
+				</button>
+			</div>
+		</form>
+	</modal-element>
+{% endblock %}

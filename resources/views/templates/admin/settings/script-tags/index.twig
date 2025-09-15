@@ -1,0 +1,80 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% block title p__('title', 'Script tags')|title %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {link: 'admin/settings', label: 'Settings'} %}
+
+		<h1 class="mt-4">{{ p__('title', 'Script tags') }}</h1>
+	</div>
+
+	<div class="flex flex-col gap-4">
+		<div class="grid gap-2 sm:gap-4 sm:grid-cols-2">
+			<a href="admin/settings/script-tags/google-analytics" class="flex gap-4 items-center box hover:border-line">
+				<x-avatar icon="brand-google-analytics"></x-avatar>
+
+				<div>
+					<h3>{{ p__('heading', 'Google Analytics') }}</h3>
+					<p class="mt-1 text-sm text-content-dimmed">
+						{{ option.script_tags.ga.is_enabled is defined and option.script_tags.ga.is_enabled ? __('Tag is enabled') : 'Tag is disabled' }}
+					</p>
+				</div>
+
+				<span class="ms-auto relative w-6 h-6 rounded-full {{ option.script_tags.ga.is_enabled is defined and option.script_tags.ga.is_enabled ? 'text-success' : 'text-content-dimmed' }}">
+					<span class="absolute top-0 left-0 w-full h-full bg-current rounded-full opacity-20"></span>
+
+					<span class="absolute top-1/2 left-1/2 w-3 h-3 bg-current rounded-full -translate-x-1/2 -translate-y-1/2"></span>
+				</span>
+			</a>
+
+			<a href="admin/settings/script-tags/google-tag-manager" class="flex gap-4 items-center box hover:border-line">
+				<span class="avatar">
+					TM
+				</span>
+
+				<div>
+					<h3>{{ p__('heading', 'Google Tag Manager') }}</h3>
+					<p class="mt-1 text-sm text-content-dimmed">
+						{{ option.script_tags.gtm.is_enabled is defined and option.script_tags.gtm.is_enabled ? __('Tag is enabled') : 'Tag is disabled' }}
+					</p>
+				</div>
+
+				<span class="ms-auto relative w-6 h-6 rounded-full {{ option.script_tags.gtm.is_enabled is defined and option.script_tags.gtm.is_enabled ? 'text-success' : 'text-content-dimmed' }}">
+					<span class="absolute top-0 left-0 w-full h-full bg-current rounded-full opacity-20"></span>
+
+					<span class="absolute top-1/2 left-1/2 w-3 h-3 bg-current rounded-full -translate-x-1/2 -translate-y-1/2"></span>
+				</span>
+			</a>
+
+			<a href="admin/settings/script-tags/intercom" class="flex gap-4 items-center box hover:border-line">
+				<x-avatar icon="brand-intercom"></x-avatar>
+
+				<div>
+					<h3>{{ p__('heading', 'Intercom') }}</h3>
+					<p class="mt-1 text-sm text-content-dimmed">
+						{{ option.script_tags.intercom.is_enabled is defined and option.script_tags.intercom.is_enabled ? __('Tag is enabled') : 'Tag is disabled' }}
+					</p>
+				</div>
+
+				<span class="ms-auto relative w-6 h-6 rounded-full {{ option.script_tags.intercom.is_enabled is defined and option.script_tags.intercom.is_enabled ? 'text-success' : 'text-content-dimmed' }}">
+					<span class="absolute top-0 left-0 w-full h-full bg-current rounded-full opacity-20"></span>
+
+					<span class="absolute top-1/2 left-1/2 w-3 h-3 bg-current rounded-full -translate-x-1/2 -translate-y-1/2"></span>
+				</span>
+			</a>
+
+			<a href="admin/settings/script-tags/custom" class="flex gap-4 items-center box hover:border-line">
+				<x-avatar icon="code"></x-avatar>
+
+				<div>
+					<h3>{{ p__('heading', 'Custom tags') }}</h3>
+					<p class="mt-1 text-sm text-content-dimmed">
+						{{ __('Custom script tags') }}
+					</p>
+				</div>
+			</a>
+		</div>
+	</div>
+{% endblock %}

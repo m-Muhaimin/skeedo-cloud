@@ -1,0 +1,262 @@
+{% extends "/layouts/main.twig" %}
+
+{% set active_menu = '/admin/coupons' %}
+
+{% set xdata %}
+coupon(
+{{ currency|json_encode }},
+{{ (coupon is defined ? coupon : {})|json_encode }}
+)
+{% endset %}
+
+{% block title (coupon is defined ? p__('title', 'Edit coupon') : p__('title', 'New coupon'))|title %}
+
+{% block template %}
+	<x-form>
+		<form class="flex flex-col gap-8" @submit.prevent="submit">
+			<div>
+				{% include "snippets/back.twig" with {link: 'admin/coupons', label: 'Coupons'} %}
+
+				<h1 class="mt-4">
+					<span x-show="!coupon.id">{{ p__('heading', 'Add new coupon') }}</span>
+					<span x-show="coupon.id">
+						{{ p__('heading', 'Edit coupon') }}:
+						<span class="font-normal text-intermediate-content" x-text="`${coupon.title}`"></span>
+					</span>
+				</h1>
+
+				<template x-if="coupon.id">
+					<div class="mt-2">
+						<x-uuid x-text="coupon.id"></x-uuid>
+					</div>
+				</template>
+			</div>
+
+			<div class="flex flex-col gap-2">
+				<section class="grid gap-6 md:grid-cols-2 box" data-density="comfortable">
+					<h2 class="md:col-span-2">{{ p__('heading', 'General') }}</h2>
+
+					<div>
+						<label for="title">{{ p__('label', 'Title') }}</label>
+						<input type="text" id="title" class="mt-2 input" autocomplete="off" :placeholder="coupon.title || `{{ __('Input coupon title') }}`" required x-model="model.title"/>
+
+						<ul class="info mt-2">
+							<li>
+								{{ __("End users won't see") }}
+							</li>
+						</ul>
+					</div>
+
+					<div>
+						<label for="code">{{ p__('label', 'Code') }}</label>
+						<div class="relative mt-2">
+							<input type="text" id="code" class="pe-11 uppercase input" autocomplete="off" :placeholder="coupon.code || `{{ __('Input coupon code') }}`" required x-model="model.code" maxlength="24" :disabled="coupon.id != null"/>
+
+							<template x-if='coupon.id'>
+								<x-copy :data-copy="coupon.code" class="absolute end-3 top-1/2 text-2xl -translate-y-1/2 text-content-dimmed hover:text-content">
+									<i class="block ti ti-copy"></i>
+								</x-copy>
+							</template>
+
+							<template x-if='!coupon.id'>
+								<button type="button" class="absolute end-3 top-1/2 text-2xl -translate-y-1/2 text-content-dimmed hover:text-content" @click="regenerateCode">
+									<i class="block ti ti-refresh"></i>
+								</button>
+							</template>
+						</div>
+					</div>
+
+					<div>
+						<label for="discount_type">{{ p__('label', 'Discount type') }}</label>
+						<select class="mt-2 input" x-model="model.discount_type" :disabled="coupon.id != null">
+							<option value="percentage">{{ p__('label', 'Percentage') }}</option>
+							<option value="fixed">{{ p__('label', 'Fixed') }}</option>
+						</select>
+					</div>
+
+					<div>
+						<label for="amount">{{ p__('label', 'Amount') }}</label>
+
+						<div class="relative">
+							<input type="text" id="amount" name="amount" class="pe-11 mt-2 input" autocomplete="off" required x-model="model.amount" x-mask:dynamic="model.discount_type == 'fixed' ? $money($input, '.', ' ', {{ currency.fraction_digits }}) :  ($input.indexOf('.') > -1 ? '99.99' : '99')" x-ref="amount" :disabled="coupon.id != null"/>
+							<code class="absolute end-3 top-1/2 text-sm font-medium -translate-y-1/2 pointer-events-none text-content-dimmed" x-text="model.discount_type == 'fixed' ? `{{ currency.code }}` : '%'"></code>
+						</div>
+					</div>
+				</section>
+
+				<section class="grid gap-6 md:grid-cols-2 box" data-density="comfortable">
+					<h2 class="md:col-span-2">{{ p__('heading', 'Eligibility') }}</h2>
+
+					<div>
+						<label for="plan">{{ p__('label', 'Plan') }}</label>
+						<select class="mt-2 input" id="plan" x-model="model.plan" :disabled="!plansFetched">
+							<option value="" x-text="plansFetched ? `{{ p__('label', 'All plans') }}` : `{{ p__('label', 'Loading plans...') }}`"></option>
+
+							<template x-for="plan in plans" :key="plan.id">
+								<option :value="plan.id" x-text="`${plan.title} / ${plan.billing_cycle}`" :selected="model.plan == plan.id"></option>
+							</template>
+						</select>
+
+						<ul class="info mt-2">
+							<li>
+								{{ __("Coupon code will be valid only for the selected plan") }}
+							</li>
+						</ul>
+					</div>
+
+					<div>
+						<label for="billing_cycle">{{ p__('label', 'Billing cycle') }}</label>
+						<select class="mt-2 input peer" id="billing_cycle" x-model="model.billing_cycle" :disabled="!plansFetched || (model.plan != null && model.plan != '')">
+							<option value="">{{ p__('label', 'All billing cycles') }}</option>
+							<option value="monthly">{{ p__('label', 'Monthly plans only') }}</option>
+							<option value="yearly">{{ p__('label', 'Yearly plans only') }}</option>
+							<option value="lifetime">{{ p__('label', 'Lifetime plans only') }}</option>
+							<option value="one-time">{{ p__('label', 'Add-on credit packs only') }}</option>
+						</select>
+
+						<ul class="info mt-2 peer-disabled:hidden">
+							<li>
+								{{ __("Coupon code will be valid only for the plans with selected billing cycle") }}
+							</li>
+						</ul>
+					</div>
+				</section>
+
+				<section class="grid gap-6 md:grid-cols-2 box" data-density="comfortable">
+					<h2 class="md:col-span-2">{{ p__('heading', 'Settings') }}</h2>
+
+					<div class="flex justify-between items-center p-3 rounded-lg bg-intermediate md:col-span-2">
+						{{ p__('label', 'Status') }}
+
+						<label class="inline-flex gap-2 items-center cursor-pointer">
+							<input type="checkbox" name="status" class="hidden peer" :checked="model.status == 1" x-model="model.status">
+
+							<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+							<span class="text-content-dimmed peer-checked:hidden">
+								{{ p__('input-value', 'Inactive') }}
+							</span>
+
+							<span class="hidden text-success peer-checked:inline">
+								{{ p__('input-value', 'Active') }}
+							</span>
+						</label>
+					</div>
+
+					<div>
+						<label for="starts_at">{{ p__('label', 'Start date') }}</label>
+						<input type="hidden" x-model="model.starts_at"/>
+						<x-datepicker class="block mt-2" id="starts_at" placeholder="{{ __('No start date') }}" @change="model.starts_at = $el.getValue()" data-value="{{coupon.starts_at ?? ''}}"></x-datepicker>
+
+						<ul class="info mt-2">
+							<li>
+								{{ __("Coupon will be valid only after this date. Leave blank to start immediately.") }}
+							</li>
+						</ul>
+					</div>
+
+					<div>
+						<label for="expires_at">{{ p__('label', 'Expiration date') }}</label>
+						<input type="hidden" x-model="model.expires_at"/>
+						<x-datepicker class="block mt-2" id="expires_at" placeholder="{{ __('No expiration date') }}" @change="model.expires_at = $el.getValue()" data-value="{{coupon.expires_at ?? ''}}"></x-datepicker>
+
+						<ul class="info mt-2">
+							<li>
+								{{ __("Coupon will be valid only before this date. Leave blank for no expiration.") }}
+							</li>
+						</ul>
+					</div>
+
+					<div>
+						<label for="cycle_count">{{ p__('label', 'Cycle count') }}</label>
+						<input type="number" step="1" :min="coupon.cycle_count || 0" id="cycle_count" class="mt-2 input" autocomplete="off" x-model="model.cycle_count" placeholder="{{ __('Unlimited') }}" :disabled="coupon.id != null"/>
+
+						<ul class="info mt-2">
+							<li>
+								{{ __("For monthly and yearly subscriptions, this limits how many payments the discount will apply to. For example, setting it to 3 means only the first 3 payments get the discount.") }}
+							</li>
+							<li>
+								{{ __("Leave empty to apply the discount to all payments in the subscription.") }}
+							</li>
+							<li>
+								{{ __("Note: Some payment gateways may not support limited cycles and will apply the discount to all payments.") }}
+							</li>
+						</ul>
+					</div>
+
+					<div>
+						<label for="redemption_limit">{{ p__('label', 'Redemption limit') }}</label>
+						<input type="number" step="1" :min="coupon.redemption_count || 0" id="redemption_limit" class="mt-2 input" autocomplete="off" x-model="model.redemption_limit" placeholder="{{ __('Unlimited') }}"/>
+
+						<ul class="info mt-2">
+							<li>
+								{{ __("Limits the number of times the coupon can be used. Leave empty for unlimited.") }}
+							</li>
+
+							{% set count %}
+							<span x-text="coupon.redemption_count"></span>
+							{% endset %}
+
+							<template x-if="coupon.redemption_count > 0">
+								<li>
+									{{ __("Must be greater than or equal to the current redemption count which is %s", count)|raw }}
+								</li>
+							</template>
+						</ul>
+					</div>
+				</section>
+
+				<template x-if="orders.length > 0">
+					<section class="flex flex-col gap-6 box" data-density="comfortable">
+						<div class="flex gap-2 justify-between items-center">
+							<div class="flex flex-col">
+								<div class="flex gap-1 items-center">
+									<h2>
+										{{ p__('heading', 'Redemptions') }}
+									</h2>
+									<i class="text-xs ti ti-point-filled text-content-super-dimmed"></i>
+									<span class="text-content-dimmed" x-text="coupon.redemption_count" x-tooltip.raw="{{ __('Total count of redemptions') }}"></span>
+								</div>
+								<p class="text-xs text-content-dimmed">{{ __('Latest orders using this coupon') }}</p>
+							</div>
+
+							<a class="badge" :href="`admin/orders?coupon=${coupon.id}&sort=created_at:desc`">
+								{{ p__('button', 'View all') }}
+							</a>
+						</div>
+
+						<div>
+							<div class="hidden md:grid grid-cols-12 gap-3 items-center px-3 py-2 text-content-dimmed text-xs group-data-[state=empty]/list:hidden">
+								<div class="col-span-3">{{ p__('label', 'Order') }}</div>
+								<div class="col-span-2">{{ p__('label', 'Status') }}</div>
+								<div class="col-span-2">{{ p__('label', 'Credits') }}</div>
+								<div class="col-span-2">{{ p__('label', 'Total') }}</div>
+								<div class="col-span-2">{{ p__('label', 'Created') }}</div>
+								<div class="col-span-1"></div>
+							</div>
+
+							<div class="text-sm flex flex-col gap-1 group-data-[state=empty]:hidden">
+								<template x-for="order in orders" :key="order.id">
+									{% include "snippets/cards/order.twig" with {ref: 'order', type: 'admin'} %}
+								</template>
+							</div>
+						</div>
+					</section>
+				</template>
+			</div>
+
+			<div class="flex gap-4 justify-end">
+				<a href="admin/users" class="button button-outline">
+					{{ p__('button', 'Cancel') }}
+				</a>
+
+				<button type="submit" class="button button-accent" :processing="isProcessing">
+					{% include "/snippets/spinner.twig" %}
+
+					<span x-show="!coupon.id">{{ p__('button', 'Create coupon') }}</span>
+					<span x-show="coupon.id">{{ p__('button', 'Update coupon') }}</span>
+				</button>
+			</div>
+		</form>
+	</x-form>
+{% endblock %}

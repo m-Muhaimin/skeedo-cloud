@@ -1,0 +1,233 @@
+{% extends "/layouts/main.twig" %}
+
+{% set strings = {
+  delete_success: __("Memory has been deleted successfully.")
+} %}
+
+{% set xdata %}
+list("/library/memories",
+{{ strings|json_encode }})
+{% endset %}
+
+{% block title p__('title', 'Memories')|title %}
+
+{% block template %}
+	{# Header #}
+	<div>
+		{% include "snippets/back.twig" with {link: 'app/account', label: p__('button', 'Account')} %}
+		<h1>{{ __('Memories') }}</h1>
+	</div>
+
+	{# Filters #}
+	{% include "/snippets/filters.twig" with { 
+  total: __("Total :count saved memories"),
+  sort: [
+    {
+      value: null,
+      label: p__('label', 'Default')
+    },
+  
+    {
+      value: 'updated_at',
+      label: p__('label', 'Date')
+    }
+  ]
+} %}
+
+	{# List #}
+	<div class="group/list" data-state="initial" :data-state="state">
+		<div class="hidden group-data-[state=empty]/list:block">
+			{% include "sections/empty.twig" with { title: p__('heading', 'Empty result set'), message: __('There are no saved memories yet.'), reset: __('There are no memories matching your search.') } %}
+		</div>
+
+		<div class="hidden md:grid grid-cols-12 gap-3 items-center px-3 py-2 text-content-dimmed text-xs group-data-[state=empty]/list:hidden">
+			<div class="col-span-11">{{ p__('label', 'Memory') }}</div>
+			<div class="col-span-1"></div>
+		</div>
+
+		<ul class="text-sm group-data-[state=empty]/list:hidden flex flex-col gap-1">
+			{% for i in range(1,5) %}
+				<li class="hidden justify-between gap-3 items-center p-3 box group-data-[state=initial]/list:flex">
+					<div class="flex flex-col gap-1">
+						<div class="mt-0.5 w-40 h-5 loading"></div>
+						<div class="mb-0.5 w-20 h-4 loading"></div>
+					</div>
+
+					<div class="justify-self-end md:col-span-1">
+						<i class="text-2xl ti ti-dots-vertical text-content-dimmed"></i>
+					</div>
+				</li>
+			{% endfor %}
+
+			<template x-for="memory in resources" :key="memory.id">
+				<li class="flex relative gap-3 justify-between items-center p-3 box hover:border-line" x-data>
+
+					<div class="flex flex-col gap-1">
+						<div x-html="memory.content || `{{ __('Empty memory') }}`" :class="memory.content ? '' : 'text-content-dimmed'"></div>
+
+						<div class="flex items-center gap-2 text-xs text-content-dimmed">
+							<div>
+								<x-time :datetime="memory.created_at" data-type="date"></x-time>
+							</div>
+
+							<template x-if="memory.user.id !== $store.user.id">
+								<span class="text-content-dimmed">•</span>
+							</template>
+
+							<template x-if="memory.user.id !== $store.user.id">
+								<div>
+									{% set ownedby %}
+									<span x-text="`${memory.user.first_name} ${memory.user.last_name}`"></span>
+									{% endset %}
+
+									{{ __('Owned by :name', {':name': ownedby})|raw }}
+								</div>
+							</template>
+						</div>
+					</div>
+
+					<div>
+						<div class="relative" @click.outside="$refs.context.removeAttribute('data-open')">
+
+							<button @click="$refs.context.toggleAttribute('data-open')">
+								<i class="text-2xl ti ti-dots-vertical text-content-dimmed hover:text-intermediate-content"></i>
+							</button>
+
+							<div class="z-10 menu" x-ref="context">
+								<ul>
+									<template x-if="memory.user.id !== $store.user.id">
+										<li class="text-content-dimmed px-4 py-2">
+											{{ __('No action available') }}
+										</li>
+									</template>
+
+									<template x-if="memory.user.id == $store.user.id">
+										<li>
+											<button class="flex gap-2 items-center px-4 py-2 w-full hover:no-underline hover:bg-intermediate" @click.prevent="currentResource = memory; $nextTick(() => modal.open('audience-modal'))">
+												<template x-if="memory.visibility === 0">
+													<i class="ti ti-lock"></i>
+												</template>
+
+												<template x-if="memory.visibility === 1">
+													<i class="ti ti-building"></i>
+												</template>
+
+												{{ __('Visibility') }}
+											</button>
+										</li>
+									</template>
+
+									<template x-if="memory.user.id == $store.user.id">
+										<li>
+											<button class="flex gap-2 items-center px-4 py-2 w-full hover:no-underline hover:bg-intermediate" @click.prevent="currentResource = memory; modal.open('delete-modal')">
+												<i class="ti ti-trash"></i>
+												{{ __('Delete') }}
+											</button>
+										</li>
+									</template>
+								</ul>
+							</div>
+						</div>
+					</div>
+				</li>
+			</template>
+		</ul>
+	</div>
+
+	<template x-if="currentResource">
+		<modal-element name="audience-modal" x-data="audience()" x-model="currentResource" x-modelable="item">
+			<template x-if="item">
+				<div class="flex flex-col gap-6 modal">
+					<div class="flex justify-between items-center">
+						<h2 class="text-xl">{{ p__('heading', 'Select audience') }}</h2>
+
+						<button class="flex justify-center items-center w-8 h-8 rounded-full border border-transparent bg-line-dimmed hover:border-line" @click="modal.close()" type="button">
+							<i class="text-xl ti ti-x"></i>
+						</button>
+					</div>
+
+					<div class="flex flex-col gap-1">
+						<template x-if="item.user && item.user.id != $store.user.id">
+							<div class="flex gap-4 items-center box group">
+								<x-avatar :title="`${item.user.first_name} ${item.user.last_name}`" :src="item.user.avatar"></x-avatar>
+
+								<div>
+									<div class="font-bold" x-text="`${item.user.first_name} ${item.user.last_name}`"></div>
+									<div class="text-xs text-content-dimmed">
+										{{ __('Item will be accessible only by owner.') }}</div>
+								</div>
+
+								<template x-if="item.visibility === 0">
+									<button type="button" disabled class="ms-auto button button-xs button-dimmed">
+										{{ p__('badge', 'Selected') }}
+									</button>
+								</template>
+
+								<template x-if="item.visibility !== 0">
+									<button type="button" :processing="isProcessing===0" class="invisible ms-auto button button-xs button-dimmed group-hover:visible" @click="changeAudience(0)">
+										{% include "/snippets/spinner.twig" %}
+										{{ p__('badge', 'Select') }}
+									</button>
+								</template>
+							</div>
+						</template>
+
+						<template x-if="item.user && item.user.id == $store.user.id">
+							<div class="flex gap-4 items-center box group">
+								<x-avatar icon="lock"></x-avatar>
+
+								<div>
+									<div class="font-bold">{{ p__('audience', 'Only me') }}</div>
+									<div class="text-xs text-content-dimmed">
+										{{ __('Item is only accessible by you.') }}</div>
+								</div>
+
+								<template x-if="item.visibility === 0">
+									<button type="button" disabled class="ms-auto button button-xs button-dimmed">
+										{{ p__('badge', 'Selected') }}
+									</button>
+								</template>
+
+								<template x-if="item.visibility !== 0">
+									<button type="button" :processing="isProcessing===0" class="invisible ms-auto button button-xs button-dimmed group-hover:visible" @click="changeAudience(0)">
+										{% include "/snippets/spinner.twig" %}
+										{{ p__('badge', 'Select') }}
+									</button>
+								</template>
+							</div>
+						</template>
+
+						<div class="flex gap-4 items-center box group">
+							<x-avatar icon="building"></x-avatar>
+
+							<div>
+								<div class="font-bold">{{ p__('audience', 'Workspace') }}</div>
+								<div class="text-xs text-content-dimmed">
+									{{ __('Accesible by team members. Can be managed by workspace owner.') }}
+								</div>
+							</div>
+
+							<template x-if="item.visibility === 1">
+								<button type="button" disabled class="ms-auto button button-xs button-dimmed">
+									{{ p__('badge', 'Selected') }}
+								</button>
+							</template>
+
+							<template x-if="item.visibility !== 1">
+								<button type="button" :processing="isProcessing===1" class="invisible ms-auto button button-xs button-dimmed group-hover:visible" @click="changeAudience(1)">
+									{% include "/snippets/spinner.twig" %}
+									{{ p__('badge', 'Select') }}
+								</button>
+							</template>
+						</div>
+					</div>
+				</div>
+			</template>
+		</modal-element>
+	</template>
+
+	{% include "sections/delete-modal.twig" with { 
+  message: __('Do you really want to delete the memory?'),
+  details: __('Once confirmed, this action cannot be reverted.')
+} %}
+{% endblock %}

@@ -1,0 +1,239 @@
+{% extends "/layouts/main.twig" %}
+
+{% set active_menu = '/admin/affiliates/payouts' %}
+
+{% set xdata %}
+list("payouts")
+{% endset %}
+
+{% block title p__('title', 'Payouts')|title %}
+
+{% block template %}
+	{# Header #}
+	<div class="flex justify-between items-center">
+		<div>
+			<h1>{{ p__('heading', 'Payouts') }}</h1>
+
+			<template x-if="total !== null">
+				<div class="text-sm text-content-dimmed md:hidden">
+					{{ __('Total :count payouts')|replace({':count': '<span x-text="total"></span>'})|raw }}
+				</div>
+			</template>
+		</div>
+	</div>
+
+	<div class="flex flex-col gap-1">
+		<section class="box" x-data="stats">
+			<div class="flex gap-y-4 md:gap-4 flex-wrap md:flex-nowrap">
+				<div class="flex flex-col gap-1 w-1/2 md:w-auto">
+					<div class="text-xs text-content-dimmed">
+						{{ __('Pending') }}
+					</div>
+
+					<template x-if="!stats">
+						<span class="my-1 h-6 w-18 loading"></span>
+					</template>
+
+					<template x-if="stats">
+						<x-money class="text-2xl font-bold" :data-value="stats.affiliates.pending.metric" currency="{{ currency.code }}" minor-units="{{ currency.fraction_digits }}"></x-money>
+					</template>
+				</div>
+
+				<div class="w-px bg-line-dimmed hidden md:block"></div>
+
+				<div class="flex flex-col gap-1 w-1/2 md:w-auto">
+					<div class="flex gap-1 items-center text-xs text-content-dimmed">
+						{{ __('Earnings') }}
+
+						<i class="text-base leading-4 ti ti-info-square-rounded-filled text-content-dimmed" x-tooltip.raw="{{ __('Sum of affiliate balance and pending withdrawal requests') }}"></i>
+					</div>
+
+					<template x-if="!stats">
+						<span class="my-1 h-6 w-18 loading"></span>
+					</template>
+
+					<template x-if="stats">
+						<x-money class="text-2xl font-bold" :data-value="stats.affiliates.earnings.metric" currency="{{ currency.code }}" minor-units="{{ currency.fraction_digits }}"></x-money>
+					</template>
+				</div>
+
+				<div class="w-px bg-line-dimmed hidden md:block"></div>
+
+				<div class="flex flex-col gap-1 w-1/2 md:w-auto">
+					<div class="flex gap-1 items-center text-xs text-content-dimmed">
+						{{ __('Paid') }}
+					</div>
+
+					<template x-if="!stats">
+						<span class="my-1 h-6 w-18 loading"></span>
+					</template>
+
+					<template x-if="stats">
+						<x-money class="text-2xl font-bold" :data-value="stats.affiliates.withdrawn.metric" currency="{{ currency.code }}" minor-units="{{ currency.fraction_digits }}"></x-money>
+					</template>
+				</div>
+
+				<div class="w-px bg-line-dimmed hidden md:block"></div>
+
+				<div class="flex flex-col gap-1 w-1/2 md:w-auto">
+					<div class="flex gap-1 items-center text-xs text-content-dimmed">
+						{{ __('Total') }}
+
+						<i class="text-base leading-4 ti ti-info-square-rounded-filled text-content-dimmed" x-tooltip.raw="{{ __('Sum of total earnings and paid amounts') }}"></i>
+					</div>
+
+					<template x-if="!stats">
+						<span class="my-1 h-6 w-18 loading"></span>
+					</template>
+
+					<template x-if="stats">
+						<x-money class="text-2xl font-bold" :data-value="stats.affiliates.total.metric" currency="{{ currency.code }}" minor-units="{{ currency.fraction_digits }}"></x-money>
+					</template>
+				</div>
+			</div>
+
+			<p class="mt-4 md:mt-2 text-xs text-content-dimmed">
+				{{ __('These values represent all-time totals for affiliate payouts.') }}
+			</p>
+		</section>
+
+		{# Filters #}
+		{% include "/snippets/filters.twig" with { 
+      total: __('Total :count payouts'),
+      search: false,
+      sort: [
+        {
+          value: null,
+          label: p__('label', 'Default')
+        },
+      
+        {
+          value: 'created_at',
+          label: p__('label', 'Date')
+        }
+      ],
+      filters: [
+          {
+            label: p__('label', 'Status'),
+            model: 'status',
+            options: [
+              {
+                value: 'pending',
+                label: p__('status', 'Pending')
+              },
+              {
+                value: 'approved',
+                label: p__('status', 'Approved')
+              },
+              {
+                value: 'rejected',
+                label: p__('status', 'Rejected')
+              }
+            ]
+          },
+          {
+            label: p__('label', 'User'),
+            model: 'user',
+            hidden: true,
+          },
+        ]
+    } %}
+	</div>
+
+	{# List #}
+	<div class="group/list" :data-state="state">
+		<div class="hidden group-data-[state=empty]/list:block">
+			{% include "sections/empty.twig" with { title: p__('heading', 'Empty result set'), message: __('There are no payouts yet.'), reset: __('There are no payouts matching your search.') } %}
+		</div>
+
+		<div class="hidden md:grid grid-cols-12 gap-3 items-center px-3 py-2 text-content-dimmed text-xs group-data-[state=empty]/list:hidden">
+			<div class="col-span-2">{{ p__('label', 'Amount') }}</div>
+			<div class="col-span-6">{{ p__('label', 'Status') }}</div>
+			<div class="col-span-3">{{ p__('label', 'Date') }}</div>
+			<div class="col-span-1"></div>
+		</div>
+
+		<ul class="text-sm group-data-[state=empty]/list:hidden flex flex-col gap-1">
+			{% for i in range(1,5) %}
+				<li class="hidden relative grid-cols-12 gap-3 items-center p-3 box hover:border-line group-data-[state=initial]/list:grid">
+					<div class="col-span-5 md:col-span-2">
+						<div class="py-1 w-20">
+							<div class="h-4 loading"></div>
+						</div>
+
+						<div class="md:hidden">
+							<div class="py-1 w-32">
+								<div class="h-4 loading"></div>
+							</div>
+						</div>
+					</div>
+
+					<div class="col-span-6">
+						<div class="py-1 w-32">
+							<div class="h-4 loading"></div>
+						</div>
+					</div>
+
+					<div class="hidden col-span-3 md:block">
+						<div class="py-1 w-32">
+							<div class="h-4 loading"></div>
+						</div>
+					</div>
+
+					<div class="col-span-1 justify-self-end">
+						<div class="relative group">
+							<i class="text-2xl ti ti-dots-vertical text-content-dimmed"></i>
+						</div>
+					</div>
+				</li>
+			{% endfor %}
+
+			<template x-for="p in resources" :key="p.id">
+				<li class="grid relative grid-cols-12 gap-3 items-center p-3 box hover:border-line" x-data>
+					<a :href="`admin/affiliates/payouts/${p.id}`" class="absolute top-0 left-0 w-full h-full cursor-pointer"></a>
+
+					<div class="col-span-5 md:col-span-2">
+						<x-money :data-value="p.amount" :currency="p.currency.code" :minor-units="p.currency.fraction_digits" class="font-bold"></x-money>
+
+						<div class="md:hidden">
+							<x-time :datetime="p.created_at" data-type="date"></x-time>
+						</div>
+					</div>
+
+					<div class="flex col-span-6">
+						<template x-if="p.status == 'pending'">
+							<span class="badge">{{ __('Pending') }}</span>
+						</template>
+
+						<template x-if="p.status == 'approved'">
+							<span class="badge badge-success">{{ __('Approved') }}</span>
+						</template>
+
+						<template x-if="p.status == 'rejected'">
+							<span class="badge badge-failure">{{ __('Rejected') }}</span>
+						</template>
+					</div>
+
+					<div class="hidden col-span-3 md:block">
+						<x-time :datetime="p.created_at" data-type="date"></x-time>
+					</div>
+
+					<div class="col-span-1 justify-self-end">
+						<div class="relative" @click.outside="$refs.context.removeAttribute('data-open')">
+
+							<button class="relative z-10" @click="$refs.context.toggleAttribute('data-open')">
+								<i class="text-2xl ti ti-dots-vertical text-content-dimmed hover:text-intermediate-content"></i>
+							</button>
+
+							<div class="menu" x-ref="context">
+								<ul>
+									<li><a :href="`admin/affiliates/payouts/${p.id}`" class="flex gap-2 items-center px-4 py-2 hover:no-underline hover:bg-intermediate">{{ p__('button', 'Details') }}</a></li>
+								</ul>
+							</div>
+						</div>
+					</div>
+				</li>
+			</template>
+		</ul>
+	</div>
+{% endblock %}

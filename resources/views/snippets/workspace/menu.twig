@@ -1,0 +1,60 @@
+{% if view_namespace == 'app' %}
+	<div class="relative mx-4" @click.outside="$refs.wsmenu.removeAttribute('data-open')">
+		<div class="w-60 menu-bl menu peer" x-ref="wsmenu" @click="$el.removeAttribute('data-open')">
+
+			<div class="flex gap-3 items-center p-4 w-full">
+				<x-avatar icon="building" class="size-7 bg-button text-button-content [&_i]:text-sm"></x-avatar>
+
+				<div class="max-w-[120px] whitespace-nowrap">
+					<div class="overflow-hidden font-semibold text-ellipsis text-xs" x-text="$store.workspace.name">
+						{{ workspace.name }}
+					</div>
+
+					{% if workspace.subscription %}
+						<div class="overflow-hidden text-xs text-content-dimmed text-ellipsis">
+							{{ workspace.subscription.plan.title }}
+						</div>
+					{% endif %}
+				</div>
+
+				<button class="ms-auto text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Switch workspace') }}" @click="modal.open('workspace-switch')">
+					<i class="text-lg ti ti-switch-horizontal"></i>
+				</button>
+			</div>
+
+			<hr class="border-t border-line-dimmed">
+
+			<ul>
+				<li><a href="app/workspace" class="flex gap-2 items-center px-4 py-2 hover:bg-intermediate hover:no-underline"><i class="text-lg ti ti-settings-2"></i>{{ p__('button', 'Overview') }}</a></li>
+
+				<li><a href="app/billing" class="flex gap-2 items-center px-4 py-2 hover:bg-intermediate hover:no-underline"><i class="text-lg ti ti-credit-card"></i>{{ p__('button', 'Billing') }}</a></li>
+
+				<li><a href="app/logs/usage" class="flex gap-2 items-center px-4 py-2 hover:bg-intermediate hover:no-underline"><i class="text-lg ti ti-mist"></i>{{ p__('button', 'Logs') }}</a></li>
+			</ul>
+		</div>
+
+		<button class="flex items-center group w-full gap-2 px-2 py-1 text-start border rounded-lg border-line hover:bg-main peer-data-open:bg-main" @click="$refs.wsmenu.toggleAttribute('data-open')">
+			<x-avatar icon="building" class="size-7 bg-button text-button-content [&_i]:text-sm"></x-avatar>
+
+			<div class="max-w-24 whitespace-nowrap">
+				{% if workspace.subscription == null %}
+					<div class="overflow-hidden text-xs text-intermediate-content-dimmed text-ellipsis">
+						{{ p__('label', 'Workspace') }}
+					</div>
+				{% endif %}
+
+				<div class="overflow-hidden font-semibold text-xs text-ellipsis" x-text="$store.workspace.name">
+					{{ workspace.name }}
+				</div>
+
+				{% if workspace.subscription %}
+					<div class="overflow-hidden text-xs text-intermediate-content-dimmed text-ellipsis">
+						{{ workspace.subscription.plan.title }}
+					</div>
+				{% endif %}
+			</div>
+
+			<i class="ti ti-selector text-lg text-intermediate-content-dimmed ms-auto group-hover:text-intermediate-content"></i>
+		</button>
+	</div>
+{% endif %}

@@ -1,0 +1,35 @@
+{% extends "@emails/layout.twig" %}
+
+{% block subject %}
+	Email verification required for your account -
+	{{ option.site.name ?? '' }}
+{% endblock %}
+
+{% block content %}
+	<div>
+		Dear
+		<strong>{{ user.first_name }}</strong>,
+
+		<p>
+			To ensure the security of your account, please verify your email address.
+		</p>
+
+		<p>
+			Click the button below to verify your email:
+		</p>
+
+		<p>
+			<a href="{{ verification_url }}" class="button">Verify Your Email</a>
+		</p>
+
+		<p>
+			Warm regards,
+			<br/>
+
+			<strong>
+				{{ option.site.name ?? '' }}
+				team
+			</strong>
+		</p>
+	</div>
+{% endblock %}

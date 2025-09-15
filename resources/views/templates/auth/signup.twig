@@ -1,0 +1,135 @@
+{% extends "/layouts/minimal.twig" %}
+
+{% block title p__('title', 'Signup')|title %}
+{% set xdata %}
+auth(`{{ option.site.default_app_page ?? '/app' }}`)
+{% endset %}
+
+{% block template %}
+	<div class="box" data-density="comfortable">
+		<x-form>
+			<form @submit.prevent="submit" x-ref="form" data-api-path="/signup" class="flex flex-col gap-5">
+				<h1>{{ p__('heading', 'Sign up') }}</h1>
+
+				<div class="grid gap-6 md:grid-cols-2">
+					<fieldset>
+						<label for="first-name">{{ p__('label', 'First name') }}</label>
+
+						<input type="text" id="first-name" name="first_name" placeholder="{{ __('Type your first name') }}" autocomplete="given-name" class="input" required>
+					</fieldset>
+
+					<fieldset>
+						<label for="last-name">{{ p__('label', 'Last name') }}</label>
+
+						<input type="text" id="last-name" name="last_name" autocomplete="family-name" required placeholder="{{ __('Type your last name') }}" class="input">
+					</fieldset>
+				</div>
+
+				{% if option.site.phone_requirement_policy|default('none') in ['relaxed', 'strict'] %}
+					<fieldset>
+						<label for="phone_number">{{ p__('label', 'Phone number') }}</label>
+						<x-phone-input class="block relative" x-ref="el" x-data="{country: null}" @input="country = $refs.el.dataset.country">
+							<div class="flex absolute left-3 top-1/2 justify-center items-center w-6 h-6 text-2xl -translate-y-1/2 text-content-dimmed">
+								<template x-if="!country">
+									<i class="ti ti-world"></i>
+								</template>
+
+								<template x-if="country">
+									<x-avatar class="w-6 h-6" :title="country" :src="`https://flagcdn.com/${country.toLowerCase()}.svg`"></x-avatar>
+								</template>
+							</div>
+
+							<input type="tel" id="phone_number" maxlength="30" name="phone_number" placeholder="{{ __('Type your phone number') }}" class="pl-12 input" {{ option.site.phone_requirement_policy|default('none') == 'strict' ? 'required' : '' }}>
+						</x-phone-input>
+
+						{% if option.site.phone_requirement_purpose|default('')|trim %}
+							<ul class="info">
+								<li>
+									{{ option.site.phone_requirement_purpose }}
+								</li>
+							</ul>
+						{% endif %}
+					</fieldset>
+				{% endif %}
+
+				<fieldset>
+					<label for="email">{{ p__('label', 'Email') }}</label>
+
+					<input type="email" id="email" name="email" placeholder="{{ __('Type your email address') }}" autocomplete="email" class="input" required>
+				</fieldset>
+
+				<fieldset>
+					<label for="password">{{ p__('label', 'Password') }}</label>
+
+					<div class="relative" x-data="{isVisible: false}">
+						<input :type="isVisible ? 'text' : 'password'" id="password" name="password" placeholder="{{ __('Type your password') }}" autocomplete="current-password" class="input pe-11" required>
+
+						<button type="button" class="absolute end-3 top-1/2 text-2xl -translate-y-1/2 text-content-dimmed" @click="isVisible = !isVisible">
+							<i class="block ti" :class="{'ti-eye-closed' : isVisible, 'ti-eye':!isVisible}"></i>
+						</button>
+					</div>
+				</fieldset>
+
+				{% include "/snippets/captcha.twig" %}
+
+				<button type="submit" class="w-full button button-accent" :processing="isProcessing">
+
+					{% include "/snippets/spinner.twig" %}
+
+					{{ p__('button', 'Sign up') }}
+				</button>
+
+				<div class="flex flex-col gap-1 items-center text-sm md:flex-row">
+					<span class="flex gap-1 items-center">
+						<i class="text-base ti ti-help-square-rounded"></i>
+
+						{{ __('Already have an account?') }}
+					</span>
+
+					<a href="login" class="font-semibold hover:underline">
+						{{ p__('button', 'Sign in') }}
+					</a>
+				</div>
+
+				{% include "/snippets/sso.twig" %}
+
+				{% set policies = [] %}
+				{% if option.policies.tos is defined and option.policies.tos is not empty %}
+					{% set policy %}
+					<a href="policies/terms" class="text-content hover:text-content hover:underline">{{ p__('button', 'Terms') }}</a>
+					{% endset %}
+
+					{% set policies = policies|merge([policy]) %}
+				{% endif %}
+
+				{% if option.policies.privacy is defined and option.policies.privacy is not empty %}
+					{% set policy %}
+					<a href="policies/privacy" class="text-content hover:text-content hover:underline">{{ p__('button', 'Privacy Policy') }}</a>
+					{% endset %}
+
+					{% set policies = policies|merge([policy]) %}
+				{% endif %}
+
+				{% if option.policies.refund is defined and option.policies.refund is not empty %}
+					{% set policy %}
+					<a href="policies/refund" class="text-content hover:text-content hover:underline">
+						{{ p__('button', 'Refund Policy') }}
+					</a>
+					{% endset %}
+
+					{% set policies = policies|merge([policy]) %}
+				{% endif %}
+
+				{% if policies|length > 0 %}
+					<div class="text-xs text-content-dimmed">
+						{{ __('By signing up, you agree to our %s', policies|join(', ', __(' and ')))|raw }}
+					</div>
+				{% endif %}
+			</form>
+		</x-form>
+	</div>
+{% endblock %}
+
+{% block scripts %}
+	<script type="module" src="{{ '/resources/assets/js/auth/index.js'|asset }}"></script>
+{% endblock %}

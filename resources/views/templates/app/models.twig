@@ -1,0 +1,303 @@
+{% extends "/layouts/main.twig" %}
+
+{% set active_menu = '/app/models' %}
+
+{% set xdata %}
+models({{ services|json_encode }})
+{% endset %}
+
+{% block title p__('title', 'Models')|title %}
+
+{% block template %}
+	{# Header #}
+	<h1>{{ __('Models') }}</h1>
+
+	<div class="p-3 rounded-xl border border-line-dimmed">
+		<div class="relative group">
+			<input type="search" name="query" placeholder="{{ __('Search...') }}" class="block p-0 ps-7 w-full h-8 bg-transparent border-none appearance-none cursor-pointer placeholder:text-content-dimmed focus:outline-hidden focus:ring-0 focus:cursor-text peer text-content" autocomplete="off" x-model="query">
+
+			<i class="absolute start-0 text-xl -translate-y-1/2 pointer-events-none ti ti-search top-1/2 text-content-dimmed group-hover:text-content peer-not-placeholder-shown:text-content peer-focus:text-content group-grow:w-full"></i>
+		</div>
+	</div>
+
+	{# List #}
+	<div class="group/list" data-state="initial" :data-state="state">
+		<div class="hidden group-data-[state=empty]/list:block">
+			{% include "sections/empty.twig" with { title: p__('heading', 'Empty result set'), message: __('There are no classification yet.'), reset: __('There are no classification matching your search.') } %}
+		</div>
+
+		<div class="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-1">
+			{% for i in range(1,6) %}
+				<div class="relative group hidden group-data-[state=initial]/list:flex">
+					<div class="box w-full flex flex-col text-start gap-4">
+						<div class="flex items-center gap-2">
+							<div class="avatar loading"></div>
+
+							<div class="flex flex-col">
+								<div class="h-4 my-0.5 loading w-32"></div>
+								<div class="h-3 my-0.5 loading w-20"></div>
+							</div>
+						</div>
+
+						<div class="flex flex-col gap-1">
+							<div class="h-3 my-0.5 loading w-full"></div>
+							<div class="h-3 my-0.5 loading w-2/3"></div>
+						</div>
+
+						<div class="flex items-center gap-1 mt-auto">
+							<div class="size-4 loading rounded"></div>
+							<div class="size-4 loading rounded"></div>
+							<div class="size-4 loading rounded"></div>
+						</div>
+					</div>
+				</div>
+			{% endfor %}
+
+			<template x-for="m in adapters" :key="m.key + '-' + m.model.key">
+				<template x-if="!['embedding', 'transcription'].includes(m.model.type) && search(query, m, 'adapter')">
+					<div class="relative flex group" :class="m.model.granted ? null : 'opacity-50 hover:opacity-100'">
+						<button type="button" @click="chooseAdapter(m)" class="box w-full flex flex-col text-start gap-4">
+							<div class="flex items-center gap-2">
+								<x-avatar :mask="m.model.icon || m.model.provider?.icon || m.icon" :icon="!m.model.icon && !m.model.provider?.icon && !m.icon ? 'cpu' : null" class="contain avatar-outline"></x-avatar>
+
+								<div class="flex flex-col">
+									<h3 class="text-sm line-clamp-1" x-text="m.model.name" :title="m.model.name"></h3>
+									<div class="text-xs text-content-dimmed line-clamp-1" x-text="m.model.provider?.name || m.name"></div>
+								</div>
+							</div>
+
+							<template x-if="m.model.description">
+								<p x-text="m.model.description" class="text-xs text-content-dimmed line-clamp-3"></p>
+							</template>
+
+							<div class="flex items-center gap-1 mt-auto">
+								<template x-if="m.model.modalities?.input?.includes('image')">
+									<i class="ti ti-photo text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Can analyze images') }}"></i>
+								</template>
+
+								<template x-if="m.model.capabilities?.includes('tools')">
+									<i @click.stop="modal.open('supercharged')" class="ti ti-bolt text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Supercharged') }}"></i>
+								</template>
+
+								<template x-if="m.model.capabilities?.includes('reasoning')">
+									<i class="ti ti-brain text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Reasoning enabled') }}"></i>
+								</template>
+
+								<template x-if="m.model.attributes?.preview">
+									<i class="ti ti-test-pipe text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Experimental') }}"></i>
+								</template>
+
+								<template x-if="m.model.attributes?.turbo">
+									<i class="ti ti-progress-bolt text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Optimized for speed') }}"></i>
+								</template>
+							</div>
+
+							<template x-if="!m.model.granted">
+								<span class="flex items-center w-full gap-1">
+									<i class="ti ti-diamond"></i>
+									<span class="text-xs">{{ __('Upgrade plan') }}</span>
+								</span>
+							</template>
+
+							<i class="ti ti-maximize absolute bottom-4 right-4 text-content-dimmed hover:text-content invisible group-hover:visible transition-all" x-tooltip.raw="{{ __('View model details') }}"></i>
+						</button>
+
+						<template x-if="m.model.granted && !m.pinned">
+							<button type="button" class="ti ti-pin text-base opacity-0 group-hover:opacity-100 text-content-dimmed hover:text-content absolute top-7 right-4" x-tooltip.raw="{{ __('Pin') }}" @click="togglePin(m, 'model')"></button>
+						</template>
+
+						<template x-if="m.model.granted && m.pinned">
+							<button type="button" class="ti ti-pinned-filled text-base text-content-dimmed hover:text-content absolute top-7 right-4" x-tooltip.raw="{{ __('Unpin') }}" @click="togglePin(m, 'model')"></button>
+						</template>
+					</div>
+				</template>
+			</template>
+		</div>
+	</div>
+
+	<modal-element name="model">
+		<template x-if="adapter">
+			<div @submit.prevent="modal.close()" class="flex flex-col gap-6 modal">
+				<div class="flex justify-between items-center">
+					<h2 class="text-xl">{{ p__('heading', 'Model details') }}</h2>
+
+					<button type="button" class="flex justify-center items-center w-8 h-8 rounded-full border border-transparent bg-line-dimmed hover:border-line" @click="modal.close()">
+						<i class="text-xl ti ti-x"></i>
+					</button>
+				</div>
+
+				<div class="flex items-center gap-4">
+					<x-avatar :mask="adapter.model.icon || adapter.model.provider?.icon || adapter.icon" :icon="!adapter.model.icon && !adapter.model.provider?.icon && !adapter.icon ? 'cpu' : null" class="contain avatar-lg avatar-outline"></x-avatar>
+
+					<div class="flex flex-col">
+						<h3 class="line-clamp-1" x-text="adapter.model.name" :title="adapter.model.name"></h3>
+						<div class="text-sm text-content-dimmed line-clamp-1" x-text="adapter.model.provider?.name || adapter.name"></div>
+					</div>
+				</div>
+
+				<template x-if="adapter.model.description">
+					<p x-text="adapter.model.description" class="text-content-dimmed"></p>
+				</template>
+
+				<template x-if="adapter.model.type == 'llm'">
+					<div class="grid grid-cols-1 xs:grid-cols-2 gap-6 items-center text-sm border-t border-line-dimmed pt-6">
+						<div>
+							<div class="text-content-dimmed">{{ __('Context window') }}</div>
+							<div class="font-bold">
+								<template x-if="adapter.model.attributes?.context_window">
+									<x-credit :data-value="adapter.model.attributes.context_window" :title="adapter.model.attributes.context_window"></x-credit>
+								</template>
+
+								<template x-if="!adapter.model.attributes?.context_window">
+									<span class="text-content-dimmed">N/A</span>
+								</template>
+							</div>
+						</div>
+
+						<div>
+							<div class="text-content-dimmed">{{ __('Max output tokens') }}</div>
+							<div class="font-bold">
+								<template x-if="adapter.model.attributes?.max_output_tokens">
+									<x-credit :data-value="adapter.model.attributes.max_output_tokens" :title="adapter.model.attributes.max_output_tokens"></x-credit>
+								</template>
+
+								<template x-if="!adapter.model.attributes?.max_output_tokens">
+									<span class="text-content-dimmed">N/A</span>
+								</template>
+							</div>
+						</div>
+					</div>
+				</template>
+
+				<template x-if="adapter.model.attributes?.reasoning_level || adapter.model.attributes?.performance || adapter.model.attributes?.intelligence || adapter.model.attributes?.speed">
+					<div class="flex flex-col gap-6 xs:gap-2 text-sm text-content-dimmed border-t border-line-dimmed pt-6">
+						<template x-if="adapter.model.attributes?.reasoning_level">
+							<div class="flex flex-col xs:flex-row items-start xs:items-center gap-2">
+								<div class="xs:w-32">{{ __('Reasoning') }}</div>
+								<div class="w-full xs:w-auto xs:grow">
+									<div class="grid grid-cols-5 gap-1">
+										<template x-for="i in 5">
+											<span class="h-1.5 rounded" :class="i <= adapter.model.attributes.reasoning_level ? 'bg-content' : 'bg-line-dimmed'"></span>
+										</template>
+									</div>
+								</div>
+							</div>
+						</template>
+
+						<template x-if="adapter.model.attributes?.performance">
+							<div class="flex flex-col xs:flex-row items-start xs:items-center gap-2">
+								<div class="w-full xs:w-32">{{ __('Performance') }}</div>
+								<div class="w-full xs:w-auto xs:grow">
+									<div class="grid grid-cols-5 gap-1">
+										<template x-for="i in 5">
+											<span class="h-1.5 rounded" :class="i <= adapter.model.attributes.performance ? 'bg-content' : 'bg-line-dimmed'"></span>
+										</template>
+									</div>
+								</div>
+							</div>
+						</template>
+
+						<template x-if="adapter.model.attributes?.intelligence">
+							<div class="flex flex-col xs:flex-row items-start xs:items-center gap-2">
+								<div class="w-full xs:w-32">{{ __('Intelligence') }}</div>
+								<div class="w-full xs:w-auto xs:grow">
+									<div class="grid grid-cols-5 gap-1">
+										<template x-for="i in 5">
+											<span class="h-1.5 rounded" :class="i <= adapter.model.attributes.intelligence ? 'bg-content' : 'bg-line-dimmed'"></span>
+										</template>
+									</div>
+								</div>
+							</div>
+						</template>
+
+						<template x-if="adapter.model.attributes?.speed">
+							<div class="flex flex-col xs:flex-row items-start xs:items-center gap-2">
+								<div class="w-full xs:w-32">{{ __('Speed') }}</div>
+								<div class="w-full xs:w-auto xs:grow">
+									<div class="grid grid-cols-5 gap-1">
+										<template x-for="i in 5">
+											<span class="h-1.5 rounded" :class="i <= adapter.model.attributes.speed ? 'bg-content' : 'bg-line-dimmed'"></span>
+										</template>
+									</div>
+								</div>
+							</div>
+						</template>
+					</div>
+				</template>
+
+				<template x-if="adapter.model.rates || adapter.rates">
+					<div class="grid grid-cols-1 xs:grid-cols-2 gap-6 items-center text-sm border-t border-line-dimmed pt-6">
+						<template x-for="r in (adapter.model.rates || []).concat(adapter.rates || [])">
+							<div>
+								<div class="text-content-dimmed capitalize" x-text="r.type == 'all' ? '{{ __('Universal') }}' : r.type"></div>
+								<div class="font-bold">
+									<template x-if="r.value <= 1">
+										<x-credit :data-value="r.value == 0 ? null : 1/r.value" :format="`1 credit = :count ${r.unit}`"></x-credit>
+									</template>
+
+									<template x-if="r.value > 1">
+										<x-credit :data-value="r.value" :format="`1 ${r.unit} = :count credits`"></x-credit>
+									</template>
+								</div>
+							</div>
+						</template>
+					</div>
+				</template>
+
+				<div class="flex items-center gap-4" :class="adapter.model.attributes?.knowledge_cutoff ? 'border-t border-line-dimmed pt-6' : null">
+					<div class="flex items-center gap-1">
+						<template x-if="adapter.model.modalities?.input?.includes('image')">
+							<i class="ti ti-photo text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Can analyze images') }}"></i>
+						</template>
+
+						<template x-if="adapter.model.capabilities?.includes('tools')">
+							<button type="button" @click="modal.open('supercharged')" class="ti ti-bolt text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Supercharged') }}"></button>
+						</template>
+
+						<template x-if="adapter.model.capabilities?.includes('reasoning')">
+							<i class="ti ti-brain text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Reasoning enabled') }}"></i>
+						</template>
+
+						<template x-if="adapter.model.attributes?.preview">
+							<i class="ti ti-test-pipe text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Experimental') }}"></i>
+						</template>
+
+						<template x-if="adapter.model.attributes?.turbo">
+							<i class="ti ti-progress-bolt text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Optimized for speed') }}"></i>
+						</template>
+					</div>
+
+					<template x-if="adapter.model.attributes?.knowledge_cutoff">
+						<div class="flex items-center gap-1 text-xs ms-auto">
+							<span class="text-content-dimmed">{{ __('Knowledge cutoff') }}:</span>
+							<x-time :datetime="adapter.model.attributes.knowledge_cutoff" data-type="date"></x-time>
+						</div>
+					</template>
+				</div>
+
+				<div>
+					<template x-if="!adapter.model.granted">
+						<a href="app/billing" class="w-full button">
+							<i class="ti ti-click"></i>
+							{{ p__('button', 'Upgrade plan') }}
+						</a>
+					</template>
+
+					<template x-if="adapter.model.granted && adapter.useLink">
+						<a :href="adapter.useLink" class="w-full button">
+							{{ p__('button', 'Use this model') }}
+						</a>
+					</template>
+
+					<template x-if="adapter.model.granted && !adapter.useLink">
+						<button type="button" @click="modal.close()" class="w-full button button-outline">
+							{{ p__('button', 'Close') }}
+						</button>
+					</template>
+				</div>
+			</div>
+		</template>
+	</modal-element>
+
+	{% include "snippets/supercharged.twig" %}
+{% endblock %}

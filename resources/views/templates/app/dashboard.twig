@@ -1,0 +1,16 @@
+{% extends "/layouts/main.twig" %}
+
+{% set active_menu = '/app' %}
+{% set xdata = 'dashboard' %}
+{% block title p__('title', 'Dashboard')|title %}
+
+{% block template %}
+	{% include "sections/dashboard/quick-access.twig" %}
+
+	<div class="flex flex-col gap-1">
+		{% include "sections/dashboard/billing.twig" %}
+		{% include "sections/dashboard/usage.twig" %}
+	</div>
+
+	{% include "sections/dashboard/tools.twig" %}
+{% endblock %}

@@ -1,0 +1,56 @@
+/* Dropdown context menu */
+.menu {
+  @apply absolute 
+    z-20 
+    
+    end-0 
+    mt-1 
+    top-full
+    
+    hidden
+    border 
+    rounded-lg 
+    
+    border-line-dimmed 
+    bg-main 
+    text-content
+    
+    data-open:block  
+    
+    whitespace-nowrap
+    
+    max-h-max
+    overflow-auto
+    text-sm
+    min-w-32;
+
+  box-shadow: 0px 4px 6px -2px rgba(0, 0, 9, 0.03),
+    0px 12px 16px -4px rgba(0, 0, 9, 0.08);
+
+  &.menu-bl {
+    @apply start-0 end-auto;
+  }
+
+  &.menu-b {
+    @apply start-1/2 end-auto -translate-x-1/2;
+  }
+
+  &.menu-tr {
+    @apply end-0 start-auto bottom-full top-auto mt-0 mb-1;
+  }
+
+  &.menu-tl {
+    @apply start-0 end-auto bottom-full top-auto mt-0 mb-1;
+  }
+
+  /*
+  
+  & a {
+    @apply flex gap-2 items-center px-4 py-2 hover:no-underline hover:bg-intermediate;
+  }
+
+  & i {
+    @apply text-base;
+  }
+  */
+}

@@ -1,0 +1,25 @@
+<x-form>
+    <form class="flex flex-col gap-8" @submit.prevent="viewRequirement()">
+        <h1>Aikeedo Installation</h1>
+
+        <p class="text-intermediate-content">
+            Welcome! Aikeedo is an AI Powered Content Platform (web application)
+            that allows
+            you generate blogs, social media content, marketing emails,
+            programming
+            codes, images and more.
+        </p>
+
+        <p class="flex items-center gap-2 text-sm text-intermediate-content">
+            Installation process is very easy and it takes less than a minute!
+            <i class="text-xl ti ti-sparkles text-success"></i>
+        </p>
+
+        <button type="submit" class="w-full button group"
+            :processing="isProcessing">
+            {% include "snippets/spinner.twig" %}
+
+            Start installation
+        </button>
+    </form>
+</x-form>

@@ -1,0 +1,71 @@
+{% extends "/layouts/main.twig" %}
+
+{% set active_menu = '/admin/plugins' %}
+
+{% set xdata = 'plugin' %}
+
+{% block title p__('title', 'Install plugin / theme')|title %}
+
+{% block template %}
+	<form class="flex flex-col gap-8" @submit.prevent="submit">
+		<div>
+			{% include "snippets/back.twig" with {link: 'admin', label: 'Dashboard'} %}
+
+			<h1 class="mt-4">
+				{{ p__('title', 'Install plugin or theme') }}
+			</h1>
+		</div>
+
+		<section class="p-8 box">
+			<div class="flex items-center gap-4">
+				<span class="flex items-center justify-center w-10 h-10 bg-intermediate text-intermediate-content" :class="file ? 'rounded-lg' : 'rounded-full'">
+					<i class="ti" :class="file ? 'ti-file-zip' : 'ti-paperclip'"></i>
+				</span>
+
+				<template x-if="file">
+					<div>
+						<div class="font-medium" x-text="file.name"></div>
+
+						<template x-if="error">
+							<div class="text-sm text-failure" x-text="error"></div>
+						</template>
+
+						<template x-if="!error">
+							<div class="text-sm text-content-dimmed" x-text="filesize"></div>
+						</template>
+					</div>
+				</template>
+
+				<template x-if="!file">
+					<div>
+						<div class="font-medium">{{ __('Choose a plugin or theme file') }}
+						</div>
+
+						<template x-if="error">
+							<div class="text-sm text-failure" x-text="error"></div>
+						</template>
+
+						<template x-if="!error">
+							<div class="text-sm text-content-dimmed">
+								{{ __('ZIP archive file only') }}
+							</div>
+						</template>
+					</div>
+				</template>
+
+				<button type="button" class="ms-auto button button-outline button-sm" @click="$refs.file.click()" :disabled="isProcessing" x-text="file ? `{{ p__('button', 'Change file') }}` : `{{ p__('button', 'Choose file') }}`"></button>
+
+				<template x-if="file">
+					<button type="submit" class="button button-sm button-accent" :processing="isProcessing" :disabled="isProcessing">
+
+						{% include "/snippets/spinner.twig" %}
+						<span x-text="isProcessing ? `{{ p__('button', 'Installing...') }}` : `{{ p__('button', 'Install') }}`"></span>
+
+					</button>
+				</template>
+
+				<input type="file" @change="file = $refs.file.files[0]; error = null;" class="hidden" accept="application/zip, application/x-zip-compressed, multipart/x-zip" x-ref="file">
+			</div>
+		</section>
+	</form>
+{% endblock %}

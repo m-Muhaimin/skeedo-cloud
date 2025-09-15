@@ -1,0 +1,329 @@
+{% extends "/layouts/main.twig" %}
+
+{% set xdata = 'affiliates' %}
+{% block title p__('title', 'Affiliates')|title %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {link: 'app', label: p__('button', 'Dashboard')} %}
+		<h1>{{ __('Affiliates') }}</h1>
+	</div>
+
+	<div class="relative p-1 bg-linear-to-br rounded-xl bg-gradient-from from-gradient-from to-gradient-to">
+		<div class="flex flex-col gap-4 p-8 rounded-lg bg-main">
+			<div>
+				<div class="text-lg font-medium">
+					{{ __('Invite your friends and earn %s commission from their all purchases', (option.affiliates.commission ?? '0') ~ '%') | raw }}
+				</div>
+			</div>
+
+			<div class="flex flex-col gap-4 justify-between p-4 rounded-xl md:items-center md:flex-row bg-intermediate text-intermediate-content">
+				<div>
+					<div class="label">{{ __('Your referral link') }}</div>
+					<div class="text-sm truncate">
+						<x-copy class="text-content-dimmed hover:text-content">
+							{{ option.site.is_secure ? 'https://' : 'http://' }}{{ option.site.domain }}/r/{{ user.affiliate.code }}
+						</x-copy>
+					</div>
+				</div>
+
+				<x-copy data-copy="{{ option.site.is_secure ? 'https://' : 'http://' }}{{ option.site.domain }}/r/{{ user.affiliate.code }}" class="button button-sm button-accent">
+					<i class="ti ti-copy"></i>
+					{{ p__('button', 'Copy link') }}
+				</x-copy>
+			</div>
+		</div>
+	</div>
+
+	<div class="grid grid-cols-2 gap-4 p-6 md:gap-2 md:grid-cols-5 box">
+		<div>
+			<div class="text-sm text-content-dimmed">{{ __('Clicks') }}</div>
+			<div class="text-lg font-bold">
+				<x-credit data-value="{{ user.affiliate.clicks }}"></x-credit>
+			</div>
+		</div>
+
+		<div>
+			<div class="text-sm text-content-dimmed">{{ __('Signups') }}</div>
+			<div class="text-lg font-bold">
+				<x-credit data-value="{{ user.affiliate.referrals }}"></x-credit>
+			</div>
+		</div>
+
+		<div>
+			<div class="text-sm text-content-dimmed">{{ __('Balance') }}</div>
+			<template x-if="affiliate.payout_method == null">
+				<div class="flex gap-1 items-center text-lg font-bold">
+					<x-money data-value="{{ user.affiliate.balance }}" currency="{{ user.affiliate.currency.code }}" minor-units="{{ user.affiliate.currency.fraction_digits }}"></x-money>
+
+					<button type="button" class="text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Set payout method') }}" @click="modal.open('payout-method-modal')">
+						<i class="text-base ti ti-settings"></i>
+					</button>
+				</div>
+			</template>
+
+			<template x-if="affiliate.payout_method">
+				{% if option.affiliates.min_payout is defined %}
+					{% if user.affiliate.balance >= option.affiliates.min_payout %}
+						<button type="button" class="flex gap-1 items-center text-lg font-bold group" x-tooltip.raw="{{ __('Click to withdraw') }}" @click="modal.open('withdraw-modal')">
+							<x-money data-value="{{ user.affiliate.balance }}" currency="{{ user.affiliate.currency.code }}" minor-units="{{ user.affiliate.currency.fraction_digits }}"></x-money>
+
+							<i class="text-xl ti ti-credit-card text-content-dimmed group-hover:text-content"></i>
+						</button>
+					{% else %}
+						{% set min %}
+						<x-money data-value="{{ option.affiliates.min_payout }}" currency="{{ user.affiliate.currency.code }}" minor-units="{{ user.affiliate.currency.fraction_digits }}"></x-money>
+						{% endset %}
+
+						<div class="flex gap-1 items-center text-lg font-bold" x-tooltip.raw.html="{{ __('Minimum payout is %s', min) }}">
+							<x-money data-value="{{ user.affiliate.balance }}" currency="{{ user.affiliate.currency.code }}" minor-units="{{ user.affiliate.currency.fraction_digits }}"></x-money>
+
+							<i class="text-xl ti ti-credit-card text-content-dimmed"></i>
+						</div>
+					{% endif %}
+				{% else %}
+					<x-money data-value="{{ user.affiliate.balance }}" currency="{{ user.affiliate.currency.code }}" minor-units="{{ user.affiliate.currency.fraction_digits }}"></x-money>
+				{% endif %}
+			</template>
+		</div>
+
+		<div>
+			<div class="text-sm text-content-dimmed">
+				{{ __('Pending') }}
+			</div>
+
+			<div class="text-lg font-bold">
+				<x-money data-value="{{ user.affiliate.pending }}" currency="{{ user.affiliate.currency.code }}" minor-units="{{ user.affiliate.currency.fraction_digits }}"></x-money>
+			</div>
+		</div>
+
+		<div>
+			<div class="text-sm text-content-dimmed">
+				{{ __('Paid') }}
+			</div>
+
+			<div class="text-lg font-bold">
+				<x-money data-value="{{ user.affiliate.withdrawn }}" currency="{{ user.affiliate.currency.code }}" minor-units="{{ user.affiliate.currency.fraction_digits }}"></x-money>
+			</div>
+		</div>
+	</div>
+
+	<div class="flex flex-col gap-4">
+		<h2>{{ p__('heading', 'How it works?') }}</h2>
+
+		<div class="grid grid-cols-1 gap-1 md:grid-cols-3">
+			<div class="flex flex-col gap-4 box">
+				<x-avatar class="bg-button text-button-content" icon="mail-fast"></x-avatar>
+
+				<div>
+					<h3>1.
+						{{ p__('heading', 'Invite your friend') }}</h3>
+					<p class="text-sm text-content-dimmed">
+						{{ __('Share your referral link with friends and followers.') }}
+					</p>
+				</div>
+			</div>
+
+			<div class="flex flex-col gap-4 box">
+				<x-avatar class="bg-button text-button-content" icon="user-circle"></x-avatar>
+
+				<div>
+					<h3>2.
+						{{ p__('heading', 'Registration') }}</h3>
+					<p class="text-sm text-content-dimmed">
+						{{ __('Your friend signs up using your referral link.') }}
+					</p>
+				</div>
+			</div>
+
+			<div class="flex flex-col gap-4 box">
+				<x-avatar class="bg-button text-button-content" icon="currency-dollar"></x-avatar>
+
+				<div>
+					<h3>3.
+						{{ p__('heading', 'Earn comission') }}</h3>
+					<p class="text-sm text-content-dimmed">
+						{{ __('You will receive comission for every purchase of your referrals.') }}
+					</p>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<section class="flex flex-col gap-6 box" data-density="comfortable">
+		<div class="flex gap-2 items-center">
+			<h2>
+				{{ p__('heading', 'Payouts') }}
+			</h2>
+
+			<a href="app/payouts" class="badge">
+				{{ p__('button', 'View all') }}
+			</a>
+
+			<button type="button" class="ms-auto text-content-dimmed hover:text-content" @click="modal.open('payout-method-modal')" x-tooltip.raw="{{ __('Payout settings') }}">
+				<i class="text-2xl ti ti-settings"></i>
+			</button>
+		</div>
+
+		<div>
+			<template x-if="payoutsFetched && payouts.length === 0">
+				<p class="text-sm text-content-dimmed">
+					{{ __('Your payouts will appear here.') }}
+				</p>
+			</template>
+
+			<template x-if="!payoutsFetched || payouts.length > 0">
+				<ul class="flex flex-col gap-1 text-sm">
+					{% for i in range(1,3) %}
+						<template x-if="!payoutsFetched">
+							<li class="grid relative grid-cols-12 gap-3 items-center p-3 box">
+								<div class="col-span-6 md:col-span-2">
+									<div class="py-1 w-20">
+										<div class="h-4 loading"></div>
+									</div>
+
+									<div class="md:hidden">
+										<div class="py-1 w-32">
+											<div class="h-4 loading"></div>
+										</div>
+									</div>
+								</div>
+
+								<div class="col-span-6 md:col-span-7">
+									<div class="py-1 w-32">
+										<div class="h-4 loading"></div>
+									</div>
+								</div>
+
+								<div class="hidden col-span-3 md:block">
+									<div class="py-1 w-32">
+										<div class="h-4 loading"></div>
+									</div>
+								</div>
+							</li>
+						</template>
+					{% endfor %}
+
+					<template x-for="p in payouts" :key="p.id">
+						<li class="grid relative grid-cols-12 gap-3 items-center p-3 box hover:border-line" x-data>
+							<div class="col-span-6 md:col-span-2">
+								<x-money :data-value="p.amount" :currency="p.currency.code" :minor-units="p.currency.fraction_digits" class="font-bold"></x-money>
+
+								<div class="md:hidden">
+									<x-time :datetime="p.created_at" data-type="date"></x-time>
+								</div>
+							</div>
+
+							<div class="flex col-span-6 md:col-span-7">
+								<template x-if="p.status == 'pending'">
+									<span class="badge">{{ __('Pending') }}</span>
+								</template>
+
+								<template x-if="p.status == 'approved'">
+									<span class="badge badge-success">{{ __('Approved') }}</span>
+								</template>
+
+								<template x-if="p.status == 'rejected'">
+									<span class="badge badge-failure">{{ __('Rejected') }}</span>
+								</template>
+							</div>
+
+							<div class="hidden col-span-3 md:block">
+								<x-time :datetime="p.created_at" data-type="date"></x-time>
+							</div>
+						</li>
+					</template>
+				</ul>
+			</template>
+		</div>
+	</section>
+
+	<modal-element name="payout-method-modal">
+		<x-form>
+			<form class="flex flex-col gap-8 modal" @submit.prevent="setPayoutMethod">
+				<div class="flex justify-between items-center">
+					<h2 class="text-xl">{{ p__('heading', 'Payout settings') }}</h2>
+
+					<button class="flex justify-center items-center w-8 h-8 rounded-full border border-transparent bg-line-dimmed hover:border-line" @click="modal.close()" type="button">
+						<i class="text-xl ti ti-x"></i>
+					</button>
+				</div>
+
+				<div class="flex flex-col gap-6">
+					<div>
+						<label for="method">{{ p__('label', 'Payout method') }}</label>
+
+						<select id="method" class="mt-2 input" required x-model="affiliate.payout_method">
+							<option value="">{{ __('Select payout method') }}</option>
+
+							{% if option.affiliates.payout_methods.paypal.is_enabled %}
+								<option value="paypal">{{ __('PayPal') }}</option>
+							{% endif %}
+
+							{% if  option.affiliates.payout_methods.bank_transfer.is_enabled %}
+								<option value="bank_transfer">{{ __('Bank transfer') }}</option>
+							{% endif %}
+						</select>
+					</div>
+
+					<template x-if="affiliate.payout_method === 'paypal'">
+						<div>
+							<label for="paypal_email">{{ p__('label', 'PayPal email') }}</label>
+							<input type="email" id="paypal_email" class="mt-2 input" required x-model="affiliate.paypal_email"/>
+						</div>
+					</template>
+
+					<template x-if="affiliate.payout_method === 'bank_transfer'">
+						<div>
+							<label for="bank_name">{{ p__('label', 'Bank requisites') }}</label>
+							<textarea id="bank_name" class="mt-2 input" rows="8" required x-model="affiliate.bank_requisites"></textarea>
+						</div>
+					</template>
+				</div>
+
+				<div class="flex items-center">
+					<button class="w-full button" type="submit" :processing="affiliateIsProcessing">
+						{% include "/snippets/spinner.twig" %}
+
+						{{ p__('button', 'Save') }}
+					</button>
+				</div>
+			</form>
+		</x-form>
+	</modal-element>
+
+	<modal-element name="withdraw-modal">
+		<x-form>
+			<form class="flex flex-col gap-8 modal" @submit.prevent="sendWithdrawalRequest">
+				<div class="flex justify-between items-center">
+					<h2 class="text-xl">{{ p__('heading', 'Withdrawal request') }}</h2>
+
+					<button class="flex justify-center items-center w-8 h-8 rounded-full border border-transparent bg-line-dimmed hover:border-line" @click="modal.close()" type="button">
+						<i class="text-xl ti ti-x"></i>
+					</button>
+				</div>
+
+				<div>
+					<div class="flex gap-1 items-center text-sm font-bold">
+						<i class="text-lg ti ti-info-square-rounded"></i>
+						{{ __('Important') }}
+					</div>
+
+					<p class="mt-2 text-sm">
+						{{ __('Withdrawal takes few business days. Make sure you have set correct payout details.') }}
+
+						<button type="button" class="font-bold hover:underline" @click="modal.open('payout-method-modal')">{{ __('View payout details') }}</button>
+					</p>
+				</div>
+
+				<div class="flex items-center">
+					<button class="w-full button" type="submit" :processing="withdrawIsProcessing">
+						{% include "/snippets/spinner.twig" %}
+
+						{{ p__('button', 'Send request') }}
+					</button>
+				</div>
+			</form>
+		</x-form>
+	</modal-element>
+{% endblock %}

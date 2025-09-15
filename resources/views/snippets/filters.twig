@@ -1,0 +1,486 @@
+{% set search = search ?? true %}
+{% set filters = filters ?? [] %}
+
+{% set country_options = [
+    {value: "AF", label: p__('country', 'Afghanistan')},
+    {value: "AL", label: p__('country', 'Albania')},
+    {value: "DZ", label: p__('country', 'Algeria')},
+    {value: "AS", label: p__('country', 'American Samoa')},
+    {value: "AD", label: p__('country', 'Andorra')},
+    {value: "AO", label: p__('country', 'Angola')},
+    {value: "AI", label: p__('country', 'Anguilla')},
+    {value: "AQ", label: p__('country', 'Antarctica')},
+    {value: "AG", label: p__('country', 'Antigua and Barbuda')},
+    {value: "AR", label: p__('country', 'Argentina')},
+    {value: "AM", label: p__('country', 'Armenia')},
+    {value: "AW", label: p__('country', 'Aruba')},
+    {value: "AU", label: p__('country', 'Australia')},
+    {value: "AT", label: p__('country', 'Austria')},
+    {value: "AZ", label: p__('country', 'Azerbaijan')},
+    {value: "BS", label: p__('country', 'Bahamas')},
+    {value: "BH", label: p__('country', 'Bahrain')},
+    {value: "BD", label: p__('country', 'Bangladesh')},
+    {value: "BB", label: p__('country', 'Barbados')},
+    {value: "BY", label: p__('country', 'Belarus')},
+    {value: "BE", label: p__('country', 'Belgium')},
+    {value: "BZ", label: p__('country', 'Belize')},
+    {value: "BJ", label: p__('country', 'Benin')},
+    {value: "BM", label: p__('country', 'Bermuda')},
+    {value: "BT", label: p__('country', 'Bhutan')},
+    {value: "BO", label: p__('country', 'Bolivia')},
+    {value: "BA", label: p__('country', 'Bosnia and Herzegovina')},
+    {value: "BW", label: p__('country', 'Botswana')},
+    {value: "BV", label: p__('country', 'Bouvet Island')},
+    {value: "BR", label: p__('country', 'Brazil')},
+    {value: "IO", label: p__('country', 'British Indian Ocean Territory')},
+    {value: "BN", label: p__('country', 'Brunei')},
+    {value: "BG", label: p__('country', 'Bulgaria')},
+    {value: "BF", label: p__('country', 'Burkina Faso')},
+    {value: "BI", label: p__('country', 'Burundi')},
+    {value: "KH", label: p__('country', 'Cambodia')},
+    {value: "CM", label: p__('country', 'Cameroon')},
+    {value: "CA", label: p__('country', 'Canada')},
+    {value: "CV", label: p__('country', 'Cape Verde')},
+    {value: "KY", label: p__('country', 'Cayman Islands')},
+    {value: "CF", label: p__('country', 'Central African Republic')},
+    {value: "TD", label: p__('country', 'Chad')},
+    {value: "CL", label: p__('country', 'Chile')},
+    {value: "CN", label: p__('country', 'China')},
+    {value: "CX", label: p__('country', 'Christmas Island')},
+    {value: "CC", label: p__('country', 'Cocos (Keeling) Islands')},
+    {value: "CO", label: p__('country', 'Colombia')},
+    {value: "KM", label: p__('country', 'Comoros')},
+    {value: "CG", label: p__('country', 'Congo')},
+    {value: "CD", label: p__('country', 'Congo, Democratic Republic of')},
+    {value: "CK", label: p__('country', 'Cook Islands')},
+    {value: "CR", label: p__('country', 'Costa Rica')},
+    {value: "CI", label: p__('country', 'Côte d\'Ivoire')},
+    {value: "HR", label: p__('country', 'Croatia')},
+    {value: "CU", label: p__('country', 'Cuba')},
+    {value: "CY", label: p__('country', 'Cyprus')},
+    {value: "CZ", label: p__('country', 'Czech Republic')},
+    {value: "DK", label: p__('country', 'Denmark')},
+    {value: "DJ", label: p__('country', 'Djibouti')},
+    {value: "DM", label: p__('country', 'Dominica')},
+    {value: "DO", label: p__('country', 'Dominican Republic')},
+    {value: "EC", label: p__('country', 'Ecuador')},
+    {value: "EG", label: p__('country', 'Egypt')},
+    {value: "SV", label: p__('country', 'El Salvador')},
+    {value: "GQ", label: p__('country', 'Equatorial Guinea')},
+    {value: "ER", label: p__('country', 'Eritrea')},
+    {value: "EE", label: p__('country', 'Estonia')},
+    {value: "ET", label: p__('country', 'Ethiopia')},
+    {value: "FK", label: p__('country', 'Falkland Islands')},
+    {value: "FO", label: p__('country', 'Faroe Islands')},
+    {value: "FJ", label: p__('country', 'Fiji')},
+    {value: "FI", label: p__('country', 'Finland')},
+    {value: "FR", label: p__('country', 'France')},
+    {value: "GF", label: p__('country', 'French Guiana')},
+    {value: "PF", label: p__('country', 'French Polynesia')},
+    {value: "TF", label: p__('country', 'French Southern Territories')},
+    {value: "GA", label: p__('country', 'Gabon')},
+    {value: "GM", label: p__('country', 'Gambia')},
+    {value: "GE", label: p__('country', 'Georgia')},
+    {value: "DE", label: p__('country', 'Germany')},
+    {value: "GH", label: p__('country', 'Ghana')},
+    {value: "GI", label: p__('country', 'Gibraltar')},
+    {value: "GR", label: p__('country', 'Greece')},
+    {value: "GL", label: p__('country', 'Greenland')},
+    {value: "GD", label: p__('country', 'Grenada')},
+    {value: "GP", label: p__('country', 'Guadeloupe')},
+    {value: "GU", label: p__('country', 'Guam')},
+    {value: "GT", label: p__('country', 'Guatemala')},
+    {value: "GG", label: p__('country', 'Guernsey')},
+    {value: "GN", label: p__('country', 'Guinea')},
+    {value: "GW", label: p__('country', 'Guinea-Bissau')},
+    {value: "GY", label: p__('country', 'Guyana')},
+    {value: "HT", label: p__('country', 'Haiti')},
+    {value: "HM", label: p__('country', 'Heard Island and McDonald Islands')},
+    {value: "VA", label: p__('country', 'Holy See')},
+    {value: "HN", label: p__('country', 'Honduras')},
+    {value: "HK", label: p__('country', 'Hong Kong')},
+    {value: "HU", label: p__('country', 'Hungary')},
+    {value: "IS", label: p__('country', 'Iceland')},
+    {value: "IN", label: p__('country', 'India')},
+    {value: "ID", label: p__('country', 'Indonesia')},
+    {value: "IR", label: p__('country', 'Iran')},
+    {value: "IQ", label: p__('country', 'Iraq')},
+    {value: "IE", label: p__('country', 'Ireland')},
+    {value: "IM", label: p__('country', 'Isle of Man')},
+    {value: "IL", label: p__('country', 'Israel')},
+    {value: "IT", label: p__('country', 'Italy')},
+    {value: "JM", label: p__('country', 'Jamaica')},
+    {value: "JP", label: p__('country', 'Japan')},
+    {value: "JE", label: p__('country', 'Jersey')},
+    {value: "JO", label: p__('country', 'Jordan')},
+    {value: "KZ", label: p__('country', 'Kazakhstan')},
+    {value: "KE", label: p__('country', 'Kenya')},
+    {value: "KI", label: p__('country', 'Kiribati')},
+    {value: "KP", label: p__('country', 'North Korea')},
+    {value: "KR", label: p__('country', 'South Korea')},
+    {value: "KW", label: p__('country', 'Kuwait')},
+    {value: "KG", label: p__('country', 'Kyrgyzstan')},
+    {value: "LA", label: p__('country', 'Laos')},
+    {value: "LV", label: p__('country', 'Latvia')},
+    {value: "LB", label: p__('country', 'Lebanon')},
+    {value: "LS", label: p__('country', 'Lesotho')},
+    {value: "LR", label: p__('country', 'Liberia')},
+    {value: "LY", label: p__('country', 'Libya')},
+    {value: "LI", label: p__('country', 'Liechtenstein')},
+    {value: "LT", label: p__('country', 'Lithuania')},
+    {value: "LU", label: p__('country', 'Luxembourg')},
+    {value: "MO", label: p__('country', 'Macao')},
+    {value: "MK", label: p__('country', 'North Macedonia')},
+    {value: "MG", label: p__('country', 'Madagascar')},
+    {value: "MW", label: p__('country', 'Malawi')},
+    {value: "MY", label: p__('country', 'Malaysia')},
+    {value: "MV", label: p__('country', 'Maldives')},
+    {value: "ML", label: p__('country', 'Mali')},
+    {value: "MT", label: p__('country', 'Malta')},
+    {value: "MH", label: p__('country', 'Marshall Islands')},
+    {value: "MQ", label: p__('country', 'Martinique')},
+    {value: "MR", label: p__('country', 'Mauritania')},
+    {value: "MU", label: p__('country', 'Mauritius')},
+    {value: "YT", label: p__('country', 'Mayotte')},
+    {value: "MX", label: p__('country', 'Mexico')},
+    {value: "FM", label: p__('country', 'Micronesia')},
+    {value: "MD", label: p__('country', 'Moldova')},
+    {value: "MC", label: p__('country', 'Monaco')},
+    {value: "MN", label: p__('country', 'Mongolia')},
+    {value: "ME", label: p__('country', 'Montenegro')},
+    {value: "MS", label: p__('country', 'Montserrat')},
+    {value: "MA", label: p__('country', 'Morocco')},
+    {value: "MZ", label: p__('country', 'Mozambique')},
+    {value: "MM", label: p__('country', 'Myanmar')},
+    {value: "NA", label: p__('country', 'Namibia')},
+    {value: "NR", label: p__('country', 'Nauru')},
+    {value: "NP", label: p__('country', 'Nepal')},
+    {value: "NL", label: p__('country', 'Netherlands')},
+    {value: "NC", label: p__('country', 'New Caledonia')},
+    {value: "NZ", label: p__('country', 'New Zealand')},
+    {value: "NI", label: p__('country', 'Nicaragua')},
+    {value: "NE", label: p__('country', 'Niger')},
+    {value: "NG", label: p__('country', 'Nigeria')},
+    {value: "NU", label: p__('country', 'Niue')},
+    {value: "NF", label: p__('country', 'Norfolk Island')},
+    {value: "MP", label: p__('country', 'Northern Mariana Islands')},
+    {value: "NO", label: p__('country', 'Norway')},
+    {value: "OM", label: p__('country', 'Oman')},
+    {value: "PK", label: p__('country', 'Pakistan')},
+    {value: "PW", label: p__('country', 'Palau')},
+    {value: "PS", label: p__('country', 'Palestine')},
+    {value: "PA", label: p__('country', 'Panama')},
+    {value: "PG", label: p__('country', 'Papua New Guinea')},
+    {value: "PY", label: p__('country', 'Paraguay')},
+    {value: "PE", label: p__('country', 'Peru')},
+    {value: "PH", label: p__('country', 'Philippines')},
+    {value: "PN", label: p__('country', 'Pitcairn')},
+    {value: "PL", label: p__('country', 'Poland')},
+    {value: "PT", label: p__('country', 'Portugal')},
+    {value: "PR", label: p__('country', 'Puerto Rico')},
+    {value: "QA", label: p__('country', 'Qatar')},
+    {value: "RE", label: p__('country', 'Réunion')},
+    {value: "RO", label: p__('country', 'Romania')},
+    {value: "RU", label: p__('country', 'Russian Federation')},
+    {value: "RW", label: p__('country', 'Rwanda')},
+    {value: "BL", label: p__('country', 'Saint Barthélemy')},
+    {value: "SH", label: p__('country', 'Saint Helena')},
+    {value: "KN", label: p__('country', 'Saint Kitts and Nevis')},
+    {value: "LC", label: p__('country', 'Saint Lucia')},
+    {value: "MF", label: p__('country', 'Saint Martin')},
+    {value: "PM", label: p__('country', 'Saint Pierre and Miquelon')},
+    {value: "VC", label: p__('country', 'Saint Vincent and the Grenadines')},
+    {value: "WS", label: p__('country', 'Samoa')},
+    {value: "SM", label: p__('country', 'San Marino')},
+    {value: "ST", label: p__('country', 'Sao Tome and Principe')},
+    {value: "SA", label: p__('country', 'Saudi Arabia')},
+    {value: "SN", label: p__('country', 'Senegal')},
+    {value: "RS", label: p__('country', 'Serbia')},
+    {value: "SC", label: p__('country', 'Seychelles')},
+    {value: "SL", label: p__('country', 'Sierra Leone')},
+    {value: "SG", label: p__('country', 'Singapore')},
+    {value: "SX", label: p__('country', 'Sint Maarten')},
+    {value: "SK", label: p__('country', 'Slovakia')},
+    {value: "SI", label: p__('country', 'Slovenia')},
+    {value: "SB", label: p__('country', 'Solomon Islands')},
+    {value: "SO", label: p__('country', 'Somalia')},
+    {value: "ZA", label: p__('country', 'South Africa')},
+    {value: "GS", label: p__('country', 'South Georgia and the South Sandwich Islands')},
+    {value: "SS", label: p__('country', 'South Sudan')},
+    {value: "ES", label: p__('country', 'Spain')},
+    {value: "LK", label: p__('country', 'Sri Lanka')},
+    {value: "SD", label: p__('country', 'Sudan')},
+    {value: "SR", label: p__('country', 'Suriname')},
+    {value: "SJ", label: p__('country', 'Svalbard and Jan Mayen')},
+    {value: "SZ", label: p__('country', 'Eswatini')},
+    {value: "SE", label: p__('country', 'Sweden')},
+    {value: "CH", label: p__('country', 'Switzerland')},
+    {value: "SY", label: p__('country', 'Syrian Arab Republic')},
+    {value: "TW", label: p__('country', 'Taiwan')},
+    {value: "TJ", label: p__('country', 'Tajikistan')},
+    {value: "TZ", label: p__('country', 'Tanzania')},
+    {value: "TH", label: p__('country', 'Thailand')},
+    {value: "TL", label: p__('country', 'Timor-Leste')},
+    {value: "TG", label: p__('country', 'Togo')},
+    {value: "TK", label: p__('country', 'Tokelau')},
+    {value: "TO", label: p__('country', 'Tonga')},
+    {value: "TT", label: p__('country', 'Trinidad and Tobago')},
+    {value: "TN", label: p__('country', 'Tunisia')},
+    {value: "TR", label: p__('country', 'Turkey')},
+    {value: "TM", label: p__('country', 'Turkmenistan')},
+    {value: "TC", label: p__('country', 'Turks and Caicos Islands')},
+    {value: "TV", label: p__('country', 'Tuvalu')},
+    {value: "UG", label: p__('country', 'Uganda')},
+    {value: "UA", label: p__('country', 'Ukraine')},
+    {value: "AE", label: p__('country', 'United Arab Emirates')},
+    {value: "GB", label: p__('country', 'United Kingdom')},
+    {value: "US", label: p__('country', 'United States')},
+    {value: "UM", label: p__('country', 'United States Minor Outlying Islands')},
+    {value: "UY", label: p__('country', 'Uruguay')},
+    {value: "UZ", label: p__('country', 'Uzbekistan')},
+    {value: "VU", label: p__('country', 'Vanuatu')},
+    {value: "VE", label: p__('country', 'Venezuela')},
+    {value: "VN", label: p__('country', 'Vietnam')},
+    {value: "VG", label: p__('country', 'Virgin Islands, British')},
+    {value: "VI", label: p__('country', 'Virgin Islands, U.S.')},
+    {value: "WF", label: p__('country', 'Wallis and Futuna')},
+    {value: "EH", label: p__('country', 'Western Sahara')},
+    {value: "YE", label: p__('country', 'Yemen')},
+    {value: "ZM", label: p__('country', 'Zambia')},
+    {value: "ZW", label: p__('country', 'Zimbabwe')}
+] %}
+
+{# Process any filter that needs country options #}
+{% set new_filters = [] %}
+{% for key, filter in filters %}
+    {% if filter.model == 'country_code' %}
+        {% set filter = filter|merge({'options': country_options}) %}
+    {% endif %}
+    {% set new_filters = new_filters|merge([filter]) %}
+{% endfor %}
+{% set filters = new_filters %}
+
+<div class="hidden md:block"
+  x-data="lc({{(filters ?? [])|json_encode}}, {{(sort ?? [])|json_encode}})">
+  <div
+    class="flex gap-3 items-center p-3 rounded-xl border border-line-dimmed group/wrp">
+    {% if search %}
+    <div
+      class="relative w-5 overflow-hidden shrink-0 group group-[:focus-within:has([type=search]:focus)]/wrp:grow"
+      :class="{'grow': filters.length == 0 || (filters.length < 3 && (!sort || sort.length < 1))}">
+      <input type="search" name="query" placeholder="{{ __('Search...') }}"
+        class="block p-0 ps-7 w-full h-8 bg-transparent border-none appearance-none cursor-pointer placeholder:text-content-dimmed focus:outline-hidden focus:ring-0 focus:cursor-text peer text-content"
+        autocomplete="off" x-model="params.query">
+
+      <i
+        class="absolute start-0 text-xl -translate-y-1/2 pointer-events-none ti ti-search top-1/2 text-content-dimmed group-hover:text-content peer-not-placeholder-shown:text-content peer-focus:text-content"></i>
+    </div>
+    {% endif %}
+
+    {% if search is empty and filters is empty %}
+    {% if total is defined or hidden is defined %}
+    <div class="flex gap-1 items-center px-3">
+      {% if total is defined %}
+      <template x-if="all === null">
+        <div class="w-24 h-4 rounded-md loading">
+        </div>
+      </template>
+
+      <template x-if="all !== null">
+        <div class="text-xs text-content-dimmed">
+          {{ total|replace({':count': '<span x-text="all"></span>'})|raw }}
+        </div>
+      </template>
+      {% endif %}
+
+      {% if showHidden is defined %}
+      <template x-if="all > total">
+        <i class="text-xs ti ti-slash text-content-super-dimmed"></i>
+      </template>
+
+      <template x-if="all > total">
+        <a :href="window.location.pathname + '?all'"
+          class="text-xs text-content-dimmed hover:text-content hover:underline"
+          x-tooltip.raw="{{ __('Click to show all') }}">
+          {{ __(":count hidden")|replace({':count': '<span x-text="all-total"></span>'})|raw }}
+        </a>
+      </template>
+      {% endif %}
+    </div>
+    {% endif %}
+    {% endif %}
+
+    <template x-if="filters.length > 0">
+      <div class="flex gap-4 items-center"
+        :class="{'group-[:focus-within:has([type=search]:focus)]/wrp:hidden': filters.length > 2 || (sort && sort.length > 0)}">
+        {% if search %}
+        <span class="block h-6 w-px bg-line-dimmed"
+          x-show="sort && sort.length > 0"></span>
+        {% endif %}
+
+        <div class="flex flex-wrap gap-2 items-center">
+          <template x-for="f in filters">
+            <template x-if="!f.hidden">
+              <div class="relative z-30 group has-[[data-open]]:z-50" x-data
+                :data-selected="params[f.model] && f.options.length > 0"
+                @click.outside="$refs.filter.removeAttribute('data-open')">
+
+                <button
+                  class="relative whitespace-nowrap flex items-center gap-1 px-2 h-8 text-sm border border-transparent rounded-lg text-content-dimmed group-data-selected:border-line hover:group-data-selected:border-line disabled:opacity-50"
+                  @click="$refs.filter.toggleAttribute('data-open')"
+                  x-tooltip="f.label" :disabled="f.options.length < 1">
+
+                  <i
+                    class="text-xl ti ti-square-rounded-plus-filled group-data-selected:hidden"></i>
+
+                  <i class="hidden text-xl text-content ti ti-square-rounded-x-filled group-data-selected:block transition-all hover:scale-125 hover:rotate-90"
+                    @click.stop="params[f.model]=null"></i>
+
+                  <span x-text="f.label"
+                    class="group-data-selected:hidden"></span>
+
+                  <span
+                    class="hidden group-data-selected:inline text-content font-medium"
+                    x-text="f.options.find(o => o.value == params[f.model])?.label"></span>
+
+                  <svg
+                    class="absolute top-0 left-0 w-full h-full rounded-lg text-line-dimmed group-hover:text-line group-data-selected:hidden"
+                    width="100%" height="100%" fill="none"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <rect cx="56" width="100%" height="100%"
+                      stroke="currentColor" stroke-dasharray="4 2" rx="8" ry="8"
+                      stroke-width="2" />
+                  </svg>
+                </button>
+
+                <div class="max-h-72 menu menu-bl"
+                  @click="$el.removeAttribute('data-open')" x-ref="filter">
+                  <ul class="text-sm">
+                    <template x-for="option in f.options">
+                      <li>
+                        <button
+                          class="block px-4 py-2 w-full text-start hover:bg-intermediate"
+                          x-text="option.label"
+                          @click="params[f.model]=option.value;">
+                        </button>
+                      </li>
+                    </template>
+                  </ul>
+                </div>
+              </div>
+            </template>
+          </template>
+
+          <template x-for="f in filters">
+            <template x-if="f.hidden && params[f.model]">
+              <div class="relative group" x-data data-selected>
+                <button
+                  class="flex relative gap-1 items-center px-2 h-8 text-sm whitespace-nowrap rounded-lg border text-content border-line hover:border-line"
+                  x-tooltip="`${f.label}: ${params[f.model]}`">
+
+                  <i class="text-xl transition-all text-content ti ti-square-rounded-x-filled hover:scale-125 hover:rotate-90"
+                    @click.stop="params[f.model]=null"></i>
+
+                  <span x-text="f.label"></span>
+                </button>
+              </div>
+            </template>
+          </template>
+        </div>
+      </div>
+    </template>
+
+    <div class="flex gap-3 items-center ms-auto shrink-0">
+      <template x-if="isFiltered">
+        <button
+          class="flex gap-1 items-center text-sm transition-colors text-content-dimmed hover:text-content"
+          @click="resetFilters()" x-tooltip.raw="{{ p__('button', 'Reset')}}">
+          <i class="text-xl ti ti-x"></i>
+        </button>
+      </template>
+
+      <template x-if="isFiltered && sort && sort.length > 0">
+        <span class="block h-6 w-px bg-line-dimmed"></span>
+      </template>
+
+      <template x-if="sort && sort.length > 0">
+        <div class="relative ms-auto" x-data
+          @click.outside="$refs.sortel.removeAttribute('data-open')"
+          x-tooltip.raw="{{ p__('label', 'Sort by') }}">
+
+          <input type="hidden" name="sort" x-model="orderby">
+
+          <button
+            class="flex gap-1 items-center px-2 h-8 text-sm rounded-lg border border-transparent hover:border-line"
+            type="button" @click="$refs.sortel.toggleAttribute('data-open')">
+
+            <i class="text-sm ti ti-sort-ascending-2 text-content-dimmed"
+              x-show="dir=='asc'"></i>
+            <i class="text-sm ti ti-sort-descending-2 text-content-dimmed"
+              x-show="dir=='desc'"></i>
+            <span class="me-1 text-content-dimmed"
+              x-show="!dir">{{ p__('label', 'Sort by') }}:</span>
+
+            <span x-text="sort.find(o => o.value == orderby)?.label">
+            </span>
+
+            <i class="text-xl ti ti-chevron-down"></i>
+          </button>
+
+          <div class="menu" x-ref="sortel"
+            @click="$el.removeAttribute('data-open')">
+
+            <ul class="text-sm">
+              <template x-for="option in sort">
+                <li x-show="option.value != null">
+                  <button
+                    class="flex gap-2 items-center px-4 py-2 w-full text-start hover:bg-intermediate group/option"
+                    @click="dir = (dir=='desc' || dir==null ? 'asc' : 'desc'); orderby=option.value;">
+
+                    <span x-text="option.label"></span>
+
+                    <i class="invisible text-sm text-content-dimmed ti ti-arrow-up group-hover/option:visible"
+                      x-show="orderby!=option.value || dir=='desc'"></i>
+                    <i class="invisible text-sm text-content-dimmed ti ti-arrow-down group-hover/option:visible"
+                      x-show="orderby==option.value && dir=='asc'"></i>
+                  </button>
+                </li>
+              </template>
+            </ul>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  {% if (search or filters is not empty) and (total is defined or hidden is defined) %}
+  <div class="flex gap-1 items-center px-3 mt-3">
+    {% if total is defined %}
+    <template x-if="all === null">
+      <div class="w-24 h-4 rounded-md loading">
+      </div>
+    </template>
+
+    <template x-if="all !== null">
+      <div class="text-xs text-content-dimmed">
+        {{ total|replace({':count': '<span x-text="all"></span>'})|raw }}
+      </div>
+    </template>
+    {% endif %}
+
+    {% if showHidden is defined %}
+    <template x-if="all > total">
+      <i class="text-xs ti ti-slash text-content-super-dimmed"></i>
+    </template>
+
+    <template x-if="all > total">
+      <a :href="window.location.pathname + '?all'"
+        class="text-xs text-content-dimmed hover:text-content hover:underline"
+        x-tooltip.raw="{{ __('Click to show all') }}">
+        {{ __(":count hidden")|replace({':count': '<span x-text="all-total"></span>'})|raw }}
+      </a>
+    </template>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>

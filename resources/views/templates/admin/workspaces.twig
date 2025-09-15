@@ -1,0 +1,157 @@
+{% extends "/layouts/main.twig" %}
+
+{% set active_menu = '/admin/workspaces' %}
+
+{% set xdata %}
+list("workspaces")
+{% endset %}
+
+{% block title p__('title', 'Workspaces')|title %}
+
+{% block template %}
+	{# Header #}
+	<div class="flex justify-between items-center">
+		<div>
+			<h1>{{ p__('heading', 'Workspaces') }}</h1>
+
+			<template x-if="total !== null">
+				<div class="text-sm text-content-dimmed md:hidden">
+					{{ __('Total :count workspaces')|replace({':count': '<span x-text="total"></span>'})|raw }}
+				</div>
+			</template>
+		</div>
+
+		<div class="flex gap-2 items-center md:hidden">
+			<button type="button" class="hidden w-8 h-8 avatar">
+				<i class="text-lg ti ti-adjustments-horizontal"></i>
+			</button>
+		</div>
+
+		<div class="hidden gap-2 items-center md:flex">
+			<button type="button" class="button button-outline button-sm" @click="exportData" :processing="isExporting">
+				{% include "/snippets/spinner.twig" %}
+
+				{{ p__('button', 'Export') }}
+			</button>
+		</div>
+	</div>
+
+	{# Filters #}
+	{% 
+  include "/snippets/filters.twig" with { 
+    total: __('Total :count workspaces'),
+    sort: [
+      {
+        value: null,
+        label: p__('label', 'Default')
+      },
+    
+      {
+        value: 'created_at',
+        label: p__('label', 'Date')
+      },
+    
+      {
+        value: 'name',
+        label: p__('label', 'Name')
+      }
+    ],
+    filters: [
+      {
+        label: p__('label', 'Subscription'),
+        model: 'with_subscription',
+        options: [
+          {
+            value: '1',
+            label: __('With subscription')
+          },
+          {
+            value: '0',
+            label: __('Without subscription')
+          }
+        ]
+      }
+    ]
+  } 
+%}
+
+	{# List #}
+	<div class="group/list" :data-state="state">
+		<div class="hidden group-data-[state=empty]/list:block">
+			{% include "sections/empty.twig" with { title: p__('heading', 'Empty result set'), message: __('There are no workspace yet.'), reset: __('There are no workspace matching your search.') } %}
+		</div>
+
+		<div class="hidden md:grid grid-cols-12 gap-3 items-center px-3 py-2 text-content-dimmed text-xs group-data-[state=empty]/list:hidden">
+			<div class="col-span-6">{{ p__('label', 'Workspace') }}</div>
+			<div class="col-span-2">{{ p__('label', 'Plan') }}</div>
+			<div class="col-span-3">{{ p__('label', 'Created') }}</div>
+			<div class="col-span-1"></div>
+		</div>
+
+		<ul class="text-sm flex flex-col gap-1 group-data-[state=empty]:hidden">
+			{% for i in range(1,5) %}
+				<li class="hidden grid-cols-12 gap-3 items-center md:p-3 box animate-pulse group-data-[state=initial]/list:grid">
+					<div class="flex col-span-11 gap-3 items-center">
+						<div class="avatar loading"></div>
+						<div class="w-32 h-6 loading"></div>
+					</div>
+
+					<div class="col-span-1 justify-self-end">
+						<i class="text-2xl animate-pulse ti ti-dots-vertical text-content-dimmed"></i>
+					</div>
+				</li>
+			{% endfor %}
+
+			<template x-for="ws in resources" :key="ws.id">
+				<li class="grid relative grid-cols-12 gap-3 items-center p-3 box hover:border-line" x-data>
+					<a :href="`admin/workspaces/${ws.id}`" class="absolute top-0 left-0 w-full h-full cursor-pointer"></a>
+
+					<div class="flex col-span-11 gap-3 items-center md:col-span-6">
+						<x-avatar :title="ws.name"></x-avatar>
+
+						<div>
+							<div class="font-bold" x-text="ws.name"></div>
+
+							<div class="mt-0.5 text-xs text-content-dimmed">
+								{% set name %}
+								<a :href="`admin/users/${ws.owner.id}`" x-text="`${ws.owner.first_name} ${ws.owner.last_name}`" class="relative hover:underline text-content"></a>
+								{% endset %}
+
+								{{ __('Owned by :name')|replace({':name' : name})|raw }}
+							</div>
+						</div>
+					</div>
+
+					<div class="hidden md:block md:col-span-2">
+						<template x-if="ws.subscription">
+							<a :href="`admin/plan-snapshots/${ws.subscription.plan.id}`" class="relative hover:underline" x-text="ws.subscription.plan.title"></a>
+						</template>
+
+						<template x-if="!ws.subscription">
+							<span class="text-content-dimmed">-</span>
+						</template>
+					</div>
+
+					<div class="hidden md:block md:col-span-3">
+						<x-time :datetime="ws.created_at" data-type="date"></x-time>
+					</div>
+
+					<div class="col-span-1 justify-self-end">
+						<div class="relative" @click.outside="$refs.context.removeAttribute('data-open')">
+
+							<button class="relative z-10" @click="$refs.context.toggleAttribute('data-open')">
+								<i class="text-2xl ti ti-dots-vertical text-content-dimmed hover:text-intermediate-content"></i>
+							</button>
+
+							<div class="menu" x-ref="context">
+								<ul>
+									<li><a :href="`admin/workspaces/${ws.id}`" class="flex gap-2 items-center px-4 py-2 hover:no-underline hover:bg-intermediate">{{ p__('button', 'Details') }}</a></li>
+								</ul>
+							</div>
+						</div>
+					</div>
+				</li>
+			</template>
+		</ul>
+	</div>
+{% endblock %}

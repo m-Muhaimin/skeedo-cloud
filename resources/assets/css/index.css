@@ -1,0 +1,47 @@
+@import 'tailwindcss' source('../../');
+@plugin "@tailwindcss/typography";
+@plugin "@tailwindcss/forms";
+
+@custom-variant dark (&:where([data-mode=dark], [data-mode=dark] *));
+@import './theme.css' layer(theme);
+
+@import './base.css' layer(base);
+
+@import './quick-access.css' layer(components);
+@import './components.css' layer(components);
+@import './avatar.css' layer(components);
+@import './button.css' layer(components);
+@import './input.css' layer(components);
+@import './badge.css' layer(components);
+@import './highlight.css' layer(components);
+@import './editor.css' layer(components);
+@import './menu.css' layer(components);
+@import './modal.css' layer(components);
+@import './message.css' layer(components);
+@import './dropzone.css' layer(components);
+@import 'tippy.js/dist/tippy' layer(components);
+@import 'tippy.js/dist/backdrop.css' layer(components);
+@import 'tippy.js/animations/shift-away.css' layer(components);
+
+@import './utilities.css' layer(utilities);
+@utility container {
+  @apply mx-auto px-4 md:px-6 max-w-4xl;
+}
+
+/*
+  The default border color has changed to `currentColor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+}

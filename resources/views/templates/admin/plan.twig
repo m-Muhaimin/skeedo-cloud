@@ -1,0 +1,936 @@
+{% extends "/layouts/main.twig" %}
+
+{% set active_menu = '/admin/plans' %}
+
+{% set groups = [
+	{
+    heading: p__('heading', 'Text Models'),
+    type: 'llm',
+  },
+	{
+    heading: p__('heading', 'Image Models'),
+    type: 'image',
+  },
+	{	
+		heading: p__('heading', 'Voice Models'),
+		type: 'tts',
+	},
+	{
+		heading: p__('heading', 'Video Models'),
+		type: 'video',
+	}
+] %}
+
+{% set xdata %}
+plan(
+{{ currency|json_encode }},
+{{ plan is defined ? plan|json_encode : null }}
+)
+{% endset %}
+
+{% block title (plan is defined ? p__('title', 'Edit plan') :p__('title', 'New plan'))|title %}
+
+{% block template %}
+	<x-form>
+		<form class="flex flex-col gap-8" @submit.prevent="submit">
+			<div>
+				{% include "snippets/back.twig" with {link: 'admin/plans', label: 'Plans'} %}
+
+				<h1 class="mt-4">
+					<span x-show="!plan.id">
+						{{ p__('heading', 'Create new plan') }}
+					</span>
+					<span x-show="plan.id">
+						{{ p__('heading', 'Edit plan') }}:
+						<span class="font-normal text-intermediate-content" x-text="plan.title"></span>
+					</span>
+				</h1>
+
+				<template x-if="plan.id">
+					<div class="mt-2">
+						<x-uuid x-text="plan.id"></x-uuid>
+					</div>
+				</template>
+			</div>
+
+			<div class="flex flex-col gap-2">
+				<section class="grid gap-6 box" data-density="comfortable">
+					<h2>{{ p__('heading', 'Details') }}</h2>
+
+					<div>
+						<label for="title">{{ p__('label', 'Title') }}</label>
+
+						<input type="text" id="title" class="mt-2 input" autocomplete="off" :placeholder="plan.title || `{{ __('Include a title for the plan')|e('html_attr') }}`" x-model="model.title" required/>
+					</div>
+
+					<div>
+						<label for="description">{{ p__('label', 'Description') }}</label>
+
+						<textarea id="description" rows="1" class="mt-2 input" autocomplete="off" :placeholder="plan.description || ''" x-model="model.description"></textarea>
+					</div>
+
+					<div>
+						<label for="icon">{{ p__('label', 'Icon') }}</label>
+
+						<input type="text" id="icon" name="icon" class="mt-2 input" autocomplete="off" :placeholder="plan.icon || ''" x-model="model.icon"/>
+
+						<p class="mt-2 text-sm text-intermediate-content">
+							<i class="ti ti-info-square-rounded"></i>
+
+							{% set link %}
+							<a href="https://tabler-icons.io/" target="_blank" class="font-semibold text-content">Tabler Icons</a>
+							{% endset %}
+
+							{{ __('Include SVG source code or name of the any icon from %s', link)|raw }}
+						</p>
+					</div>
+
+					<div class="flex justify-between items-center p-3 rounded-lg bg-intermediate">
+						{{ p__('label', 'Status') }}
+
+						<label class="inline-flex gap-2 items-center cursor-pointer">
+							<input type="checkbox" name="status" class="hidden peer" x-model="model.status">
+
+							<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+							<span class="text-content-dimmed peer-checked:hidden">
+								{{ p__('input-value', 'Inactive') }}
+							</span>
+
+							<span class="hidden text-success peer-checked:inline">
+								{{ p__('input-value', 'Active') }}
+							</span>
+						</label>
+					</div>
+
+					<div class="flex justify-between items-center p-3 rounded-lg bg-intermediate">
+						{{ p__('label', 'Featured plan') }}
+
+						<label class="inline-flex gap-2 items-center cursor-pointer">
+							<input type="checkbox" name="is_featured" class="hidden peer" x-model="model.is_featured">
+
+							<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+							<span class="text-content-dimmed peer-checked:hidden">
+								{{ p__('input-value', 'Off') }}
+							</span>
+
+							<span class="hidden text-success peer-checked:inline">
+								{{ p__('input-value', 'On') }}
+							</span>
+						</label>
+					</div>
+
+					<div>
+						<label for="offers">{{ p__('label', 'Offers') }}</label>
+
+						<textarea id="offers" rows="2" class="mt-2 input" autocomplete="off" :placeholder="plan.features || 'Basic support, -Dedicated account manager'" x-model="model.features"></textarea>
+
+						<ul class="info mt-2">
+							<li>
+								{{ __('Comma separated list of additional offers. To show the offer as excluded add a dash (-) before the name.') }}
+							</li>
+						</ul>
+					</div>
+				</section>
+
+				<section class="grid gap-6 md:grid-cols-2 box" data-density="comfortable">
+					<h2 class="md:col-span-2">{{ p__('heading', 'Pricing') }}</h2>
+
+					<div class="md:col-span-2">
+						<div>
+							<label>{{ p__('label', 'Plan type') }}</label>
+
+							<select name="category" name="billing-cycle" class="mt-2 input" x-model="model.billing_cycle">
+								<option value="monthly" :selected="model.billing_cycle == 'monthly'">
+									{{ p__('label', 'Monthly') }}
+								</option>
+
+								<option value="yearly" :selected="model.billing_cycle == 'yearly'">
+									{{ p__('label', 'Yearly') }}
+								</option>
+
+								<option value="one-time" :selected="model.billing_cycle == 'one-time'">
+									{{ p__('label', 'Addon credits') }}
+								</option>
+
+								<option value="lifetime" :selected="model.billing_cycle == 'lifetime'">
+									{{ p__('label', 'Lifetime') }}
+								</option>
+							</select>
+						</div>
+
+						<template x-if="model.billing_cycle == 'one-time'">
+							<ul class="info mt-2">
+								<li>
+									{{ __("Add-on credits are non-recurring, permanent extras that can be purchased at any time to enhance the current subscription of a workspace. These credits are used only after the workspace's regular, recurring credits are depleted.")}}
+								</li>
+
+								<li>
+									{{ __('Add-on credits can be applied to any active subscription, whether free or paid. However, they require an active subscription to be usable.')}}
+								</li>
+							</ul>
+						</template>
+
+						<template x-if="model.billing_cycle == 'lifetime'">
+							<ul class="info mt-2">
+								<li>
+									{{ __('The Lifetime Plan is a one-time payment option that grants users access to your service indefinitely.') }}
+								</li>
+
+								<li>
+									{{ __("Workspaces receive monthly recurring usage credits as part of their Lifetime Plan. These credits reset each month, providing consistent access to your service's features.") }}
+								</li>
+							</ul>
+						</template>
+
+						<template x-if="model.billing_cycle == 'monthly'">
+							<ul class="info mt-2">
+								<li>
+									{{ __('The Monthly Plan requires users to pay (automatically) a set fee every month to maintain access to your service.') }}
+								</li>
+
+								<li>
+									{{ __('Workspaces on the Monthly Plan receive monthly recurring usage credits. These credits are reset once in 30 days.') }}
+								</li>
+							</ul>
+						</template>
+
+						<template x-if="model.billing_cycle == 'yearly'">
+							<ul class="info mt-2">
+								<li>
+									{{ __("Users opting for the Yearly Plan make a single payment for a year's worth of access to your service.") }}
+								</li>
+
+								<li>
+									{{ __('Despite the yearly payment, workspaces still receive monthly recurring usage credits. This ensures that users have regular access to your service throughout their subscription period.') }}
+								</li>
+							</ul>
+						</template>
+					</div>
+
+					<div>
+						<label for="price" class="flex gap-2 items-center">
+							<span>{{ p__('label', 'Price') }}</span>
+
+							<template x-if="model.billing_cycle == 'one-time' || model.billing_cycle == 'lifetime'">
+								<span class="badge">
+									{{ __('One-time') }}
+								</span>
+							</template>
+
+							<template x-if="model.billing_cycle == 'monthly'">
+								<span class="flex gap-1 items-center">
+									<span class="badge">
+										{{ __('Recurring') }}
+									</span>
+
+									<span class="badge">
+										{{ __('30 days') }}
+									</span>
+								</span>
+							</template>
+
+							<template x-if="model.billing_cycle == 'yearly'">
+								<span class="flex gap-1 items-center">
+									<span class="badge">
+										{{ __('Recurring') }}
+									</span>
+
+									<span class="badge">
+										{{ __('365 days') }}
+									</span>
+								</span>
+							</template>
+						</label>
+
+						<div class="relative">
+							<input type="text" id="price" name="title" class="pe-11 mt-2 input" autocomplete="off" placeholder="{{ __('Include price') }}" required x-model="model.price" x-mask:dynamic="$money($input, '.', ' ', {{ currency.fraction_digits }})" x-ref="price"/>
+
+							<code class="absolute end-3 top-1/2 text-sm font-medium -translate-y-1/2 pointer-events-none text-content-dimmed">{{ currency.code }}</code>
+						</div>
+					</div>
+
+					<div>
+						<label for="credit-count" class="flex gap-2 items-center">
+							<span>
+								{{ p__('label', 'Credit limit') }}
+							</span>
+
+							<template x-if="model.billing_cycle == 'one-time'">
+								<span class="badge">
+									{{ __('Non-expiring') }}
+								</span>
+							</template>
+
+							<template x-if="['lifetime', 'monthly', 'yearly'].includes(model.billing_cycle)">
+								<span class="flex gap-1 items-center">
+									<span class="badge">
+										{{ __('Renewing') }}
+									</span>
+
+									<span class="badge">
+										{{ __('30 days') }}
+									</span>
+								</span>
+							</template>
+						</label>
+
+						<input type="number" id="credit-count" name="title" class="mt-2 input" autocomplete="off" :placeholder="plan.credit_count || `{{ __('Unlimited') }}`" x-model="model.credit_count"/>
+					</div>
+
+					<template x-if="model.billing_cycle != 'one-time'">
+						<div class="md:col-span-2">
+							<label for="member-cap" class="flex gap-2 items-center">
+								{{ p__('label', 'Member cap') }}
+							</label>
+
+							<input type="number" id="member-cap" class="mt-2 input" autocomplete="off" placeholder="{{ __('Unlimited') }}" min="0" x-model="model.member_cap"/>
+
+							<ul class="info mt-2">
+								<li>
+									{{ __('This setting limits the number of members a workspace can have.') }}
+									{{ __('This includes users and pending invitations, but excludes the owner.') }}
+								</li>
+
+								<li>
+									{{ __('Leave blank for unlimited.') }}
+								</li>
+							</ul>
+						</div>
+					</template>
+				</section>
+
+				<template x-if="model.billing_cycle != 'one-time'">
+					<section class="flex flex-col gap-6 box" data-density="comfortable">
+						<h2>{{ p__('heading', 'Tools') }}</h2>
+
+						<div class="grid gap-6 md:grid-cols-2">
+							<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+								<div>
+									<div class="flex gap-2 items-center label">
+										{{ p__('heading', 'Writer') }}
+
+										{% if option.features.writer.is_enabled is not defined or option.features.writer.is_enabled == false %}
+											<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Disabled globally') }}"></i>
+										{% endif %}
+									</div>
+
+									<p class="font-normal text-content-dimmed">
+										{{ p__('writer-tool-description', 'Write SEO optimized blogs, sales emails and more...') }}
+									</p>
+								</div>
+
+								<div class="ms-auto">
+									<input type="checkbox" class="hidden peer" x-model="model.config.writer.is_enabled">
+
+									<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+								</div>
+							</label>
+
+							<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+								<div>
+									<div class="flex gap-2 items-center label">
+										{{ p__('heading', 'Coder') }}
+
+										{% if option.features.coder.is_enabled is not defined or option.features.coder.is_enabled == false %}
+											<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Disabled globally') }}"></i>
+										{% endif %}
+									</div>
+									<p class="font-normal text-content-dimmed">
+										{{ p__('coder-tool-description', 'Ready to write code at the speed of light?') }}
+									</p>
+								</div>
+
+								<div class="ms-auto">
+									<input type="checkbox" class="hidden peer" x-model="model.config.coder.is_enabled">
+
+									<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+								</div>
+							</label>
+
+							<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+								<div>
+									<div class="flex gap-2 items-center label">
+										{{ p__('heading', 'Video') }}
+
+										{% if option.features.video.is_enabled is not defined or option.features.video.is_enabled == false %}
+											<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Disabled globally') }}"></i>
+										{% endif %}
+									</div>
+									<p class="font-normal text-content-dimmed">
+										{{ p__('video-tool-description', 'Create videos from text and images.') }}
+									</p>
+								</div>
+
+								<div class="ms-auto">
+									<input type="checkbox" class="hidden peer" x-model="model.config.video.is_enabled">
+
+									<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+								</div>
+							</label>
+
+							<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+								<div>
+									<div class="flex gap-2 items-center label">
+										{{ p__('heading', 'Imagine') }}
+
+										{% if option.features.imagine.is_enabled is not defined or option.features.imagine.is_enabled == false %}
+											<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Disabled globally') }}"></i>
+										{% endif %}
+									</div>
+									<p class="font-normal text-content-dimmed">
+										{{ p__('imagine-tool-description', 'Visualize what you dream of. Create images from text.') }}
+									</p>
+								</div>
+
+								<div class="ms-auto">
+									<input type="checkbox" class="hidden peer" x-model="model.config.imagine.is_enabled">
+
+									<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+								</div>
+							</label>
+
+							<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+								<div>
+									<div class="flex gap-2 items-center label">
+										{{ p__('heading', 'Transcriber') }}
+
+										{% if option.features.transcriber.is_enabled is not defined or option.features.transcriber.is_enabled == false %}
+											<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Disabled globally') }}"></i>
+										{% endif %}
+									</div>
+									<p class="font-normal text-content-dimmed">
+										{{ p__('transcriber-tool-description', 'Instantly transcribe spoken words into text.')  }}
+									</p>
+								</div>
+
+								<div class="ms-auto">
+									<input type="checkbox" class="hidden peer" x-model="model.config.transcriber.is_enabled">
+
+									<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+								</div>
+							</label>
+
+							<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+								<div>
+									<div class="flex gap-2 items-center label">
+										{{ p__('heading', 'Voiceover') }}
+
+										{% if option.features.voiceover.is_enabled is not defined or option.features.voiceover.is_enabled == false %}
+											<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Disabled globally') }}"></i>
+										{% endif %}
+									</div>
+									<p class="font-normal text-content-dimmed">
+										{{ p__('voiceover-tool-description', 'Convert your texts into lifelike speech') }}
+									</p>
+								</div>
+
+								<div class="ms-auto">
+									<input type="checkbox" class="hidden peer" x-model="model.config.voiceover.is_enabled">
+
+									<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+								</div>
+							</label>
+
+							<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+								<div>
+									<div class="flex gap-2 items-center label">
+										{{ p__('heading', 'Chat') }}
+
+										{% if option.features.chat.is_enabled is not defined or option.features.chat.is_enabled == false %}
+											<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Disabled globally') }}"></i>
+										{% endif %}
+									</div>
+									<p class="font-normal text-content-dimmed">
+										{{ p__('chat-tool-description', 'Chat with AI assistants') }}
+									</p>
+								</div>
+
+								<div class="ms-auto">
+									<input type="checkbox" class="hidden peer" x-model="model.config.chat.is_enabled">
+
+									<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+								</div>
+							</label>
+
+							<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+								<div>
+									<div class="flex gap-2 items-center label">
+										{{ p__('heading', 'Voice isolator') }}
+
+										{% if option.features.voice_isolator.is_enabled is not defined or option.features.voice_isolator.is_enabled == false %}
+											<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Disabled globally') }}"></i>
+										{% endif %}
+									</div>
+									<p class="font-normal text-content-dimmed">
+										{{ p__('voice-isolator-tool-description', 'Isolate voice from background noise.')  }}
+									</p>
+								</div>
+
+								<div class="ms-auto">
+									<input type="checkbox" class="hidden peer" x-model="model.config.voice_isolator.is_enabled">
+
+									<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+								</div>
+							</label>
+
+							<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+								<div>
+									<div class="flex gap-2 items-center label">
+										{{ p__('heading', 'Classifier') }}
+
+										{% if option.features.classifier.is_enabled is not defined or option.features.classifier.is_enabled == false %}
+											<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Disabled globally') }}"></i>
+										{% endif %}
+									</div>
+									<p class="font-normal text-content-dimmed">
+										{{ p__('classifier-tool-description', 'Classify content as potentially harmful across several categories.')  }}
+									</p>
+								</div>
+
+								<div class="ms-auto">
+									<input type="checkbox" class="hidden peer" x-model="model.config.classifier.is_enabled">
+
+									<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+								</div>
+							</label>
+
+							<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+								<div>
+									<div class="flex gap-2 items-center label">
+										{{ p__('heading', 'Composer') }}
+
+										{% if option.features.composer.is_enabled is not defined or option.features.composer.is_enabled == false %}
+											<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Disabled globally') }}"></i>
+										{% endif %}
+									</div>
+									<p class="font-normal text-content-dimmed">
+										{{ p__('composer-tool-description', 'Create music and sounds.')  }}
+									</p>
+								</div>
+
+								<div class="ms-auto">
+									<input type="checkbox" class="hidden peer" x-model="model.config.composer.is_enabled">
+
+									<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+								</div>
+							</label>
+						</div>
+
+						<div class="[&>div:first-of-type]:pt-6 [&>div:first-of-type]:border-t [&>div:first-of-type]:border-line-dimmed">
+							<template x-if="model.config.voiceover.is_enabled">
+								<div>
+									<label for="cloned-voice-cap">{{ p__('label', 'Cloned voice cap') }}</label>
+									<input type="number" id="cloned-voice-cap" class="mt-2 input" autocomplete="off" placeholder="{{ __('Unlimited') }}" min="0" x-model="model.config.voiceover.clone_cap"/>
+
+									<ul class="info mt-2">
+										<li>
+											{{ __('Leave blank for unlimited. Set to zero to disable voice cloning.') }}
+										</li>
+									</ul>
+								</div>
+							</template>
+						</div>
+					</section>
+				</template>
+
+				<template x-if="model.billing_cycle != 'one-time'">
+					<section class="flex flex-col gap-6 box" data-density="comfortable">
+						<h2>{{ p__('heading', 'Capabilities') }}</h2>
+
+						<div class="grid gap-2">
+							<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+								<div>
+									<div class="flex gap-2 items-center text-sm">
+										{{ __('File analysis') }}
+
+										{% if option.features.tools.embedding_search.is_enabled is not defined or option.features.tools.embedding_search.is_enabled == false %}
+											<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Feature is disabled globally') }}"></i>
+										{% endif %}
+									</div>
+
+									<div class="font-normal text-content-dimmed">
+										{{ __('Chat with PDF, Doc and other text based documents') }}
+									</div>
+								</div>
+
+								<div class="ms-auto">
+									<input type="checkbox" class="hidden peer" value="embedding_search" x-model="model.config.tools['embedding_search']">
+
+									<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+								</div>
+							</label>
+
+							<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+								<div>
+									<div class="flex gap-2 items-center text-sm">
+										{{ __('Google search') }}
+
+										{% if option.serper.api_key is not defined or option.serper.api_key is empty %}
+											<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Missing Serper API key') }}"></i>
+										{% elseif option.features.tools.google_search.is_enabled is not defined or option.features.tools.google_search.is_enabled == false %}
+											<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Feature is disabled globally') }}"></i>
+										{% endif %}
+									</div>
+
+									<div class="font-normal text-content-dimmed">
+										{{ __('Search with Serper API') }}
+									</div>
+								</div>
+
+								<div class="ms-auto">
+									<input type="checkbox" class="hidden peer" value="google_search" x-model="model.config.tools['google_search']">
+
+									<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+								</div>
+							</label>
+
+							<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+								<div>
+									<div class="flex gap-2 items-center text-sm">
+										{{ __('Youtube') }}
+
+										{% if option.searchapi.api_key is not defined or option.searchapi.api_key is empty %}
+											<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Missing Search API key') }}"></i>
+										{% elseif option.features.tools.youtube.is_enabled is not defined or option.features.tools.youtube.is_enabled == false %}
+											<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Feature is disabled globally') }}"></i>
+										{% endif %}
+									</div>
+
+									<div class="font-normal text-content-dimmed">
+										{{ __('Get meta data from Youtube') }}
+									</div>
+								</div>
+
+								<div class="ms-auto">
+									<input type="checkbox" class="hidden peer" value="youtube" x-model="model.config.tools['youtube']">
+
+									<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+								</div>
+							</label>
+
+							<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+								<div>
+									<div class="flex gap-2 items-center text-sm">
+										{{ __('Web browsing') }}
+
+										{% if option.features.tools.web_scrap.is_enabled is not defined or option.features.tools.web_scrap.is_enabled == false %}
+											<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Feature is disabled globally') }}"></i>
+										{% endif %}
+									</div>
+
+									<div class="font-normal text-content-dimmed">
+										{{ __('Scrap web pages for information') }}
+									</div>
+								</div>
+
+								<div class="ms-auto">
+									<input type="checkbox" class="hidden peer" value="web_scrap" x-model="model.config.tools['web_scrap']">
+
+									<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+								</div>
+							</label>
+
+							<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+								<div>
+									<div class="flex gap-2 items-center text-sm">
+										{{ __('Image generation') }}
+
+										{% if option.features.tools.generate_image.is_enabled is not defined or option.features.tools.generate_image.is_enabled == false %}
+											<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Feature is disabled globally') }}"></i>
+										{% endif %}
+									</div>
+
+									<div class="font-normal text-content-dimmed">
+										{{ __('Generate images based on prompts') }}
+									</div>
+								</div>
+
+								<div class="ms-auto">
+									<input type="checkbox" class="hidden peer" value="generate_image" x-model="model.config.tools['generate_image']">
+
+									<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+								</div>
+							</label>
+
+							<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+								<div>
+									<div class="flex gap-2 items-center text-sm">
+										{{ __('Memory') }}
+
+										{% if option.features.tools.memory.is_enabled|default(false) == false %}
+											<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Feature is disabled globally') }}"></i>
+										{% endif %}
+									</div>
+
+									<div class="font-normal text-content-dimmed">
+										{{ __("Get and save user's memory") }}
+									</div>
+								</div>
+
+								<div class="ms-auto">
+									<input type="checkbox" class="hidden peer" value="memory" x-model="model.config.tools['memory']">
+
+									<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+								</div>
+							</label>
+						</div>
+					</section>
+				</template>
+
+				<template x-if="model.billing_cycle != 'one-time'">
+					<section class="flex flex-col gap-6 box" data-density="comfortable">
+						<h2>{{ p__('heading', 'Models') }}</h2>
+						{# <h3>{{ p__('heading', 'Text Models') }}</h3> #}
+
+						<div class="grid gap-6 md:grid-cols-2">
+							<div>
+								<label class="flex gap-2 items-center">
+									{{ p__('label', 'Writer model') }}
+
+									<i class="text-base leading-5 ti ti-alert-square-rounded-filled text-failure" x-show="!model.config.writer.is_enabled" x-cloak x-tooltip.raw="{{ __('Writer tool is disabled') }}"></i>
+								</label>
+
+								<select class="mt-2 input" x-model="model.config.writer.model">
+									{% for service in config.model.registry.directory %}
+										{% for model in service.models %}
+											{% if model.type == 'llm' and model.config.writer %}
+												<option value="{{ model.key }}">
+													{{ service.name }}
+													/
+													{{ model.name }}
+												</option>
+											{% endif %}
+										{% endfor %}
+									{% endfor %}
+								</select>
+							</div>
+
+							<div>
+								<label class="flex gap-2 items-center">
+									{{ p__('label', 'Coder model') }}
+
+									<i class="text-base leading-5 ti ti-alert-square-rounded-filled text-failure" x-show="!model.config.coder.is_enabled" x-cloak x-tooltip.raw="{{ __('Coder tool is disabled') }}"></i>
+								</label>
+
+								<select class="mt-2 input" x-model="model.config.coder.model">
+									{% for service in config.model.registry.directory %}
+										{% for model in service.models %}
+											{% if model.type == 'llm' and model.config.coder %}
+												<option value="{{ model.key }}">
+													{{ service.name }}
+													/
+													{{ model.name }}
+												</option>
+											{% endif %}
+										{% endfor %}
+									{% endfor %}
+								</select>
+							</div>
+
+							<div>
+								<label>{{ p__('label', 'Title generator model') }}</label>
+
+								<select class="mt-2 input" x-model="model.config.titler.model">
+									{% for service in config.model.registry.directory %}
+										{% for model in service.models %}
+											{% if model.type == 'llm' and model.config.titler %}
+												<option value="{{ model.key }}">
+													{{ service.name }}
+													/
+													{{ model.name }}
+												</option>
+											{% endif %}
+										{% endfor %}
+									{% endfor %}
+								</select>
+							</div>
+
+							<div>
+								<label>{{ p__('label', 'Embeddings model') }}</label>
+
+								<select class="mt-2 input" x-model="model.config.embedding_model">
+									{% for service in config.model.registry.directory %}
+										{% for model in service.models %}
+											{% if model.type == 'embedding' %}
+												<option value="{{ model.key }}">
+													{{ service.name }}
+													/
+													{{ model.name }}
+												</option>
+											{% endif %}
+										{% endfor %}
+									{% endfor %}
+								</select>
+
+								<ul class="info mt-2">
+									<li>
+										{{ __('Selected model will be used for File Insight capability') }}
+									</li>
+								</ul>
+							</div>
+						</div>
+
+						{% for group in groups %}
+							<hr class="my-2">
+
+							<h3 class="flex gap-2 items-center">{{ group.heading }}</h3>
+
+							<div class="grid gap-6 md:grid-cols-2">
+								{% for service in config.model.registry.directory %}
+									{% for model in service.models|filter(model => model.type == group.type) %}
+										<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+											<div>
+												<div class="flex gap-2 items-center text-sm">
+													{{ model.name }}
+
+													{% if option[service.key]|default(null) is empty and service.key != 'ollama' and not service.custom|default(false) %}
+														<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('%s integration is not configured', service.name) }}"></i>
+													{% endif %}
+												</div>
+
+												<div class="font-normal text-content-dimmed">{{ service.name }}</div>
+											</div>
+
+											<div class="ms-auto">
+												<input type="checkbox" class="hidden peer" value="{{ model.key }}" x-model="model.config.models['{{ model.key }}']">
+												<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+											</div>
+										</label>
+									{% endfor %}
+								{% endfor %}
+							</div>
+						{% endfor %}
+					</section>
+				</template>
+
+				<template x-if="model.billing_cycle != 'one-time'">
+					<section class="flex flex-col gap-6 box" data-density="comfortable" x-init="model.config.assistants !== null ? fetchAssistants() : null">
+						<h2 class="md:col-span-2">{{ p__('heading', 'Assistants') }}</h2>
+
+						<div class="flex gap-2 items-center p-3 rounded-lg bg-intermediate">
+							{{ p__('label', 'All assistants') }}
+
+							<template x-if="model.config.assistants !== null && assistants == null">
+								{% include "snippets/spinner.twig" %}
+							</template>
+
+							<label class="inline-flex gap-2 items-center ms-auto cursor-pointer">
+								<input type="checkbox" name="status" class="hidden peer" :checked="model.config.assistants === null" @change="fetchAssistants(); model.config.assistants = $el.checked ? null : []">
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</label>
+						</div>
+
+						<template x-if="model.config.assistants != null && assistants != null">
+							<div class="grid gap-6 md:grid-cols-2">
+								<template x-for="assistant in assistants" :key="assistant.id">
+									<label class="flex gap-3 items-center text-sm box">
+										<x-avatar :title="assistant.name" :src="assistant.avatar"></x-avatar>
+
+										<div>
+											<div class="font-bold" x-text="assistant.name"></div>
+											<template x-if="assistant.expertise">
+												<div class="text-content-dimmed" x-text="assistant.expertise"></div>
+											</template>
+										</div>
+
+										<input type="checkbox" class="hidden peer" :value="assistant.id" x-model="model.config.assistants" :checked="model.config.assistants != null && model.config.assistants.includes(assistant.id)">
+
+										<i class="text-2xl hidden ms-auto ti ti-square-rounded-check-filled peer-checked:inline"></i>
+										<i class="text-2xl ms-auto ti ti-square-rounded peer-checked:hidden"></i>
+									</label>
+								</template>
+							</div>
+						</template>
+					</section>
+				</template>
+
+				<template x-if="model.billing_cycle != 'one-time'">
+					<section class="flex flex-col gap-6 box" data-density="comfortable" x-init="model.config.presets !== null ? fetchPresets() : null">
+						<h2 class="md:col-span-2">{{ p__('heading', 'Templates') }}</h2>
+
+						<div class="flex gap-2 items-center p-3 rounded-lg bg-intermediate">
+							{{ p__('label', 'All templates') }}
+
+							<template x-if="model.config.presets !== null && presets == null">
+								{% include "snippets/spinner.twig" %}
+							</template>
+
+							<label class="inline-flex gap-2 items-center ms-auto cursor-pointer">
+								<input type="checkbox" name="status" class="hidden peer" :checked="model.config.presets === null" @change="fetchPresets(); model.config.presets = $el.checked ? null : []">
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</label>
+						</div>
+
+						<template x-if="model.config.presets != null && presets != null">
+							<div class="grid gap-6 md:grid-cols-2">
+								<template x-for="preset in presets" :key="preset.id">
+									<label class="flex gap-3 items-center text-sm box">
+										<x-avatar :style="{backgroundColor: preset.color, color: '#fff'}" :title="preset.title" :icon="preset.image"></x-avatar>
+
+										<div>
+											<div class="font-bold" x-text="preset.title"></div>
+											<template x-if="preset.expertise">
+												<div class="text-content-dimmed" x-text="preset.category?.title"></div>
+											</template>
+										</div>
+
+										<input type="checkbox" class="hidden peer" :value="preset.id" x-model="model.config.presets" :checked="model.config.presets != null && model.config.presets.includes(preset.id)">
+
+										<i class="text-2xl hidden ms-auto ti ti-square-rounded-check-filled peer-checked:inline"></i>
+										<i class="text-2xl ms-auto ti ti-square-rounded peer-checked:hidden"></i>
+									</label>
+								</template>
+							</div>
+						</template>
+					</section>
+				</template>
+
+				<template x-if="model.billing_cycle != 'one-time' && plan.id">
+					<section class="flex flex-col gap-6 box" data-density="comfortable">
+
+						<div>
+							<div>
+								<label class="inline-flex gap-1 items-center">
+									<input type="checkbox" class="hidden peer" x-model="model.update_snapshots">
+
+									<i class="text-2xl ti ti-square-rounded text-content-dimmed peer-checked:hidden"></i>
+									<i class="text-2xl hidden ti ti-square-rounded-check-filled text-success peer-checked:block"></i>
+
+									<span class="select-none">{{ p__('button', 'Update snapshots') }}</span>
+								</label>
+							</div>
+
+							<ul class="info mt-2">
+								<li>
+									{{ __('If checked and saved, all subscriptions on this plan will have their plan configuration updated to the latest configuration. Price and billing cycle changes will not be applied.') }}
+								</li>
+							</ul>
+						</div>
+					</section>
+				</template>
+			</div>
+
+			<div class="flex gap-4 justify-end">
+				<a href="admin/plans" class="button button-outline">
+					{{ p__('button', 'Cancel') }}
+				</a>
+
+				<button type="submit" class="button button-accent" :processing="isProcessing">
+					{% include "/snippets/spinner.twig" %}
+
+					<span x-show="!plan.id">
+						{{ p__('button', 'Create plan') }}
+					</span>
+
+					<span x-show="plan.id">
+						{{ p__('button', 'Update plan') }}
+					</span>
+				</button>
+			</div>
+		</form>
+	</x-form>
+{% endblock %}

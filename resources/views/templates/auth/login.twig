@@ -1,0 +1,130 @@
+{% extends "/layouts/minimal.twig" %}
+
+{% block title p__('title', 'Login')|title %}
+{% set xdata %}
+auth(`{{ option.site.default_app_page ?? '/app' }}`)
+{% endset %}
+
+{% block template %}
+	<div class="flex flex-col gap-1">
+		{% if environment == 'demo' %}
+			<div class="flex flex-col gap-5 box" data-density="comfortable">
+				<div>
+					<h1>
+						{{ p__('heading', 'Demo mode') }}
+					</h1>
+
+					<p class="mt-4">
+						{{ __('Demo mode is enabled. Some features might be disabled. All of those features will be available in the purchased version.') }}
+					</p>
+				</div>
+
+				{% if demo_account_email is not empty and demo_account_password is not empty %}
+					<div>
+						<p>
+							{{ __('Use following credentials to login as an admin.') }}
+						</p>
+
+						<div class="mt-4 font-mono text-sm">
+							<div>
+								<span class="font-semibold uppercase">
+									{{ p__('label', 'Email') }}:
+								</span>
+								<x-copy data-tippy-placement="right">{{ demo_account_email }}</x-copy>
+							</div>
+
+							<div class="mt-1">
+								<span class="font-semibold uppercase">
+									{{ p__('label', 'Password') }}:
+								</span>
+								<x-copy data-tippy-placement="right">{{ demo_account_password }}</x-copy>
+							</div>
+						</div>
+					</div>
+
+					<p class="text-xs text-content-dimmed">
+						{{ __('You can signup as a new user too to view the app as a normal user.') }}
+					</p>
+				{% endif %}
+			</div>
+		{% endif %}
+
+		<div class="box" data-density="comfortable">
+			<x-form>
+				<form @submit.prevent="submit" x-ref="form" data-api-path="/basic" class="flex flex-col gap-5">
+
+					<h1>{{ p__('heading', 'Sign in to your account') }}</h1>
+
+					<fieldset>
+						<label for="email">{{ p__('label', 'Email') }}</label>
+
+						<input type="email" id="email" name="email" class="input" placeholder="{{ __('Type your email address') }}" autocomplete="email" required>
+					</fieldset>
+
+					<fieldset>
+						<label for="password">{{ p__('label', 'Password') }}</label>
+
+						<div class="relative" x-data="{isVisible: false}">
+							<input :type="isVisible ? 'text' : 'password'" id="password" name="password" placeholder="{{ __('Type your password') }}" autocomplete="current-password" class="input pe-11" required>
+
+							<button type="button" class="absolute end-3 top-1/2 text-2xl -translate-y-1/2 text-content-dimmed" @click="isVisible = !isVisible">
+								<i class="block ti" :class="{'ti-eye-closed' : isVisible, 'ti-eye':!isVisible}"></i>
+							</button>
+						</div>
+					</fieldset>
+
+					<div class="flex justify-between items-center">
+						<label class="inline-flex gap-1 items-center">
+							<input type="checkbox" name="remember" class="hidden peer">
+
+							<i class="text-2xl ti ti-square-rounded text-content-dimmed peer-checked:hidden"></i>
+							<i class="hidden text-2xl ti ti-square-rounded-check-filled text-success peer-checked:block"></i>
+
+							<span class="font-normal select-none">{{ p__('button', 'Remember me') }}</span>
+						</label>
+
+						<a href="recovery" class="inline-flex gap-1 items-center text-sm font-semibold md:hover:underline">
+							<i class="ti text-2xl ti-lock-question md:hidden"></i>
+
+							<span class="hidden md:inline">
+								{{ p__('button', 'Forgot password?') }}
+							</span>
+						</a>
+					</div>
+
+					{% include "/snippets/captcha.twig" %}
+
+					<button type="submit" class="w-full button button-accent" :processing="isProcessing">
+
+						{% include "/snippets/spinner.twig" %}
+
+						{{ p__('button', 'Sign in') }}
+					</button>
+
+					{% set user_accounts_enabled = option.site.user_accounts_enabled is not defined or option.site.user_accounts_enabled %}
+					{% set user_signup_enabled = option.site.user_signup_enabled is not defined or option.site.user_signup_enabled %}
+
+					{% if user_accounts_enabled and user_signup_enabled %}
+						<div class="flex flex-col gap-1 items-center text-sm md:flex-row">
+							<span class="flex gap-1 items-center">
+								<i class="text-base ti ti-help-square-rounded"></i>
+
+								{{ __("Don't have an account?") }}
+							</span>
+
+							<a href="signup" class="font-semibold hover:underline">
+								{{ p__('button', 'Sign up')  }}
+							</a>
+						</div>
+					{% endif %}
+
+					{% include "/snippets/sso.twig" %}
+				</form>
+			</x-form>
+		</div>
+	</div>
+{% endblock %}
+
+{% block scripts %}
+	<script type="module" src="{{ '/resources/assets/js/auth/index.js'|asset }}"></script>
+{% endblock %}

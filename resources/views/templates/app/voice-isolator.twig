@@ -1,0 +1,404 @@
+{% extends "/layouts/main.twig" %}
+{% set mobile_head_button = {
+  link: 'app/voice-isolator'
+} %}
+
+{% set active_menu = '/app/voice-isolator' %}
+{% set xdata %}
+voiceIsolator({{ (voice ?? null )|json_encode() }})
+{% endset %}
+{% block title p__('title', 'Voice Isolator')|title %}
+
+{% block sidebar %}
+	<div class="hidden group-data-[key=history]/sidebar:block">
+		<div class="flex items-center justify-between p-4 border-b border-line sticky top-0 bg-main z-10">
+			<h2>{{ p__('heading', 'History') }}</h2>
+
+			<button type="button" class="text-content-dimmed hover:text-content" @click="sidebar.close()" x-tooltip.raw.placement.left="{{ __('Close') }}">
+				<i class="text-2xl ti ti-x"></i>
+			</button>
+		</div>
+
+		<div>
+			<template x-for="i in history" :key="i.id">
+				<a :href="`app/voice-isolator/${i.id}`" class="flex gap-2 items-center p-4 border-b border-line-dimmed hover:bg-line-dimmed/50" :class="preview && preview.id == i.id ? 'bg-line-dimmed/50' : ''" @click.prevent="select(i)">
+					<x-avatar :title="i.title" class="shrink-0"></x-avatar>
+
+					<div class="overflow-hidden">
+						<div x-text="i.title || `{{ __('Untitled resource') }}`" class="overflow-hidden text-sm text-ellipsis text-nowrap max-w-full" :class="i.title ? '' : 'text-content-dimmed'"></div>
+
+						<div class="flex">
+							<x-time :datetime="i.created_at" data-type="date" class="text-xs text-content-dimmed"></x-time>
+						</div>
+					</div>
+				</a>
+			</template>
+
+			<template x-if="!historyLoaded">
+				<div class="my-8 flex justify-center">
+					<button type="button" @click="fetchHistory()" class="font-semibold hover:underline text-sm">
+						{{ __('Load more') }}
+					</button>
+				</div>
+			</template>
+
+			<template x-if="historyLoaded && history.length === 0">
+				<div class="p-4 text-content-dimmed">
+					{{ __('No isolated voices yet') }}
+				</div>
+			</template>
+		</div>
+	</div>
+{% endblock %}
+
+{% block toolbar %}
+	<div class="absolute z-10 top-4 end-10 hidden md:flex gap-2 transition-all ease-in">
+		<a href="app/voice-isolator" class="text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('New') }}">
+			<i class="text-2xl ti ti-square-rounded-plus"></i>
+		</a>
+
+		<a href="app/library/isolated-voices" class="text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('History') }}" @click.prevent="sidebar.open('history')">
+			<i class="text-2xl ti ti-file-stack"></i>
+		</a>
+	</div>
+{% endblock %}
+
+{% block template %}
+	<div class="flex flex-col gap-4 grow">
+		<div :class="preview || isProcessing ? '' : 'flex justify-center my-auto'">
+			<template x-if="!preview && !isProcessing">
+				<div class="my-10 text-center md:my-0">
+					<div class="mx-auto w-16 h-16 bg-linear-to-br from-[#6283FB] to-[#C883F3] tool-icon">
+						<div class="bg-linear-to-br from-[#6283FB] to-[#C883F3]"></div>
+
+						{% include "snippets/icons/voice-isolator.twig" %}
+					</div>
+
+					<h1 class="mt-6">{{ p__('heading', 'Voice isolator') }}</h1>
+					<p class="mt-1 text-lg font-light text-content-dimmed">
+						{{ p__('voice-isolator-tool-description', 'Isolate voice from background noise.')  }}
+					</p>
+				</div>
+			</template>
+
+			<template x-if="isProcessing">
+				<div class="flex flex-col gap-4">
+					<div class="flex flex-col gap-3 grow">
+						<div class="w-2/3 h-6 loading"></div>
+
+						<div class="mb-1">
+							<div class="w-64 h-4 loading"></div>
+						</div>
+					</div>
+
+					<div class="flex gap-4 items-center p-2 box">
+						<span class="flex justify-center items-center w-10 h-10 rounded-lg bg-intermediate text-intermediate-content"></span>
+
+						<div class="grow">
+							<div class="flex gap-2 items-center group">
+								<div type="button" class="w-6 h-6 loading"></div>
+
+								<span process class="w-9 h-3 text-xs text-content-dimmed loading"></span>
+
+								<div class="h-6 grow loading" wave></div>
+
+								<span duration class="w-9 h-3 text-xs text-content-dimmed loading"></span>
+							</div>
+						</div>
+					</div>
+
+					<div class="flex gap-4 items-center">
+						<div class="flex gap-1 items-center me-auto">
+							<span class="my-1 w-16 h-3 loading"></span>
+							<span class="text-xs animate-pulse ti ti-point-filled text-content-dimmed"></span>
+							<span class="my-1 w-24 h-3 loading"></span>
+						</div>
+
+						<div class="my-1 size-5 loading"></div>
+						<div class="my-1 size-5 loading"></div>
+						<div class="my-1 size-5 loading"></div>
+					</div>
+				</div>
+			</template>
+
+			<template x-if="preview && !isProcessing">
+				<div class="flex flex-col gap-4">
+					<div class="grow">
+						<div class="text-xl autogrow-textarea font-editor-heading" :data-replicated-value="preview.title">
+							<textarea placeholder="{{ __('Untitled resource') }}" autocomplete="off" x-model="preview.title" rows="1" @input.debounce.750ms="save(preview)" class="block px-0 py-0 w-full bg-transparent border-0 ring-0 transition-colors appearance-none outline-none resize-none placeholder:text-content-dimmed placeholder:opacity-50 read-only:text-content-dimmed"></textarea>
+						</div>
+
+						<div class="mt-1">
+							<x-uuid x-text="preview.id"></x-uuid>
+						</div>
+					</div>
+
+					<div class="relative">
+						<div>
+							<template x-if="viewInputFile">
+								<div class="mb-2 label">{{ __('Isolated audio') }}</div>
+							</template>
+
+							<div class="flex relative z-10 gap-4 items-center p-2 box bg-main">
+								<span class="flex justify-center items-center w-10 h-10 rounded-lg bg-intermediate text-intermediate-content">
+									<i class="text-2xl ti ti-music"></i>
+								</span>
+
+								<div class="grow">
+									<x-wave :src="preview.output_file.url" class="flex gap-2 items-center group" x-ref="previewWave" @audioprocess="previewTime = $event.detail.time">
+										<button type="button" play-pause class="text-content-dimmed">
+											<i class="text-2xl ti ti-player-play-filled group-[[state=loading]]:hidden group-[[state=loaded]]:hidden group-[[state=playing]]:hidden"></i>
+											<i class="text-2xl ti ti-player-pause-filled hidden group-[[state=playing]]:block"></i>
+
+											<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="20px" height="20px" viewbox="0 0 50 50" style="enable-background:new 0 0 50 50;" class="hidden group-[[state=loading]]:block group-[[state=loaded]]:block" xml:space="preserve">
+												<path fill="currentColor" d="M25.251,6.461c-10.318,0-18.683,8.365-18.683,18.683h4.068c0-8.071,6.543-14.615,14.615-14.615V6.461z">
+													<animateTransform attributetype="xml" attributename="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.6s" repeatcount="indefinite"></animateTransform>
+												</path>
+											</svg>
+										</button>
+
+										<span process class="text-xs text-content-dimmed w-9 group-[[state=loading]]:hidden">
+											00:00
+										</span>
+
+										<div class="h-10 grow" wave></div>
+
+										<span duration class="text-xs text-content-dimmed w-9 group-[[state=loading]]:hidden">
+											00:00
+										</span>
+									</x-wave>
+								</div>
+							</div>
+						</div>
+
+						<div class="transition-all" :class="viewInputFile ? 'mt-4' : '-mt-12 scale-95'" x-cloak>
+							<template x-if="viewInputFile">
+								<div class="mb-2 label">{{ __('Original audio') }}</div>
+							</template>
+
+							<div class="flex gap-4 items-center p-2 box">
+								<span class="flex justify-center items-center w-10 h-10 rounded-lg bg-intermediate text-intermediate-content">
+									<i class="text-2xl ti ti-music"></i>
+								</span>
+
+								<div class="grow">
+									<x-wave :src="preview.input_file.url" class="flex gap-2 items-center group" x-ref="previewWave" @audioprocess="previewTime = $event.detail.time">
+										<button type="button" play-pause class="text-content-dimmed">
+											<i class="text-2xl ti ti-player-play-filled group-[[state=loading]]:hidden group-[[state=loaded]]:hidden group-[[state=playing]]:hidden"></i>
+											<i class="text-2xl ti ti-player-pause-filled hidden group-[[state=playing]]:block"></i>
+
+											<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="20px" height="20px" viewbox="0 0 50 50" style="enable-background:new 0 0 50 50;" class="hidden group-[[state=loading]]:block group-[[state=loaded]]:block" xml:space="preserve">
+												<path fill="currentColor" d="M25.251,6.461c-10.318,0-18.683,8.365-18.683,18.683h4.068c0-8.071,6.543-14.615,14.615-14.615V6.461z">
+													<animateTransform attributetype="xml" attributename="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.6s" repeatcount="indefinite"></animateTransform>
+												</path>
+											</svg>
+										</button>
+
+										<span process class="text-xs text-content-dimmed w-9 group-[[state=loading]]:hidden">
+											00:00
+										</span>
+
+										<div class="h-10 grow" wave></div>
+
+										<span duration class="text-xs text-content-dimmed w-9 group-[[state=loading]]:hidden">
+											00:00
+										</span>
+									</x-wave>
+								</div>
+							</div>
+						</div>
+
+					</div>
+
+					<div class="flex gap-4 items-center">
+						<div class="flex gap-4 items-center me-auto">
+							{% include "snippets/audience.twig" %}
+
+							<template x-if="preview.cost > 0">
+								<span class="flex gap-1 items-center text-sm text-content-dimmed">
+									<i class="text-base ti ti-coins"></i>
+									<x-credit :data-value="preview && preview.cost" format="{{ __(":count credits") }}"></x-credit>
+								</span>
+							</template>
+						</div>
+
+						<label class="flex gap-1 items-center text-content-dimmed">
+							<input type="checkbox" class="hidden peer" x-model="viewInputFile">
+
+							<span class="font-normal select-none">{{ p__('button', 'View original audio') }}</span>
+
+							<i class="text-xl ti ti-square-rounded peer-checked:hidden"></i>
+							<i class="hidden text-xl ti ti-square-rounded-check-filled peer-checked:block"></i>
+
+						</label>
+
+						<div>
+							<div class="relative" @click.outside="$refs.downloadOptions.removeAttribute('data-open')">
+
+								<button @click="$refs.downloadOptions.toggleAttribute('data-open')" class="flex gap-1 items-center text-sm transition-all text-content-dimmed hover:text-content">
+									<i class="text-xl ti ti-download"></i>
+								</button>
+
+								<div class="menu" x-ref="downloadOptions" @click="$el.removeAttribute('data-open')">
+
+									<ul class="text-sm">
+										<li>
+											<a :href="preview.output_file.url" target="_blank" download class="block px-4 py-2 text-start hover:bg-intermediate">
+												{{ p__('button', 'Isolated audio') }}
+											</a>
+										</li>
+
+										<li>
+											<a :href="preview.input_file.url" target="_blank" download class="block px-4 py-2 text-start hover:bg-intermediate">
+												{{ p__('button', 'Original file') }}
+											</a>
+										</li>
+									</ul>
+								</div>
+							</div>
+						</div>
+
+						<button @click="modal.open('delete-modal');" class="flex gap-1 items-center text-sm transition-all text-content-dimmed hover:text-content group">
+							<i class="text-xl ti ti-trash group-hover:text-failure"></i>
+						</button>
+					</div>
+				</div>
+			</template>
+		</div>
+	</div>
+
+	<modal-element name="delete-modal">
+		<template x-if="preview">
+			<form class="flex flex-col gap-6 items-center modal" @submit.prevent="remove(preview);">
+				<div class="flex relative justify-center items-center mx-auto w-24 h-24 rounded-full text-failure/25">
+					<svg class="absolute top-0 left-0 w-full h-full" width="112" height="112" viewbox="0 0 112 112" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<circle cx="56" cy="56" r="55.5" stroke="currentColor" stroke-dasharray="8 8"/>
+					</svg>
+
+					<div class="flex justify-center items-center w-20 h-20 text-4xl rounded-full transition-all bg-failure/25 text-failure">
+						<i class="text-4xl ti ti-trash"></i>
+					</div>
+				</div>
+
+				<div class="flex flex-col gap-2 items-center text-center">
+					<div class="text-lg text-center">
+						{{ __('Do you really want to delete the isolated voice?') }}
+					</div>
+
+					<p class="text-sm text-content-dimmed">
+						{{ __('All associated content and files will be permanently removed. This action cannot be reverted once confirmed.') }}
+					</p>
+				</div>
+
+				<div class="flex gap-4 justify-center items-center">
+					<button class="button button-outline" @click="modal.close()" type="button">
+						{{ p__('button', 'No, cancel') }}
+					</button>
+
+					<button class="button button-failure" type="submit" :processing="isDeleting">
+						{% include "/snippets/spinner.twig" %}
+
+						{{ p__('button', 'Yes, delete') }}
+					</button>
+				</div>
+			</form>
+		</template>
+	</modal-element>
+{% endblock %}
+
+{% block footer %}
+	<div class="sticky bottom-0 z-40 mt-auto">
+		<div class="h-8 to-transparent bg-linear-to-t from-main"></div>
+
+		<div class="bg-main">
+			<x-form>
+				<form @submit.prevent="{{ workspace.subscription.plan.config.voice_isolator.is_enabled is defined and workspace.subscription.plan.config.voice_isolator.is_enabled ? 'submit($el)' : '' }}">
+					<div class="relative p-0.5 rounded-3xl bg-line-dimmed focus-within:bg-linear-to-br focus-within:from-gradient-from focus-within:to-gradient-to">
+						<div class="flex gap-2 items-end p-2 rounded-[1.375rem] bg-main">
+							<x-dropzone>
+								<input type="file" @change="file = $refs.file.files[0];" name="file" accept=".flac,.mp3,.mp4,.mpeg,.mpga,.m4a,.ogg,.wav,.webm" required class="hidden" x-ref="file">
+
+								<div class="flex flex-col gap-6 items-center">
+									<i class="text-6xl ti ti-upload text-content-dimmed"></i>
+									<div class="flex flex-col gap-2 text-center">
+										<h2>{{ p__('heading', 'Drop the file here') }}</h2>
+										<p class="text-sm text-content-dimmed">
+											{{ __('flac, mp3, mp4, mpeg, mpga, m4a, ogg, wav, or webm') }}
+										</p>
+									</div>
+								</div>
+							</x-dropzone>
+
+							<div class="grow">
+								<template x-if="!file">
+									<button type="button" class="flex gap-4 ps-2 items-center w-full text-start ring-0 outline-hidden" @click="$refs.file.click()">
+										<i class="text-2xl -rotate-45 ti ti-paperclip"></i>
+
+										<div>
+											<div>{{ __('Drag and drop or upload file here') }}</div>
+											<div class="text-xs text-content-dimmed">
+												{{ __('flac, mp3, mp4, mpeg, mpga, m4a, ogg, wav, or webm') }}
+											</div>
+										</div>
+									</button>
+								</template>
+
+								<template x-if="file">
+									<div class="flex gap-2 items-center">
+										<button type="button" class="relative p-0 w-10 h-10 button button-dimmed group shrink-0 rounded-[0.875rem]" @click="file=null; $refs.file.value=null">
+											<i class="ti ti-music"></i>
+
+											<div class="hidden absolute top-0 left-0 justify-center items-center w-full h-full rounded-[0.875rem] bg-content/50 text-main group-hover:flex">
+												<i class="text-base rounded-full ti ti-circle-x-filled bg-content"></i>
+											</div>
+										</button>
+
+										<div class="grow">
+											<x-wave :src="URL.createObjectURL(file)" class="flex gap-2 items-center group">
+												<button type="button" play-pause class="text-content-dimmed">
+													<i class="text-2xl ti ti-player-play-filled group-[[state=loading]]:hidden group-[[state=loaded]]:hidden group-[[state=playing]]:hidden"></i>
+													<i class="text-2xl ti ti-player-pause-filled hidden group-[[state=playing]]:block"></i>
+
+													<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="20px" height="20px" viewbox="0 0 50 50" style="enable-background:new 0 0 50 50;" class="hidden group-[[state=loading]]:block group-[[state=loaded]]:block" xml:space="preserve">
+														<path fill="currentColor" d="M25.251,6.461c-10.318,0-18.683,8.365-18.683,18.683h4.068c0-8.071,6.543-14.615,14.615-14.615V6.461z">
+															<animateTransform attributetype="xml" attributename="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.6s" repeatcount="indefinite"></animateTransform>
+														</path>
+													</svg>
+												</button>
+
+												<div class="h-10 grow" wave></div>
+
+												<span process class="text-xs text-content-dimmed w-9 group-[[state=loading]]:hidden">
+													00:00
+												</span>
+											</x-wave>
+										</div>
+									</div>
+								</template>
+							</div>
+
+							<div class="ms-auto shrink-0">
+								{% if workspace.subscription.plan.config.voice_isolator.is_enabled is defined and workspace.subscription.plan.config.voice_isolator.is_enabled %}
+									<button type="submit" :processing="isProcessing" class="p-0 w-10 h-10 rounded-[0.875rem] button button-accent">
+
+										{% include "/snippets/spinner.twig" %}
+
+										<template x-if="!isProcessing">
+											<i class="ti ti-arrow-up"></i>
+										</template>
+									</button>
+								{% else %}
+									<a href="app/billing" class="p-0 w-10 h-10 rounded-[0.875rem] button button-dimmed" x-tooltip.raw="{{ __('Upgrade your plan') }}">
+										<i class="ti ti-lock-up"></i>
+									</a>
+								{% endif %}
+							</div>
+						</div>
+					</div>
+				</form>
+			</x-form>
+
+			{% include "/sections/footer.twig" %}
+		</div>
+	</div>
+{% endblock %}

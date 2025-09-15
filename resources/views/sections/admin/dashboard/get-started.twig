@@ -1,0 +1,197 @@
+{% set collapsed = true %}
+
+{% if 
+  option.openai.api_secret_key is not defined
+  or option.credit_rate is not defined 
+  or plans_count is not defined 
+  or plans_count < 1
+  or (option.stripe is not defined and option.paypal is not defined)
+  or option.site is not defined
+%}
+	{% set collapsed = false %}
+{% endif %}
+
+<section class="flex flex-col gap-6 box group" data-density="comfortable" x-ref="gsparent" {{ collapsed ? 'collapsed' : '' }}>
+	<div class="flex gap-4 justify-between items-center">
+		<h2>{{ p__('heading', 'Getting started') }}</h2>
+
+		{% if collapsed %}
+			<button type="button" @click="$refs.gsparent.toggleAttribute('collapsed')">
+				<i class="text-2xl ti ti-caret-up-filled block transition-all group-[[collapsed]]:rotate-180"></i>
+			</button>
+		{% endif %}
+	</div>
+
+	<div class="flex flex-col gap-6 group-[[collapsed]]:hidden">
+		<div class="flex relative gap-4 justify-between items-center">
+			<div class="flex gap-4 items-center">
+				<x-avatar icon="brand-openai"></x-avatar>
+
+				<div>
+					<div>{{ __('Connect with OpenAI') }}</div>
+					<div class="text-sm text-content-dimmed">
+						{{ __('Set your API key and start generating content.') }}
+					</div>
+				</div>
+			</div>
+
+			{% if option.openai.api_secret_key is defined %}
+				<div class="flex gap-4 items-center text-success">
+					<span class="hidden font-medium md:inline">{{ __('Done') }}</span>
+
+					<x-avatar class="bg-success/25 text-success" icon="square-rounded-check-filled"></x-avatar>
+				</div>
+			{% else %}
+				<div class="hidden md:block">
+					<a href="admin/settings/openai" class="button button-dimmed button-sm">
+						{{ p__('button', 'Connect') }}
+					</a>
+				</div>
+
+				<div class="block md:hidden">
+					<a href="admin/settings/openai" class="absolute top-0 left-0 z-10 w-full h-full"></a>
+
+					<x-avatar icon="arrow-right"></x-avatar>
+				</div>
+			{% endif %}
+		</div>
+
+		<div class="flex relative gap-4 justify-between items-center">
+			<div class="flex gap-4 items-center">
+				<x-avatar icon="decimal"></x-avatar>
+
+				<div>
+					<div>
+						{{ __('Define credit usage rates') }}
+					</div>
+
+					<div class="text-sm text-content-dimmed">
+						{{ __('Set the credit ratios against 3rd party services.') }}
+					</div>
+				</div>
+			</div>
+
+			{% if option.credit_rate is defined %}
+				<div class="flex gap-4 items-center text-success">
+					<span class="hidden font-medium md:inline">{{ __('Done') }}</span>
+
+					<x-avatar class="bg-success/25 text-success" icon="square-rounded-check-filled"></x-avatar>
+				</div>
+			{% else %}
+				<div class="hidden md:block">
+					<a href="admin/settings/credits" class="button button-dimmed button-sm">
+						{{ p__('button', 'Credit ratios') }}
+					</a>
+				</div>
+
+				<div class="block md:hidden">
+					<a href="admin/settings/credits" class="absolute top-0 left-0 z-10 w-full h-full"></a>
+
+					<x-avatar icon="arrow-right"></x-avatar>
+				</div>
+			{% endif %}
+		</div>
+
+		<div class="flex relative gap-4 justify-between items-center">
+			<div class="flex gap-4 items-center">
+				<x-avatar icon="box"></x-avatar>
+
+				<div>
+					<div>{{ __('Setup membership plans') }}</div>
+					<div class="text-sm text-content-dimmed">
+						{{ __('Create pricing plans for your users.') }}
+					</div>
+				</div>
+			</div>
+
+			{% if plans_count is defined and plans_count > 0 %}
+				<div class="flex gap-4 items-center text-success">
+					<span class="hidden font-medium md:inline">{{ __('Done') }}</span>
+
+					<x-avatar class="bg-success/25 text-success" icon="square-rounded-check-filled"></x-avatar>
+				</div>
+			{% else %}
+				<div class="hidden md:block">
+					<a href="admin/plans/new" class="button button-dimmed button-sm">
+						{{ p__('button', 'Add pricing plan') }}
+					</a>
+				</div>
+
+				<div class="block md:hidden">
+					<a href="admin/plans/new" class="absolute top-0 left-0 z-10 w-full h-full"></a>
+
+					<x-avatar icon="arrow-right"></x-avatar>
+				</div>
+			{% endif %}
+		</div>
+
+		<div class="flex relative gap-4 justify-between items-center">
+			<div class="flex gap-4 items-center">
+				<x-avatar icon="cash"></x-avatar>
+
+				<div>
+					<div>{{ __('Configure payment gateways') }}</div>
+					<div class="text-sm text-content-dimmed">
+						{{ __('Setup your payment gateways for transactions.') }}
+					</div>
+				</div>
+			</div>
+
+			{% if option.stripe is defined or option.paypal is defined %}
+				<div class="flex gap-4 items-center text-success">
+					<span class="hidden font-medium md:inline">{{ __('Done') }}</span>
+
+					<x-avatar class="bg-success/25 text-success" icon="square-rounded-check-filled"></x-avatar>
+				</div>
+			{% else %}
+				<div class="hidden md:block">
+					<a href="admin/settings/payments" class="button button-dimmed button-sm">
+						{{ p__('button', 'Configure') }}
+					</a>
+				</div>
+
+				<div class="block md:hidden">
+					<a href="admin/settings/payments" class="absolute top-0 left-0 z-10 w-full h-full"></a>
+
+					<x-avatar icon="arrow-right"></x-avatar>
+				</div>
+			{% endif %}
+		</div>
+
+		<div class="flex relative gap-4 justify-between items-center">
+			<div class="flex gap-4 items-center">
+				<x-avatar icon="settings-2"></x-avatar>
+
+				<div>
+					<div>
+						{{ __('Set business details') }}
+					</div>
+
+					<div class="text-sm text-content-dimmed">
+						{{ __('Set your business details') }}
+					</div>
+				</div>
+			</div>
+
+			{% if option.site is defined %}
+				<div class="flex gap-4 items-center text-success">
+					<span class="hidden font-medium md:inline">{{ __('Done') }}</span>
+
+					<x-avatar class="bg-success/25 text-success" icon="square-rounded-check-filled"></x-avatar>
+				</div>
+			{% else %}
+				<div class="hidden md:block">
+					<a href="admin/settings/general" class="button button-dimmed button-sm">
+						{{ p__('button', 'Business details') }}
+					</a>
+				</div>
+
+				<div class="block md:hidden">
+					<a href="admin/settings/general" class="absolute top-0 left-0 z-10 w-full h-full"></a>
+
+					<x-avatar icon="arrow-right"></x-avatar>
+				</div>
+			{% endif %}
+		</div>
+	</div>
+</section>

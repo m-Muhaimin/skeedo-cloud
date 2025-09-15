@@ -1,0 +1,324 @@
+{% extends "/layouts/main.twig" %}
+
+{% set active_menu = '/admin/orders' %}
+
+{% set xdata %}
+order({{ (order is defined ? order : {})|json_encode }})
+{% endset %}
+
+{% block title p__('title', 'Order details')|title %}
+
+{% block template %}
+	<div class="flex flex-col gap-8">
+		<div>
+			{% include "snippets/back.twig" with {link: 'admin/orders', label: 'Orders'} %}
+
+			<h1 class="mt-4">
+				{{ p__('heading', 'Order') }}:
+
+				<span class="font-normal text-intermediate-content">
+					<span x-text="order.workspace.name"></span>
+					<i class="text-2xl ti ti-direction-horizontal text-content-dimmed"></i>
+					<span x-text="order.plan.title"></span>
+				</span>
+			</h1>
+
+			<div class="mt-2">
+				<x-uuid x-text="order.id"></x-uuid>
+			</div>
+		</div>
+
+		<div class="flex flex-col gap-2">
+			<section class="flex flex-col gap-6 box" data-density="comfortable">
+				<div>
+					<div class="flex gap-2 items-center">
+						<h2>{{ p__('heading', 'Order') }}</h2>
+
+						<template x-if="order.status == 'draft'">
+							<span class="badge badge-info">{{ p__('order-status', 'Draft') }}</span>
+						</template>
+
+						<template x-if="order.status == 'pending'">
+							<span class="badge badge-alert">{{ p__('order-status', 'Pending') }}</span>
+						</template>
+
+						<template x-if="order.status == 'failed'">
+							<span class="badge badge-failure">{{ p__('order-status', 'Failed') }}</span>
+						</template>
+
+						<template x-if="order.status == 'processing'">
+							<span class="badge badge-warning">{{ p__('order-status', 'Processing') }}</span>
+						</template>
+
+						<template x-if="order.status == 'completed'">
+							<span class="badge badge-success">{{ p__('order-status', 'Completed') }}</span>
+						</template>
+
+						<template x-if="order.status == 'cancelled'">
+							<span class="badge badge-failure">{{ p__('order-status', 'Cancelled') }}</span>
+						</template>
+					</div>
+
+					<p class="text-sm text-content-dimmed">
+						{{ __('Order created on %s', '<x-time :datetime="order.created_at"></x-time>')|raw }}
+					</p>
+				</div>
+
+				<div class="flex flex-col gap-6">
+					<div class="flex flex-wrap gap-y-6 gap-x-10 items-center">
+						<div class="min-w-min">
+							<div class="label">{{ p__('label', 'Plan') }}</div>
+							<div>
+								<a :href="`admin/plan-snapshots/${order.plan.id}`" class="inline-flex gap-1 items-center group">
+									<span class="group-hover:underline" x-text="order.plan.title"></span>
+									<i class="text-base ti ti-corner-right-up text-content-dimmed"></i>
+								</a>
+							</div>
+						</div>
+
+						<div class="min-w-min">
+							<div class="label" x-text="order.plan.billing_cycle == 'one-time' ? `{{ p__('label', 'Add-on credits') }}` : `{{ p__('label', 'Monthly credits') }}`"></div>
+
+							<div>
+								<x-credit :data-value="order.plan.credit_count"></x-credit>
+							</div>
+						</div>
+
+						<div class="min-w-min">
+							<template x-if="order.plan.billing_cycle == 'monthly'">
+								<div class="label">{{ __('Monthly') }}</div>
+							</template>
+
+							<template x-if="order.plan.billing_cycle == 'yearly'">
+								<div class="label">{{ __('Yearly') }}</div>
+							</template>
+
+							<template x-if="order.plan.billing_cycle == 'lifetime'">
+								<div class="label">{{ __('Lifetime') }}</div>
+							</template>
+
+							<template x-if="order.plan.billing_cycle == 'one-time'">
+								<div class="label">{{ __('Payment') }}</div>
+							</template>
+
+							<div class="flex gap-2 items-center">
+								<x-money :data-value="order.total" :currency="order.currency.code" :minor-units="order.currency.fraction_digits"></x-money>
+							</div>
+						</div>
+
+						<template x-if="order.payment_id || order.payment_gateway || order.coupon">
+							<hr class="w-full">
+						</template>
+
+						<template x-if="order.payment_id || order.payment_gateway">
+							<div class="min-w-min">
+								<div class="label">{{ p__('label', 'Payment') }}</div>
+								<div class="flex mt-1">
+									<div>
+										<x-copy class="flex items-center badge" :data-copy="order.payment_id">
+
+											<span class="font-bold capitalize" x-text="order.payment_gateway"></span>
+
+											<span x-text="order.external_id"></span>
+										</x-copy>
+									</div>
+								</div>
+							</div>
+						</template>
+
+						<template x-if="order.coupon">
+							<div class="min-w-min">
+								<div class="label">{{ p__('label', 'Coupon') }}</div>
+								<div>
+									<x-copy class="badge" :data-copy="order.coupon.code" x-text="order.coupon.code"></x-copy>
+								</div>
+							</div>
+						</template>
+					</div>
+
+					<template x-if="['pending'].includes(order.status)">
+						<div class="flex gap-2 items-center">
+							<button type="button" class="button button-sm" @click="action = 'approve'; modal.open('confirm-modal')">
+								<i class="ti ti-check"></i>
+								{{ p__('button', 'Approve')}}
+							</button>
+
+							<button type="button" class="button button-outline button-sm" @click="action = 'reject'; modal.open('confirm-modal')">
+								<i class="ti ti-x"></i>
+								{{ p__('button', 'Reject')}}
+							</button>
+						</div>
+					</template>
+				</div>
+			</section>
+
+			<section class="flex flex-col gap-6 box" data-density="comfortable">
+				<h2>{{ p__('heading', 'Customer') }}</h2>
+
+				<div class="flex flex-col gap-1">
+					<div class="flex gap-3 items-center p-4 rounded-2xl bg-intermediate text-intermediate-content">
+						<x-avatar class="bg-main text-content" :title="order.workspace.name" :src="order.workspace.logo"></x-avatar>
+
+						<div>
+							<div class="label">{{ p__('label', 'Workspace') }}</div>
+							<div x-text="order.workspace.name"></div>
+						</div>
+
+						<a :href="`admin/workspaces/${order.workspace.id}`" class="flex justify-center items-center ms-auto w-8 h-8 rounded-full bg-main outline-1 outline-line hover:outline outline-offset-0">
+							<i class="text-base ti ti-chevron-right"></i>
+						</a>
+					</div>
+
+					<div class="flex gap-3 items-center p-4 rounded-2xl bg-intermediate text-intermediate-content">
+						<x-avatar class="bg-main text-content" :title="`${order.workspace.owner.first_name} ${order.workspace.owner.last_name}`" :src="order.workspace.owner.avatar"></x-avatar>
+
+						<div>
+							<div class="label" x-text="`${order.workspace.owner.first_name} ${order.workspace.owner.last_name}`"></div>
+							<div class="text-sm text-content-dimmed">{{ p__('role', 'Owner') }}
+							</div>
+						</div>
+
+						<a :href="`admin/users/${order.workspace.owner.id}`" class="flex justify-center items-center ms-auto w-8 h-8 rounded-full bg-main outline-1 outline-line hover:outline outline-offset-0">
+							<i class="text-base ti ti-chevron-right"></i>
+						</a>
+					</div>
+				</div>
+			</section>
+
+			<template x-if="order.subscription">
+				<section class="flex flex-col gap-6 box" data-density="comfortable">
+					<div>
+						<div class="flex gap-2 items-center">
+							<h2>{{ p__('heading', 'Subscription') }}</h2>
+
+							<div>
+								<template x-if="order.subscription.status == 'active'">
+									<span class="badge badge-success">{{ p__('subscription-status', 'Active') }}</span>
+								</template>
+
+								<template x-if="order.subscription.status == 'trialing'">
+									<span class="badge badge-info">{{ p__('subscription-status', 'Trialing') }}</span>
+								</template>
+
+								<template x-if="order.subscription.status == 'canceled'">
+									<span class="badge">{{ p__('subscription-status', 'Canceled') }}</span>
+								</template>
+
+								<template x-if="order.subscription.status == 'ended'">
+									<span class="badge badge-failure">{{ p__('subscription-status', 'Ended') }}</span>
+								</template>
+							</div>
+						</div>
+
+						<p class="text-sm text-content-dimmed">
+							{{ __('A subscription has been established in accordance with this order.') }}
+						</p>
+					</div>
+
+					<div class="flex flex-col gap-6">
+						<div class="flex flex-wrap gap-y-6 gap-x-10 items-center">
+							<div class="min-w-min">
+								<div class="label">{{ p__('label', 'Plan') }}</div>
+								<div>
+									<a :href="`admin/plan-snapshots/${order.subscription.plan.id}`" class="inline-flex gap-1 items-center group">
+										<span class="group-hover:underline" x-text="order.subscription.plan.title"></span>
+										<i class="text-base ti ti-corner-right-up text-content-dimmed"></i>
+									</a>
+								</div>
+							</div>
+
+							<div class="min-w-min">
+								<div class="label">
+									{{ p__('label', 'Monthly credits') }}
+								</div>
+
+								<div>
+									<x-credit :data-value="order.subscription.plan.credit_count"></x-credit>
+								</div>
+							</div>
+
+							<div class="min-w-min">
+								<div class="label">
+									{{ p__('label', 'Credits left') }}
+								</div>
+
+								<div>
+									<x-credit :data-value="order.subscription.credit_count"></x-credit>
+								</div>
+							</div>
+
+							<div class="min-w-min">
+								<template x-if="order.subscription.plan.billing_cycle == 'monthly'">
+									<div class="label">{{ __('Monthly') }}</div>
+								</template>
+
+								<template x-if="order.subscription.plan.billing_cycle == 'yearly'">
+									<div class="label">{{ __('Yearly') }}</div>
+								</template>
+
+								<template x-if="order.subscription.plan.billing_cycle == 'lifetime'">
+									<div class="label">{{ __('Lifetime') }}</div>
+								</template>
+
+								<div class="flex gap-2 items-center">
+									<x-money :data-value="order.subscription.plan.price" :currency="order.currency.code" :minor-units="order.currency.fraction_digits"></x-money>
+								</div>
+							</div>
+						</div>
+
+						<hr>
+
+						<template x-if="order.subscription.cancel_at">
+							<p class="text-xs text-content-dimmed">
+								{{ __("Subscription will be cancelled at %s", '<x-time :datetime="order.subscription.cancel_at"></x-time>')|raw }}
+							</p>
+						</template>
+
+						<template x-if="!order.subscription.cancel_at && order.subscription.renew_at">
+							<p class="text-xs text-content-dimmed">
+								{{ __("Usage renews at %s", '<x-time :datetime="order.subscription.renew_at"></x-time>')|raw }}
+							</p>
+						</template>
+
+						<div class="flex gap-1 items-center">
+							<a :href="`admin/subscriptions/${order.subscription.id}`" class="button button-outline button-sm">
+								{{ p__('button', 'View subscription')}}
+							</a>
+						</div>
+					</div>
+				</section>
+			</template>
+		</div>
+	</div>
+
+	<modal-element name="confirm-modal">
+		<form class="flex flex-col gap-8 modal" @submit.prevent="submit">
+			<div class="flex justify-between items-center">
+				<h2 class="text-xl">{{ p__('heading', 'Confirmation') }}</h2>
+
+				<button class="flex justify-center items-center w-8 h-8 rounded-full border border-transparent bg-line-dimmed hover:border-line" @click="modal.close()" type="button">
+					<i class="text-xl ti ti-x"></i>
+				</button>
+			</div>
+
+			<div>
+				<div class="flex gap-1 items-center text-sm font-bold">
+					<i class="text-lg ti ti-info-square-rounded"></i>
+					{{ __('Important') }}
+				</div>
+
+				<p class="mt-2 text-sm">
+					{{ __('This action is irreversible. Are you sure you want to proceed?') }}
+				</p>
+			</div>
+
+			<div class="flex items-center">
+				<button class="w-full button" type="submit" :processing="isProcessing">
+					{% include "/snippets/spinner.twig" %}
+
+					<span x-text="action == 'approve' ? `{{ p__('button', 'Approve order') }}` : `{{ p__('button', 'Reject order') }}`"></span>
+				</button>
+			</div>
+		</form>
+	</modal-element>
+{% endblock %}

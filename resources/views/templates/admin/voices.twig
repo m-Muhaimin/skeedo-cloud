@@ -1,0 +1,224 @@
+{% extends "/layouts/main.twig" %}
+
+{% set active_menu = '/admin/voices' %}
+
+{% set xdata %}
+list("voices")
+{% endset %}
+
+{% block title p__('title', 'Voices')|title %}
+
+{% block template %}
+	{# Header #}
+	<div class="flex justify-between items-center">
+		<div>
+			<h1>{{ p__('heading', 'Voices') }}</h1>
+
+			<template x-if="total !== null">
+				<div class="text-sm text-content-dimmed md:hidden">
+					{{ __('Total :count voices')|replace({':count': '<span x-text="total"></span>'})|raw }}
+				</div>
+			</template>
+		</div>
+	</div>
+
+	{# Filters #}
+	{% set total = __('Total :count assistants.') %}
+
+	{% if option.voice_list_fetch_date is defined %}
+		{% set datetime %}
+		<x-time :datetime="{{ option.voice_list_fetch_date }}" data-type="datetime"></x-time>
+		{% endset %}
+
+		{% set updated = __('Last updated :datetime.')|replace({':datetime' : datetime}) %}
+		{% set total = [total, updated]|join(' ') %}
+	{% endif %}
+
+	{% 
+  include "/snippets/filters.twig" with { 
+    total: total,
+    sort: [
+      {
+        value: null,
+        label: p__('label', 'Default')
+      },
+
+			{
+				value: 'position',
+				label: p__('label', 'Manual')
+			},
+    
+      {
+        value: 'created_at',
+        label: p__('label', 'Date')
+      },
+    
+      {
+        value: 'name',
+        label: p__('label', 'Name')
+      }
+    ],
+    filters: [
+      {
+        label: p__('label', 'Provider'),
+        model: 'provider',
+        options: [
+          {
+            value: 'openai',
+            label: p__('status', 'OpenAI')
+          },
+          {
+            value: 'elevenlabs',
+            label: p__('status', 'ElevenLabs')
+          },
+          {
+            value: 'google',
+            label: p__('status', 'Google')
+          },
+          {
+            value: 'azure',
+            label: p__('status', 'Azure')
+          }
+        ]
+      },
+      {
+        label: p__('label', 'Status'),
+        model: 'status',
+        options: [
+          {
+            value: '0',
+            label: p__('status', 'Inactive')
+          },
+          {
+            value: '1',
+            label: p__('status', 'Active')
+          }
+        ]
+      },
+      {
+        label: p__('label', 'Workspace'),
+        model: 'workspace',
+        hidden: true
+      }
+    ]
+  } 
+%}
+
+	{# List #}
+	<div class="group/list" :data-state="state">
+		<div class="hidden group-data-[state=empty]/list:block">
+			{% include "sections/empty.twig" with { title: p__('heading', 'Empty result set'), message: __('There are no assistant yet.'), reset: __('There are no assistant matching your search.') } %}
+		</div>
+
+		<div class="hidden md:grid grid-cols-12 gap-3 items-center px-3 py-2 text-content-dimmed text-xs group-data-[state=empty]/list:hidden">
+			<div class="col-span-7">{{ p__('label', 'Assistant') }}</div>
+			<div class="col-span-2">{{ p__('label', 'Created') }}</div>
+			<div class="col-span-2">{{ p__('label', 'Status') }}</div>
+			<div class="col-span-1"></div>
+		</div>
+
+		<ul x-ref="list" class="text-sm flex flex-col gap-1 group-data-[state=empty]:hidden" x-sort.ghost="prioritize($item, $position, $refs.list)">
+			{% for i in range(1,5) %}
+				<li class="hidden md:grid-cols-12 justify-between gap-3 items-center p-3 box group-data-[state=initial]/list:flex md:group-data-[state=initial]/list:grid">
+					<div class="flex gap-3 items-center md:col-span-7">
+						<i class="ti ti-grip-vertical text-content-dimmed" :class="orderby == 'position' ? 'inline-block' : 'hidden'" x-sort:handle></i>
+
+						<div class="avatar loading"></div>
+
+						<div>
+							<div>
+								<div class="my-0.5 w-28 h-4 loading"></div>
+								<div class="hidden mt-1 w-16 h-3 loading md:block"></div>
+							</div>
+
+							<div class="my-0.5 w-20 h-5 md:hidden loading"></div>
+						</div>
+					</div>
+
+					<div class="hidden md:block md:col-span-2">
+						<div class="w-10 h-5 loading"></div>
+					</div>
+
+					<div class="hidden md:block md:col-span-2">
+						<div class="w-10 h-5 loading"></div>
+					</div>
+
+					<div class="justify-self-end md:col-span-1">
+						<i class="text-2xl ti ti-dots-vertical text-content-dimmed"></i>
+					</div>
+				</li>
+			{% endfor %}
+
+			<template x-for="voice in resources" :key="voice.id">
+				<li class="flex relative grid-cols-12 gap-3 justify-between items-center p-3 md:grid box [body:not(.sorting)_&]:hover:border-line" x-data x-sort:item="voice.id" :data-id="voice.id">
+					<a :href="`admin/voices/${voice.id}`" class="absolute top-0 left-0 w-full h-full cursor-pointer"></a>
+
+					<div class="flex gap-3 items-center md:col-span-7">
+						<i class="ti ti-grip-vertical text-content-dimmed relative z-10 cursor-grab [body:not(.sorting)_&]:hover:scale-150 transition-transform" :class="orderby == 'position' ? 'inline-block' : 'hidden'" x-sort:handle></i>
+						<x-avatar :title="voice.name"></x-avatar>
+
+						<div>
+							<div class="font-bold" x-text="voice.name"></div>
+							<div class="mt-0.5 text-xs capitalize text-content-dimmed" x-text="voice.provider"></div>
+						</div>
+					</div>
+
+					<div class="hidden md:block md:col-span-2">
+						<x-time :datetime="voice.created_at" data-type="date"></x-time>
+					</div>
+
+					<div class="hidden md:block md:col-span-2">
+						<label class="inline-flex relative z-10 gap-2 items-center cursor-pointer">
+							<input type="checkbox" name="status" class="hidden peer" :checked="voice.status == 1" @click="toggleStatus(voice)">
+
+							<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+							<span class="text-content-dimmed peer-checked:hidden">
+								{{ p__('status', 'Inactive') }}
+							</span>
+
+							<span class="hidden text-success peer-checked:inline">
+								{{ p__('status', 'Active') }}
+							</span>
+						</label>
+					</div>
+
+					<div class="justify-self-end md:col-span-1">
+						<div class="relative" @click.outside="$refs.context.removeAttribute('data-open')">
+
+							<button class="relative z-10" @click="$refs.context.toggleAttribute('data-open')">
+								<i class="text-2xl ti ti-dots-vertical text-content-dimmed hover:text-intermediate-content"></i>
+							</button>
+
+							<div class="menu" x-ref="context">
+								<ul>
+									<li>
+										<a :href="`admin/voices/${voice.id}`" class="flex gap-2 items-center px-4 py-2 hover:no-underline hover:bg-intermediate">
+											<i class="ti ti-pencil"></i>
+
+											{{ p__('button', 'Edit') }}</a>
+									</li>
+
+									<template x-if="voice.user">
+										<li>
+											<button class="flex gap-2 items-center px-4 py-2 w-full hover:no-underline hover:bg-intermediate" @click.prevent="currentResource = voice; modal.open('delete-modal')">
+												<i class="ti ti-trash"></i>
+
+												{{ p__('button', 'Delete') }}
+											</button>
+										</li>
+									</template>
+								</ul>
+							</div>
+						</div>
+					</div>
+				</li>
+			</template>
+		</ul>
+	</div>
+
+	{% include "sections/delete-modal.twig" with { 
+    message: __('Do you really want to delete :title?'),
+    title: '`${currentResource.name}`'
+  } %}
+{% endblock %}

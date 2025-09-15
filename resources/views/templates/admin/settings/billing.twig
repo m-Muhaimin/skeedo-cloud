@@ -1,0 +1,329 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% set xdata = 'settings' %}
+{% block title p__('title', 'Billing settings')|title %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {link: 'admin/settings', label: 'Settings'} %}
+
+		<h1 class="mt-4">{{ p__('heading', 'Billing Configuration') }}</h1>
+	</div>
+
+	<x-form>
+		<form class="flex flex-col gap-8" @submit.prevent="submit" x-ref="form">
+			<div class="flex flex-col gap-2" x-data="{currency: '{{ option.billing.currency|default('USD') }}', fractionDigits: '{{ currency.fraction_digits }}'}">
+				<section class="grid grid-cols-2 gap-6 box" data-density="comfortable">
+
+					<h2 class="col-span-2">{{ p__('heading', 'General') }}</h2>
+
+					<div class="col-span-2">
+						<div class="flex justify-between items-center p-3 rounded-lg bg-intermediate">
+							{{ p__('label', 'Billing address') }}
+
+							<label class="inline-flex gap-2 items-center cursor-pointer">
+								<input type="checkbox" name="billing[address_enabled]" class="hidden peer" {{ option.billing.address_enabled is defined and option.billing.address_enabled ? 'checked' : '' }}>
+
+								<span class="text-content-dimmed peer-checked:hidden">
+									{{ __('Disabled') }}
+								</span>
+
+								<span class="hidden text-success peer-checked:inline">
+									{{ __('Enabled') }}
+								</span>
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+							</label>
+						</div>
+
+						<ul class="info mt-2">
+
+							<li>
+								{{ __('If enabled, then billing address will be required at the checkout.') }}
+								{{ __('Address information is required for by payment gateways in some countries.') }}
+							</li>
+						</ul>
+					</div>
+
+					<div class="col-span-2">
+						<div class="flex gap-2 items-center p-3 rounded-lg bg-intermediate">
+							{{ p__('label', 'Credit overuse allowance') }}
+
+							<i class="text-base cursor-auto ti ti-test-pipe text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Experimental') }}"></i>
+
+							<label class="inline-flex gap-2 items-center cursor-pointer ms-auto">
+								<input type="checkbox" name="billing[negative_balance_enabled]" class="hidden peer" {{ option.billing.negative_balance_enabled is defined and option.billing.negative_balance_enabled ? 'checked' : '' }}>
+
+								<span class="text-content-dimmed peer-checked:hidden">
+									{{ __('Disabled') }}
+								</span>
+
+								<span class="hidden text-success peer-checked:inline">
+									{{ __('Enabled') }}
+								</span>
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+							</label>
+						</div>
+
+						<ul class="info mt-2">
+							<li>
+								{{ __('Overused credits are tracked as workspace debt and automatically deducted from future subscription renewals or credit purchases.') }}
+							</li>
+							<li>
+								{{ __('Without this feature, overused credits become lost revenue that cannot be recovered.') }}
+							</li>
+							<li>
+								{{ __('Note: This does not allow unlimited usage. Workspaces with negative balance are still blocked from new operations until debt is covered.') }}
+							</li>
+						</ul>
+					</div>
+
+					<div>
+						<label for="billing.currency">
+							{{ p__('label', 'Default Currency') }}
+						</label>
+
+						<select id="billing.currency" name="billing[currency]" class="mt-2 input" x-model="currency" @change="fractionDigits = $el.options[$el.selectedIndex].dataset.fractionDigits">
+							{% for c in currencies %}
+								<option value="{{ c.code }}" data-fraction-digits="{{ c.fraction_digits }}">
+									{{ c.name }}
+								</option>
+							{% endfor %}
+						</select>
+					</div>
+
+					<div x-data="{provider: `{{ option.currency.provider ?? '' }}`}">
+						<label for="currency.provider">
+							{{ p__('label', 'Currency rate provider') }}
+						</label>
+
+						<select id="currency.provider" name="currency[provider]" class="mt-2 input" x-model="provider">
+
+							<option value="">{{ __('None') }}</option>
+
+							{% for key, provider in rate_providers %}
+								<option value="{{ key }}" {{ option.currency.provider is defined and key == option.currency.provider ? 'selected' : '' }}>
+									{{ provider.name }}
+								</option>
+							{% endfor %}
+						</select>
+
+						<ul class="info mt-2">
+							<template x-if="!provider">
+								<li>
+									{{ __('All charges will be made in default currency.') }}
+								</li>
+							</template>
+
+							<template x-if="provider">
+								<li>
+									<a :href="`/admin/settings/rate-providers/${provider}`" target="_blank" class="inline-flex gap-1 items-center text-content hover:underline">
+										{{ p__('button', 'Configure selected provider') }}
+
+										<i class="text-xs ti ti-external-link"></i>
+									</a>
+								</li>
+							</template>
+						</ul>
+					</div>
+				</section>
+
+				<section class="grid grid-cols-2 gap-6 px-16 py-12 rounded-xl border border-line-dimmed">
+					<h2 class="col-span-2">{{ p__('heading', 'Trialing') }}</h2>
+
+					<div>
+						<label for="billing.trial_period_days">
+							{{ p__('label', 'Trial period days') }}
+						</label>
+
+						<input type="number" id="billing.trial_period_days" required name="billing[trial_period_days]" min="0" max="90" class="mt-2 input" value="{{ option.billing.trial_period_days ?? 0 }}">
+
+						<ul class="info mt-2">
+							<li>
+								{{ __('Set value to %s to disable trailing', '<code>0</code>')|raw }}
+							</li>
+							<li>
+								{{ __('Each user is eligible for trailing only once in any paid plan') }}
+							</li>
+						</ul>
+					</div>
+
+					<div>
+						<label>&nbsp;</label>
+
+						<div class="mt-2">
+							<label class="inline-flex gap-2 items-center mt-3 cursor-pointer">
+								<input type="checkbox" name="billing[trial_without_payment]" class="hidden peer" value="1" {{ option.billing.trial_without_payment is defined and option.billing.trial_without_payment ? 'checked' : '' }}>
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+								<span class="text-content-dimmed peer-checked:text-success">
+									{{ p__('label', 'Trial without payment')}}
+								</span>
+							</label>
+						</div>
+
+						<ul class="info mt-2">
+							<li>I
+								{{ __('If enabled, eligible users can upgrade to any paid plan with provinding any payment method.') }}
+							</li>
+							<li>
+								{{ __('After trial ends, a payment method will be required.') }}
+							</li>
+						</ul>
+					</div>
+				</section>
+
+				<section class="grid grid-cols-2 gap-6 box" data-density="comfortable">
+					<h2 class="col-span-2">
+						{{ p__('heading', 'Default & Fallback plans') }}
+					</h2>
+
+					<div>
+						<label for="billing.signup_plan">
+							{{ p__('label', 'Sign up plan') }}
+						</label>
+
+						<select id="billing.signup_plan" name="billing[signup_plan]" class="mt-2 input" :disabled="!plansFetched">
+							<option value="">{{ __('None') }}</option>
+
+							<template x-for="plan in plans" :key="plan.id">
+								<template x-if="plan.billing_cycle == 'monthly' || plan.billing_cycle == 'yearly'">
+									<option :value="plan.id" x-text="`${plan.title} / ${plan.billing_cycle}`" :selected="plan.id == '{{ option.billing.signup_plan ?? '' }}'"></option>
+								</template>
+							</template>
+						</select>
+
+						<ul class="info mt-2">
+							<li>
+								{{ __('New users will be automatically subscribed to this plan <strong>without provinding payment details</strong>.')|raw }}
+							</li>
+
+							<li>
+								{{ __('Select %s to disable automatic subscription. Users will be required to choose a plan by themself', '<strong>' ~ __('None') ~ '</strong>')|raw }}
+							</li>
+
+							<li>
+								{{ __('If you\'re going to select any paid plan, then it\'s highly recommended to enable trialing. Otherwise, new users will be able to the selected paid plan for free.') }}
+							</li>
+						</ul>
+					</div>
+
+					<div>
+						<label for="billing.fallback_plan">
+							{{ p__('label', 'Fallback plan') }}
+						</label>
+
+						<select id="billing.fallback_plan" name="billing[fallback_plan]" class="mt-2 input" :disabled="!plansFetched">
+							<option value="">{{ __('None') }}</option>
+
+							<template x-for="plan in plans" :key="plan.id">
+								<template x-if="plan.billing_cycle == 'monthly' || plan.billing_cycle == 'yearly'">
+									<option :value="plan.id" x-text="`${plan.title} / ${plan.billing_cycle}`" :selected="plan.id == '{{ option.billing.fallback_plan ?? '' }}'"></option>
+								</template>
+							</template>
+						</select>
+
+						<ul class="info mt-2">
+							<li>
+								{{ __('If any subscription expires or fails to renew, then the user will be automatically subscribed to this plan.') }}
+							</li>
+
+							<li>
+								{{ __('Select %s to disable automatic downgrading. Users will be required to choose a new plan by themself.', '<strong>' ~ __('None') ~ '</strong>')|raw }}
+							</li>
+						</ul>
+					</div>
+				</section>
+
+				<section class="flex flex-col gap-6 px-16 py-12 rounded-xl border border-line-dimmed" x-data="{ status: {{ option.billing.custom_credits.enabled|default(false) ? 'true' : 'false' }} }">
+					<h2 class="col-span-2">{{ p__('heading', 'Custom Credit Purchases') }}</h2>
+
+					<div>
+						<div class="flex justify-between items-center p-3 rounded-lg bg-intermediate">
+							{{ p__('label', 'Enable custom credit purchases') }}
+
+							<label class="inline-flex gap-2 items-center cursor-pointer">
+								<input type="checkbox" name="billing[custom_credits][enabled]" class="hidden peer" {{ option.billing.custom_credits.enabled|default(false) ? 'checked' : '' }} x-model="status">
+
+								<span class="text-content-dimmed peer-checked:hidden">
+									{{ __('Disabled') }}
+								</span>
+
+								<span class="hidden text-success peer-checked:inline">
+									{{ __('Enabled') }}
+								</span>
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+							</label>
+						</div>
+
+						<ul class="info mt-2">
+							<li>
+								{{ __('Allow users to purchase additional credits with custom amounts beyond their subscription plan.') }}
+							</li>
+						</ul>
+					</div>
+
+					<template x-if="status">
+						<div class="grid grid-cols-2 gap-6">
+							<div class="col-span-2">
+								<label for="billing.custom_credits.rate">
+									{% set c %}
+									<span x-text="currency"></span>
+									{% endset %}
+									{{ p__('label', 'Credits per %s', c)|raw }}
+								</label>
+
+								<div class="relative">
+									<input type="text" id="billing.custom_credits.rate" required name="billing[custom_credits][rate]" class="mt-2 input" placeholder="{{ option.billing.custom_credits.rate ?? '' }}" value="{{ option.billing.custom_credits.rate ?? '' }}" x-mask:dynamic="$money($input, '.', '', 9)" required>
+									<code class="absolute uppercase end-3 top-1/2 text-sm font-medium -translate-y-1/2 pointer-events-none text-content-dimmed">{{ __('credits') }}</code>
+								</div>
+							</div>
+
+							<div>
+								<label for="billing.custom_credits.minimum_amount">
+									{{ p__('label', 'Minimum purchase amount') }}
+								</label>
+
+								<div class="relative">
+									<input type="text" id="billing.custom_credits.minimum_amount" name="billing[custom_credits][minimum_amount]" data-format="price" :data-fraction-digits="fractionDigits" class="pe-11 mt-2 input" autocomplete="off" value="{{ option.billing.custom_credits.minimum_amount ?? '' }}" x-mask:dynamic="$money($input, '.', ' ', fractionDigits)" x-ref="price"/>
+									<code class="absolute end-3 top-1/2 text-sm font-medium -translate-y-1/2 pointer-events-none text-content-dimmed" x-text="currency"></code>
+								</div>
+							</div>
+
+							<div>
+								<label for="billing.custom_credits.maximum_amount">
+									{{ p__('label', 'Maximum purchase amount') }}
+								</label>
+
+								<div class="relative">
+									<input type="text" id="billing.custom_credits.maximum_amount" name="billing[custom_credits][maximum_amount]" data-format="price" :data-fraction-digits="fractionDigits" class="pe-11 mt-2 input" autocomplete="off" value="{{ option.billing.custom_credits.maximum_amount ?? '' }}" x-mask:dynamic="$money($input, '.', ' ', fractionDigits)" x-ref="price"/>
+									<code class="absolute end-3 top-1/2 text-sm font-medium -translate-y-1/2 pointer-events-none text-content-dimmed" x-text="currency"></code>
+								</div>
+							</div>
+						</div>
+					</template>
+				</section>
+			</div>
+
+			<div class="flex gap-4 justify-end">
+				<a href="admin/settings" class="button button-outline">
+					{{ p__('button', 'Cancel') }}
+				</a>
+
+				<button type="submit" class="button button-accent" :processing="isProcessing">
+
+					{% include "/snippets/spinner.twig" %}
+
+					{{ p__('button', 'Save changes') }}
+				</button>
+			</div>
+		</form>
+	</x-form>
+{% endblock %}

@@ -1,0 +1,164 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% set xdata = 'settings' %}
+{% block title p__('title', 'Writer configuration')|title %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {link: 'admin/settings/features', label: 'Features'} %}
+
+		<h1 class="mt-4">{{ p__('heading', 'Writer') }}</h1>
+	</div>
+
+	<x-form>
+		<form class="flex flex-col gap-8" @submit.prevent="submit" x-ref="form">
+			<div class="flex flex-col gap-2">
+				<section class="flex flex-col gap-6 box" data-density="comfortable">
+					<h2 class="col-span-2">{{ p__('heading', 'Configuration') }}</h2>
+
+					<div class="flex justify-between items-center p-3 rounded-lg bg-intermediate">
+						{{ p__('label', 'Status') }}
+
+						<label class="inline-flex gap-2 items-center cursor-pointer">
+							<input type="checkbox" name="features[writer][is_enabled]" class="hidden peer" {{ option.features.writer.is_enabled is defined and option.features.writer.is_enabled ? 'checked' : '' }}>
+
+							<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+							<span class="text-content-dimmed peer-checked:hidden">
+								{{ p__('input-value', 'Disabled') }}
+							</span>
+
+							<span class="hidden text-success peer-checked:inline">
+								{{ p__('input-value', 'Enabled') }}
+							</span>
+						</label>
+					</div>
+
+					<div x-data="{ lang: `{{ option.features.writer.default_language|default('auto') }}` }">
+						<label>{{ p__('label', 'Default language') }}</label>
+
+						{% set languages = {
+            "sq-AL": "Albanian (Shqip)", 
+            "ar-SA": "Arabic (العربية)", 
+            "hy-AM": "Armenian (Հայերեն)", 
+            "awa-IN": "Awadhi (अवधी)", 
+            "az-AZ": "Azerbaijani (Azərbaycanca)", 
+            "ba-RU": "Bashkir (Башҡорт)", 
+            "eu-ES": "Basque (Euskara)", 
+            "be-BY": "Belarusian (Беларуская)", 
+            "bn-IN": "Bengali (বাংলা)", 
+            "bho-IN": "Bhojpuri (भोजपुरी)", 
+            "bs-BA": "Bosnian (Bosanski)", 
+            "pt-BR": "Brazilian Portugu (português brasileiro)", 
+            "bg-BG": "Bulgarian (български)", 
+            "yue-HK": "Cantonese (Yue) (粵語)", 
+            "ca-ES": "Catalan (Català)", 
+            "hi-IN": "Chhattisgarhi (छत्तीसगढ़ी)", 
+            "zh-CN": "Chinese (中文)", 
+            "hr-HR": "Croatian (Hrvatski)", 
+            "cs-CZ": "Czech (Čeština)", 
+            "da-DK": "Danish (Dansk)", 
+            "doi-IN": "Dogri (डोगरी)", 
+            "nl-NL": "Dutch (Nederlands)", 
+            "en-US": "English", 
+            "et-EE": "Estonian (Eesti)", 
+            "fo-FO": "Faroese (Føroyskt)", 
+            "fi-FI": "Finnish (Suomi)", 
+            "fr-FR": "French (Français)", 
+            "gl-ES": "Galician (Galego)", 
+            "ka-GE": "Georgian (ქართული)", 
+            "de-DE": "German (Deutsch)", 
+            "el-GR": "Greek (Ελληνικά)", 
+            "gu-IN": "Gujarati (ગુજરાતી)", 
+            "ha-IN": "Haryanvi (हरियाणवी)", 
+            "hi-IN": "Hindi (हिंदी)", 
+            "hu-HU": "Hungarian (Magyar)", 
+            "id-ID": "Indonesian (Bahasa Indonesia)", 
+            "ga-IE": "Irish (Gaeilge)", 
+            "it-IT": "Italian (Italiano)", 
+            "ja-JP": "Japanese (日本語)", 
+            "jv-ID": "Javanese (Basa Jawa)", 
+            "kn-IN": "Kannada (ಕನ್ನಡ)", 
+            "ks-IN": "Kashmiri (कश्मीरी)", 
+            "kk-KZ": "Kazakh (Қазақша)", 
+            "kok-IN": "Konkani (कोंकणी)", 
+            "ko-KR": "Korean (한국어)", 
+            "ky-KG": "Kyrgyz (Кыргызча)", 
+            "lv-LV": "Latvian (Latviešu)", 
+            "lt-LT": "Lithuanian (Lietuvių)", 
+            "mk-MK": "Macedonian (Македонски)", 
+            "mai-IN": "Maithili (मैथिली)", 
+            "ms-MY": "Malay (Bahasa Melayu)", 
+            "mt-MT": "Maltese (Malti)", 
+            "zh-CN": "Mandarin (普通话)", 
+            "zh-CN": "Mandarin Chinese (中文)", 
+            "mr-IN": "Marathi (मराठी)", 
+            "mwr-IN": "Marwari (मारवाड़ी)", 
+            "nan-TW": "Min Nan (閩南語)", 
+            "mo-MD": "Moldovan (Moldovenească)", 
+            "mn-MN": "Mongolian (Монгол)", 
+            "sr-RS": "Montenegrin (Crnogorski)", 
+            "ne-NP": "Nepali (नेपाली)", 
+            "no-NO": "Norwegian (Norsk)", 
+            "or-IN": "Oriya (ଓଡ଼ିଆ)", 
+            "ps-AF": "Pashto (پښتو)", 
+            "fa-IR": "Persian (Farsi) (فارسی)", 
+            "pl-PL": "Polish (Polski)", 
+            "pt-PT": "Portuguese (Português)", 
+            "pa-IN": "Punjabi (ਪੰਜਾਬੀ)", 
+            "raj-IN": "Rajasthani (राजस्थानी)", 
+            "ro-RO": "Romanian (Română)", 
+            "ru-RU": "Russian (Русский)", 
+            "sa-IN": "Sanskrit (संस्कृतम्)", 
+            "sat-IN": "Santali (संताली)", 
+            "sr-RS": "Serbian (Српски)", 
+            "sd-IN": "Sindhi (سنڌي)", 
+            "si-LK": "Sinhala (සිංහල)", 
+            "sk-SK": "Slovak (Slovenčina)", 
+            "sl-SI": "Slovene (Slovenščina)", 
+            "sl-SI": "Slovenian (Slovenščina)", 
+            "es-ES": "Spanish (Español)", 
+            "tr-TR": "Turkish (Türkçe)", 
+            "uk-UA": "Ukrainian (Українська)", 
+            "ur-PK": "Urdu (اردو)", 
+            "uz-UZ": "Uzbek (Ўзбек)", 
+            "vi-VN": "Vietnamese (Việt Nam)", 
+            "cy-GB": "Welsh (Cymraeg)", 
+            "wuu-CN": "Wu (吴语)" 
+            } %}
+
+						<select name="features[writer][default_language]" class="mt-2 input" x-model="lang">
+							<option value="auto">{{ p__('input-value', "Auto") }}</option>
+							{% for code, language in languages %}
+								<option value="{{ code }}" {{ option.features.writer.default_language|default('en-US') == code ? 'selected' : '' }}>
+									{{ language }}
+								</option>
+							{% endfor %}
+						</select>
+
+						<template x-if="lang == 'auto'">
+							<ul class="info mt-2">
+								<li>
+									{{ __("The default language will be set to the user's preferred language.") }}
+								</li>
+							</ul>
+						</template>
+					</div>
+				</section>
+			</div>
+
+			<div class="flex gap-4 justify-end">
+				<a href="admin/settings" class="button button-outline">
+					{{ p__('button', 'Cancel') }}
+				</a>
+
+				<button class="button button-accent" type="submit" :processing="isProcessing">
+					{% include "/snippets/spinner.twig" %}
+
+					{{ p__('button', 'Save changes') }}
+				</button>
+			</div>
+		</form>
+	</x-form>
+{% endblock %}

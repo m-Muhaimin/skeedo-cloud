@@ -1,0 +1,50 @@
+<?php
+
+declare(strict_types=1);
+
+namespace User\Domain\ValueObjects;
+
+use Doctrine\DBAL\Types\Types;
+use Doctrine\ORM\Mapping as ORM;
+use JsonSerializable;
+use Override;
+use Shared\Domain\Exceptions\InvalidValueException;
+
+#[ORM\Embeddable]
+class Language implements JsonSerializable
+{
+    public const DEFAULT = 'en-US';
+
+    #[ORM\Column(type: Types::STRING, name: "language", length: 5)]
+    public readonly string $value;
+
+    /**
+     * @throws InvalidValueException
+     */
+    public function __construct(string $value = self::DEFAULT)
+    {
+        $this->ensureValueIsValid($value);
+        $this->value = $value;
+    }
+
+    #[Override]
+    public function jsonSerialize(): string
+    {
+        return $this->value;
+    }
+
+    /**
+     * @throws InvalidValueException
+     */
+    private function ensureValueIsValid(string $value)
+    {
+        if (mb_strlen($value) > 5) {
+            throw new InvalidValueException(sprintf(
+                '<%s> does not allow the value <%s>. Maximum <%s> characters allowed.',
+                static::class,
+                $value,
+                5
+            ));
+        }
+    }
+}

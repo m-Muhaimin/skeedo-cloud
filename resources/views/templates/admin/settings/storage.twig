@@ -1,0 +1,122 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% set xdata = 'settings' %}
+{% block title p__('title', 'Storage settings')|title %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {link: 'admin/settings', label: 'Settings'} %}
+
+		<h1 class="mt-4">{{ p__('heading', 'Storage settings') }}</h1>
+	</div>
+
+	<x-form>
+		<form class="flex flex-col gap-8" @submit.prevent="submit" x-ref="form">
+			<div class="flex flex-col gap-2">
+				<section class="grid gap-6 box" data-density="comfortable">
+					<h2>{{ p__('heading', 'Configuration') }}</h2>
+
+					<div class="grid gap-6 md:grid-cols-2">
+						<div>
+							<label for="cdn.adapter">
+								{{ p__('label', 'Adapter') }}
+							</label>
+
+							<select id="cdn.adapter" name="cdn[adapter]" class="mt-2 input">
+								{% for key, adapter in cdn_adapters %}
+									<option value="{{ key }}" {{ option.cdn.adapter is defined and option.cdn.adapter == key ? 'selected' : '' }}>
+										{{ adapter.name }}
+									</option>
+								{% endfor %}
+							</select>
+
+							<ul class="info mt-2">
+								<li>
+									{{ __('Selected adapter must be enabled') }}
+								</li>
+
+								<li>
+									{{ __("Switching CDN adapter won't synchronize current files.") }}
+								</li>
+							</ul>
+						</div>
+
+						<div>
+							<label for="cdn.group_by">
+								{{ p__('label', 'Group files') }}
+							</label>
+
+							<select id="cdn.group_by" name="cdn[group_by]" class="mt-2 input">
+								<option value="none" {{ option.cdn.group_by|default('none') == 'none' ? 'selected' : '' }}>
+									{{ __('None') }}
+								</option>
+
+								<option value="workspace" {{ option.cdn.group_by|default('none') == 'workspace' ? 'selected' : '' }}>
+									{{ __('Workspace') }}
+								</option>
+
+								<option value="user" {{ option.cdn.group_by|default('none') == 'user' ? 'selected' : '' }}>
+									{{ __('User') }}
+								</option>
+
+								<option value="workspace_user" {{ option.cdn.group_by|default('none') == 'workspace_user' ? 'selected' : '' }}>
+									{{ __('Workspace/User') }}
+								</option>
+							</select>
+
+							<ul class="info mt-2">
+								<li>{{ __('Determines how files will be organized in storage') }}</li>
+								<li>{{ __('Changing this setting only affects new uploads') }}</li>
+							</ul>
+						</div>
+					</div>
+
+					<div>
+						<div class="flex gap-2 items-center p-3 rounded-lg bg-intermediate">
+							{{ p__('label', 'Secure URLs') }}
+
+							<i class="text-base cursor-auto ti ti-test-pipe text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Experimental') }}"></i>
+
+							<label class="inline-flex gap-2 items-center ms-auto cursor-pointer">
+								<input type="checkbox" name="cdn[sign_urls]" class="hidden peer" {{ option.cdn.sign_urls is defined and option.cdn.sign_urls ? 'checked' : '' }}>
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+								<span class="text-content-dimmed peer-checked:hidden">
+									{{ __('Off') }}
+								</span>
+
+								<span class="hidden text-success peer-checked:inline">
+									{{ __('On') }}
+								</span>
+							</label>
+						</div>
+
+						<ul class="info mt-2">
+							<li>
+								{{ __('Secure URLs will generate temporary signed URLs for private files.') }}
+								<a href="https://docs.aikeedo.com/advanced/secure-urls" class="inline-flex gap-1 items-center text-content hover:underline" target="_blank">
+									{{ __('Learn more') }}
+									<i class="text-xs ti ti-external-link"></i>
+								</a>
+							</li>
+						</ul>
+					</div>
+				</section>
+			</div>
+
+			<div class="flex gap-4 justify-end">
+				<a href="admin/settings" class="button button-outline">
+					{{ p__('button', 'Cancel') }}
+				</a>
+
+				<button type="submit" class="button button-accent" :processing="isProcessing">
+					{% include "/snippets/spinner.twig" %}
+
+					{{ p__('button', 'Save changes') }}
+				</button>
+			</div>
+		</form>
+	</x-form>
+{% endblock %}

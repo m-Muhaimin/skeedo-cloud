@@ -1,0 +1,98 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% set xdata = 'settings' %}
+{% block title p__('title', 'Azure Integrations') %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {link: 'admin/settings', label: 'Settings'} %}
+
+		<h1 class="mt-4">{{ p__('heading', 'Azure Integrations') }}</h1>
+	</div>
+
+	<x-form>
+		<form class="flex flex-col gap-8" @submit.prevent="submit" x-ref="form">
+			<div class="flex flex-col gap-2">
+				<section class="flex flex-col gap-6 box" data-density="comfortable">
+					<h2>{{ p__('heading', 'Speech API (TTS)') }}</h2>
+
+					<div>
+						<label for="azure[speech][region]">
+							{{ p__('label', 'Location/Region') }}
+						</label>
+
+						{% set regions = {
+            'australiaeast': 'Australia East',
+            'brazilsouth': 'Brazil South',
+            'canadacentral': 'Canada Central',
+            'centralus': 'Central US',
+            'eastasia': 'East Asia',
+            'eastus': 'East US',
+            'eastus2': 'East US 2',
+            'francecentral': 'France Central',
+            'germanywestcentral': 'Germany West Central',
+            'centralindia': 'India Central',
+            'japaneast': 'Japan East',
+            'japanwest': 'Japan West',
+            'jioindiawest': 'Jio India West',
+            'koreacentral': 'Korea Central',
+            'northcentralus': 'North Central US',
+            'northeurope': 'North Europe',
+            'norwayeast': 'Norway East',
+            'southcentralus': 'South Central US',
+            'southeastasia': 'Southeast Asia',
+            'swedencentral': 'Sweden Central',
+            'switzerlandnorth': 'Switzerland North',
+            'switzerlandwest': 'Switzerland West',
+            'uaenorth': 'UAE North',
+            'usgovarizona': 'US Gov Arizona',
+            'usgovvirginia': 'US Gov Virginia',
+            'uksouth': 'UK South',
+            'westcentralus': 'West Central US',
+            'westeurope': 'West Europe',
+            'westus': 'West US',
+            'westus2': 'West US 2',
+            'westus3': 'West US 3'
+          } %}
+
+						<select id="azure[speech][region]" name="azure[speech][region]" class="mt-2 input" required>
+							{% for key, value in regions %}
+								<option value="{{ key }}" {{ option.azure.speech.region is defined and option.azure.speech.region == key ? 'selected' : '' }}>
+									{{ value }}
+									({{ key }})
+								</option>
+							{% endfor %}
+						</select>
+					</div>
+
+					<div>
+						<label for="azure[speech][api_key]">
+							{{ p__('label', 'API Key') }}
+						</label>
+
+						<div class="relative mt-2" x-data="{isVisible: false}">
+							<input class="input pe-11" id="azure[speech][api_key]" name="azure[speech][api_key]" :type="isVisible ? 'text' : 'password'" autocomplete="off" placeholder="{{ __('Include your Azure Speech API key') }}" value="{{ environment == 'demo' ? 'hidden-in-demo' : option.azure.speech.api_key ?? '' }}" required>
+
+							<button type="button" class="absolute text-2xl -translate-y-1/2 top-1/2 end-3 text-content-dimmed" @click="isVisible = !isVisible">
+								<i class="block ti" :class="{'ti-eye-closed' : isVisible, 'ti-eye':!isVisible}"></i>
+							</button>
+						</div>
+					</div>
+				</section>
+			</div>
+
+			<div class="flex justify-end gap-4">
+				<a href="admin/settings" class="button button-outline">
+					{{ p__('button', 'Cancel') }}
+				</a>
+
+				<button class="button button-accent" type="submit" :processing="isProcessing">
+					{% include "/snippets/spinner.twig" %}
+
+					{{ p__('button', 'Save changes') }}
+				</button>
+			</div>
+		</form>
+	</x-form>
+{% endblock %}

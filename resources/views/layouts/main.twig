@@ -1,0 +1,45 @@
+{% extends "/layouts/base.twig" %}
+
+{% block layout %}
+	<div class="lg:flex lg:items-start lg:min-h-screen overflow-hidden">
+		{% include "/sections/aside.twig" %}
+
+		<div class="sticky top-0 z-30 block lg:hidden bg-main group-data-mobile-menu/html:border-0">
+			<div class="mx-auto w-full max-w-4xl">
+				{% include "/sections/mobile-nav.twig" %}
+			</div>
+		</div>
+
+		<div class="w-full h-[calc(100dvh-4rem)] lg:h-screen flex flex-col overflow-y-auto" id="content">
+			{% include "/sections/topbar.twig" %}
+
+			<div class="relative">
+				{% block toolbar %}{% endblock %}
+			</div>
+
+			<div class="container mt-4 lg:mt-0 grow flex flex-col">
+				<div class="flex flex-col lg:pt-10 grow group-data-mobile-menu/html:hidden lg:group-data-mobile-menu/html:flex w-full mx-auto max-w-4xl">
+					<main class="flex flex-col gap-5 pb-5 grow md:gap-8 md:pb-8">
+						{% block template %}{% endblock %}
+					</main>
+
+					{% block footer %}
+						{% include "/sections/footer.twig" %}
+					{% endblock %}
+				</div>
+			</div>
+		</div>
+
+		<aside id="sidebar" class="bg-main overflow-y-auto group/sidebar sticky z-10 top-0 hidden lg:flex flex-col gap-4 h-screen shrink-0 w-96 border-s border-line dark:border-line-dimmed -me-96 group-data-sidebar/html:me-0 transition-all ease-in">
+			{% block sidebar %}{% endblock %}
+		</aside>
+	</div>
+
+	{% include "/snippets/workspace/switcher.twig" %}
+{% endblock %}
+
+{% block scripts %}
+	{% if view_namespace in ['app', 'admin'] %}
+		<script type="module" src="{{ ('/resources/assets/js/' ~ view_namespace ~ '/index.js')|asset }}"></script>
+	{% endif %}
+{% endblock %}

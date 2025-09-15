@@ -1,0 +1,69 @@
+{% extends "/layouts/main.twig" %}
+
+{% set active_menu = '/admin/license' %}
+{% set xdata = 'license' %}
+{% block title p__('title', 'License')|title %}
+
+{% block template %}
+
+	<modal-element name="license-modal" class="open" data-persistent>
+		<form class="flex flex-col gap-8 modal" @submit.prevent="submit">
+			<div class="flex items-center justify-between">
+				<h2 class="text-xl">{{ p__('heading', 'License activation') }}</h2>
+			</div>
+
+			<div>
+				<label for="key">
+					{{ p__('label', 'License key') }}
+				</label>
+
+				<div class="relative mt-2" x-data="{isVisible: false}">
+					<input class="pe-11 input" :type="isVisible ? 'text' : 'password'" id="key" name="key" placeholder="{{ __('Enter your license key') }}" required x-model="key" @input="error = null">
+
+					<button type="button" class="absolute end-3 top-1/2 text-2xl -translate-y-1/2 text-content-dimmed" @click="isVisible = !isVisible">
+						<i class="block ti" :class="{'ti-eye-closed' : isVisible, 'ti-eye':!isVisible}"></i>
+					</button>
+				</div>
+
+				<ul class="info mt-2">
+					<template x-if="error">
+						<li class="text-failure" x-text="error"></li>
+					</template>
+
+					<li>
+						{{ __('Enter your license key to activate and unlock all features of the application.') }}
+					</li>
+
+					<li>
+						{{ __('For Envato marketplace purchases, please use your purchase code as the license key.') }}
+					</li>
+
+					<li class="text-warning">
+						{{ __('A valid license is required to access all features and receive updates.') }}
+					</li>
+				</ul>
+			</div>
+
+			<div class="flex flex-col items-center gap-2">
+				<button class="button w-full" type="submit" :processing="isProcessing">
+					{% include "/snippets/spinner.twig" %}
+
+					{{ p__('button', 'Activate license') }}
+				</button>
+
+				<button type="button" @click="window.history.back()" class="button button-outline w-full">
+					<i class="text-base ti ti-square-rounded-arrow-left-filled"></i>
+					{{ p__('button', 'Go back') }}
+				</button>
+
+				<div class="mt-4">
+					<a
+						href="/logout" class="text-xs inline-flex items-center gap-1 text-content-dimmed hover:text-content hover:underline" type="submit" :processing="isProcessing">
+						{# <i class="text-base ti ti-logout"></i> #}
+						{{ p__('button', 'Logout') }}
+					</a>
+				</div>
+			</div>
+		</form>
+	</modal-element>
+{% endblock %}

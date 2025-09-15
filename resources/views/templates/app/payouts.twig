@@ -1,0 +1,99 @@
+{% extends "/layouts/main.twig" %}
+
+{% set xdata %}
+list("/account/affiliate/payouts")
+{% endset %}
+
+{% block title p__('title', 'Affiliate payouts')|title %}
+
+{% block template %}
+<div>
+  {% include "snippets/back.twig" with {link: 'app/affiliates', label: p__('button', 'Affiliates')} %}
+  <h1>{{ __('Affiliate payouts') }}</h1>
+</div>
+
+
+{# List #}
+<div class="group/list" data-state="initial" :data-state="state">
+  <div class="hidden group-data-[state=empty]/list:block">
+    {% include "sections/empty.twig" with { title: p__('heading', 'Empty result set'), message: __('There are no payouts yet.'), reset: __('There are no payouts matching your search.') } %}
+  </div>
+
+  <div
+    class="hidden md:grid grid-cols-12 gap-3 items-center px-3 py-2 text-content-dimmed text-xs group-data-[state=empty]/list:hidden">
+    <div class="col-span-2">{{ p__('label', 'Amount') }}</div>
+    <div class="col-span-7">{{ p__('label', 'Status') }}</div>
+    <div class="col-span-3">{{ p__('label', 'Date') }}</div>
+  </div>
+
+  <ul class="text-sm group-data-[state=empty]/list:hidden flex flex-col gap-1">
+    {% for i in range(1,5) %}
+    <li
+      class="hidden relative grid-cols-12 gap-3 items-center p-3 box hover:border-line group-data-[state=initial]/list:flex md:group-data-[state=initial]/list:grid">
+      <div class="col-span-6 md:col-span-2">
+        <div class="py-1 w-20">
+          <div class="h-4 loading"></div>
+        </div>
+
+        <div class="md:hidden">
+          <div class="py-1 w-32">
+            <div class="h-4 loading"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-span-6 md:col-span-7">
+        <div class="py-1 w-32">
+          <div class="h-4 loading"></div>
+        </div>
+      </div>
+
+      <div class="hidden col-span-3 md:block">
+        <div class="py-1 w-32">
+          <div class="h-4 loading"></div>
+        </div>
+      </div>
+    </li>
+    {% endfor %}
+
+    <template x-for="p in resources" :key="p.id">
+      <li
+        class="grid relative grid-cols-12 gap-3 items-center p-3 box hover:border-line"
+        x-data>
+        <div class="col-span-6 md:col-span-2">
+          <x-money :data-value="p.amount" :currency="p.currency.code"
+            :minor-units="p.currency.fraction_digits"
+            class="font-bold"></x-money>
+
+          <div class="md:hidden">
+            <x-time :datetime="p.created_at" data-type="date"></x-time>
+          </div>
+        </div>
+
+        <div class="flex col-span-6 md:col-span-7">
+          <template x-if="p.status == 'pending'">
+            <span class="badge">{{ __('Pending') }}</span>
+          </template>
+
+          <template x-if="p.status == 'approved'">
+            <span class="badge badge-success">{{ __('Approved') }}</span>
+          </template>
+
+          <template x-if="p.status == 'rejected'">
+            <span class="badge badge-failure">{{ __('Rejected') }}</span>
+          </template>
+        </div>
+
+        <div class="hidden col-span-3 md:block">
+          <x-time :datetime="p.created_at" data-type="date"></x-time>
+        </div>
+      </li>
+    </template>
+  </ul>
+</div>
+
+{% include "sections/delete-modal.twig" with { 
+  message: __('Do you really want to delete :title from documents?'),
+  title: 'currentResource.title'
+} %}
+{% endblock %}

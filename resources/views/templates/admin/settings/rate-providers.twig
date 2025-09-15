@@ -1,0 +1,32 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% block title p__('title', 'Currency rate providers')|title %}
+
+{% block template %}
+<div>
+  {% include "snippets/back.twig" with {link: 'admin/settings', label: 'Settings'} %}
+
+  <h1 class="mt-4">{{ p__('title', 'Currency rate providers') }}</h1>
+</div>
+
+<div class="flex flex-col gap-4">
+  <div class="grid gap-2 sm:grid-cols-2">
+    {% for key, provider in rate_providers %}
+    {% if key != "card" %}
+    <a href="admin/settings/rate-providers/{{ key }}"
+      class="box hover:border-line">
+      <div class="flex items-center gap-2">
+        <h3>{{ provider.name }}</h3>
+
+        {% if provider is not builtin %}
+        <i class="text-lg cursor-auto ti ti-puzzle text-content-dimmed hover:text-content"
+          x-tooltip.raw="{{ __('Plugin addition') }}"></i>
+        {% endif %}
+      </div>
+    </a>
+    {% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,110 @@
+{% if placeholder is defined %}
+	<div class="hidden grid-cols-12 gap-3 items-center md:p-3 box animate-pulse group-data-[state=initial]/list:grid">
+		<div class="flex col-span-11 gap-3 items-center">
+			<div class="avatar loading"></div>
+			<div class="w-32 h-6 loading"></div>
+		</div>
+
+		<div class="col-span-1 justify-self-end">
+			<i class="text-2xl animate-pulse ti ti-dots-vertical text-content-dimmed"></i>
+		</div>
+	</div>
+{% else %}
+	{% set ref = ref ?? 'order' %}
+	{% set type = type ?? 'app' %}
+
+	<div class="grid relative grid-cols-12 gap-3 items-start p-3 box hover:border-line" x-data>
+		<a :href="`{{ type == 'admin' ? 'admin/orders/' : 'app/billing/orders/' }}${ {{ ref }}.id}`" class="absolute top-0 left-0 w-full h-full cursor-pointer"></a>
+
+		<div class="flex col-span-11 gap-3 items-center md:col-span-3">
+			<div class="flex flex-col gap-1">
+				<div>
+					<div class="font-bold" x-text="{{ ref }}.plan.title"></div>
+
+					<template x-if="{{ ref }}.plan.billing_cycle == 'monthly'">
+						<span class="text-content-dimmed text-xs">{{ p__('billing-cycle', 'Monthly') }}</span>
+					</template>
+
+					<template x-if="{{ ref }}.plan.billing_cycle == 'yearly'">
+						<span class="text-content-dimmed text-xs">{{ p__('billing-cycle', 'Yearly') }}</span>
+					</template>
+
+					<template x-if="{{ ref }}.plan.billing_cycle == 'lifetime'">
+						<span class="text-content-dimmed text-xs">{{ p__('billing-cycle', 'Lifetime') }}</span>
+					</template>
+
+					<template x-if="{{ ref }}.plan.billing_cycle == 'one-time'">
+						<span class="text-content-dimmed text-xs">{{ p__('billing-cycle', 'Add-on credit') }}</span>
+					</template>
+				</div>
+
+				{% if type == 'admin' %}
+					<div class="mt-0.5 text-xs text-content-dimmed">
+						{% set name %}
+						<a :href="`admin/workspaces/${ {{ ref }}.workspace.id}`" x-text="{{ ref }}.workspace.name" class="relative hover:underline text-content"></a>
+						{% endset %}
+
+						{{ __('Workspace: :name')|replace({':name' : name})|raw }}
+					</div>
+				{% endif %}
+			</div>
+		</div>
+
+		<div class="hidden md:block md:col-span-2">
+			<template x-if="{{ ref }}.status == 'draft'">
+				<span>{{ p__('order-status', 'Draft') }}</span>
+			</template>
+
+			<template x-if="{{ ref }}.status == 'pending'">
+				<span>{{ p__('order-status', 'Pending') }}</span>
+			</template>
+
+			<template x-if="{{ ref }}.status == 'failed'">
+				<span>{{ p__('order-status', 'Failed') }}</span>
+			</template>
+
+			<template x-if="{{ ref }}.status == 'processing'">
+				<span>{{ p__('order-status', 'Processing') }}</span>
+			</template>
+
+			<template x-if="{{ ref }}.status == 'completed'">
+				<span>{{ p__('order-status', 'Completed') }}</span>
+			</template>
+
+			<template x-if="{{ ref }}.status == 'cancelled'">
+				<span>{{ p__('order-status', 'Cancelled') }}</span>
+			</template>
+		</div>
+
+		<div class="hidden md:block md:col-span-2">
+			<x-credit :data-value="{{ ref }}.plan.credit_count"></x-credit>
+		</div>
+
+		<div class="hidden md:block md:col-span-2">
+			<div class="font-bold">
+				<x-money :data-value="{{ ref }}.total" :currency="{{ ref }}.currency.code" :minor-units="{{ ref }}.currency.fraction_digits"></x-money>
+			</div>
+
+			<div class="mt-0.5 text-xs text-content-dimmed" x-text="{{ ref }}.plan.billing_cycle == 'monthly' ? `{{ __('per month') }}` : {{ ref }}.plan.billing_cycle == 'yearly' ? `{{ __('per year') }}` : `{{ __('one-time') }}`"></div>
+		</div>
+
+		<div class="hidden md:block md:col-span-2">
+			<x-time :datetime="{{ ref }}.created_at" data-type="date"></x-time>
+		</div>
+
+		<div class="col-span-1 justify-self-end">
+			<div class="relative" @click.outside="$refs.context.removeAttribute('data-open')">
+
+				<button class="relative z-10" @click="$refs.context.toggleAttribute('data-open')">
+					<i class="text-2xl ti ti-dots-vertical text-content-dimmed hover:text-intermediate-content"></i>
+				</button>
+
+				<div class="menu" x-ref="context">
+					<ul>
+						<li><a :href="`{{ type == 'admin' ? 'admin/orders/' : 'app/billing/orders/' }}${ {{ ref }}.id}`" class="flex gap-2 items-center px-4 py-2 hover:no-underline hover:bg-intermediate">{{ p__('button', 'Details') }}</a></li>
+					</ul>
+				</div>
+			</div>
+		</div>
+	</div>
+{% endif %}

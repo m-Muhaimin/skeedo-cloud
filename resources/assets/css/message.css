@@ -1,0 +1,108 @@
+@keyframes shine {
+  from {
+    -webkit-mask-position: 150%;
+  }
+  to {
+    -webkit-mask-position: -50%;
+  }
+}
+
+@keyframes fadeInWord {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.message {
+  & .tool-processing {
+    @apply text-content flex items-center gap-2;
+    -webkit-mask-image: linear-gradient(
+      -75deg,
+      oklch(from var(--color-content) l c h / 0.4) 30%,
+      var(--color-content) 50%,
+      oklch(from var(--color-content) l c h / 0.4) 70%
+    );
+    -webkit-mask-size: 200%;
+    animation: shine 2s linear infinite;
+  }
+}
+
+.message x-markdown > div {
+  @apply prose
+    max-w-none 
+    font-editor 
+    prose-headings:font-editor-heading
+    prose-headings:font-semibold
+    prose-pre:relative
+    leading-6;
+
+  --tw-prose-body: var(--color-content);
+  --tw-prose-headings: var(--color-content);
+  --tw-prose-lead: var(--color-content);
+  --tw-prose-links: var(--color-content);
+  --tw-prose-bold: var(--color-content);
+  --tw-prose-counters: var(--color-content-dimmed);
+  --tw-prose-bullets: var(--color-content-dimmed);
+  --tw-prose-hr: var(--color-line-dimmed);
+  --tw-prose-quotes: var(--color-content-dimmed);
+  --tw-prose-quote-borders: var(--color-line-dimmed);
+  --tw-prose-captions: var(--color-content-dimmed);
+  --tw-prose-code: var(--color-content);
+  --tw-prose-pre-code: var(--color-content);
+  --tw-prose-pre-bg: var(--color-main);
+  --tw-prose-th-borders: var(--color-line-dimmed);
+  --tw-prose-td-borders: var(--color-line-dimmed);
+
+  --tw-prose-kbd: var(--color-content);
+  --tw-prose-kbd-shadows: var(--color-content);
+
+  & > *:first-child {
+    @apply mt-0;
+  }
+
+  & > *:last-child {
+    @apply mb-0;
+  }
+
+  pre {
+    @apply whitespace-pre-wrap border border-line-dimmed p-0.5 rounded-2xl;
+  }
+
+  pre svg {
+    @apply absolute top-0 left-0 w-full h-full rounded-lg text-line-dimmed group-hover:text-line group-data-selected:hidden -z-10;
+  }
+
+  pre .actions {
+    @apply flex items-center gap-2 text-content-dimmed justify-between px-4 py-2 bg-line-dimmed rounded-t-[14px];
+  }
+
+  pre .lang {
+    @apply uppercase pointer-events-none text-xs;
+  }
+
+  pre .copy {
+    @apply cursor-pointer hover:text-content;
+  }
+
+  img {
+    @apply my-2;
+  }
+}
+
+.message x-markdown[size='sm'] > div {
+  @apply text-sm
+    leading-4;
+
+  pre {
+    @apply text-base;
+  }
+}
+
+x-markdown .fade-in-word {
+  animation: fadeInWord 0.7s;
+  opacity: 1;
+  display: inline;
+}

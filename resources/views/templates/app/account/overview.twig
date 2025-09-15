@@ -1,0 +1,229 @@
+{% extends "/layouts/main.twig" %}
+
+{% block title p__('title', 'Account')|title %}
+{% set xdata %}
+account({{ user|json_encode }})
+{% endset %}
+
+{% set apiEnabled = false %}
+{% if user.role == 'admin' and option.features.admin_api.is_enabled is defined and option.features.admin_api.is_enabled %}
+	{% set apiEnabled = true %}
+{% elseif option.features.api.is_enabled is defined and option.features.api.is_enabled %}
+	{% set apiEnabled = true %}
+{% endif %}
+
+{% block template %}
+	<x-form>
+		<form class="flex flex-col gap-8" @submit.prevent="submit" x-ref="form">
+			<div>
+				{% include "snippets/back.twig" with {link: 'app', label: p__('button', 'Dashboard')} %}
+
+				<h1 class="mt-4">{{ p__('heading', 'Account') }}</h1>
+				<x-uuid>{{ user.id }}</x-uuid>
+			</div>
+
+			<div class="flex flex-col gap-2">
+				{% include "sections/account/head.twig" with {menu: apiEnabled or option.features.tools.memory.is_enabled|default(false)} %}
+
+				{% if option.features.tools.memory.is_enabled|default(false) %}
+					{% set accessible = workspace.subscription.plan.config.tools.memory|default(false) %}
+					<section class="flex flex-col gap-6 box" data-density="comfortable">
+						<div class="flex gap-2 items-center justify-between">
+							<h2>{{ p__('heading', 'Memory') }}</h2>
+
+							{% if accessible is same as false %}
+								<a href="app/billing" class="button button-outline button-sm" x-tooltip.raw="{{ __('Upgrade plan to enable the feature') }}">
+									<i class="ti ti-lock-up"></i>
+
+									{{ p__('button', 'Not available') }}
+								</a>
+							{% endif %}
+						</div>
+
+						<div>
+							<div class="flex justify-between items-center p-3 rounded-lg bg-intermediate">
+								{{ p__('label', 'Saved memories') }}
+
+								<label class="inline-flex gap-2 items-center has-disabled:cursor-auto cursor-pointer">
+									<input type="checkbox" name="preferences[memories]" class="hidden peer" {{ user.preferences.memories|default(false) and accessible is same as true ? 'checked' : '' }} value="1" @change="submit" {{ accessible is same as false ? 'disabled' : ':disabled="isProcessing"' }}>
+
+									<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4 {{ accessible is same as false ? 'opacity-50' : '' }}"></span>
+
+									<span class="text-content-dimmed peer-checked:hidden">
+										{{ __('Disabled') }}
+									</span>
+
+									<span class="hidden text-success peer-checked:inline">
+										{{ __('Enabled') }}
+									</span>
+								</label>
+							</div>
+
+							<ul class="info mt-2">
+								<li>
+									{{ __('When enabled, new memories can be saved and referenced in chat conversations.') }}
+								</li>
+							</ul>
+						</div>
+
+						<div>
+							<div class="flex justify-between items-center p-3 rounded-lg bg-intermediate">
+								{{ p__('label', 'Chat history') }}
+
+								<label class="inline-flex gap-2 items-center has-disabled:cursor-auto cursor-pointer">
+									<input type="checkbox" name="preferences[history]" class="hidden peer" {{ user.preferences.history|default(false) and accessible is same as true ? 'checked' : '' }} value="1" @change="submit" {{ accessible is same as false ? 'disabled' : ':disabled="isProcessing"' }}>
+
+									<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4 {{ accessible is same as false ? 'opacity-50' : '' }}"></span>
+
+									<span class="text-content-dimmed peer-checked:hidden">
+										{{ __('Disabled') }}
+									</span>
+
+									<span class="hidden text-success peer-checked:inline">
+										{{ __('Enabled') }}
+									</span>
+								</label>
+							</div>
+
+							<ul class="info mt-2">
+								<li>
+									{{ __('When enabled, messages from recent chat conversations may be referenced.') }}
+								</li>
+							</ul>
+						</div>
+
+						<div class="flex">
+							<a href="/app/account/memories" class="button button-outline button-sm">
+								{{ p__('button', 'Manage memories') }}
+							</a>
+						</div>
+					</section>
+				{% endif %}
+
+				{% if apiEnabled is same as(false) and option.features.tools.memory.is_enabled|default(false) is same as(false) %}
+					{% include "sections/account/profile.twig" %}
+				{% endif %}
+
+				{% if apiEnabled %}
+					<section class="flex flex-col gap-6 box" data-density="comfortable">
+						<h2 class="md:col-span-2">{{ p__('heading', 'API credentials') }}</h2>
+
+						<div class="flex flex-col gap-4">
+							<div class="flex flex-col gap-4 md:items-center md:flex-row">
+								<div class="flex gap-4 items-center">
+									<span class="flex justify-center items-center w-10 h-10 rounded-lg bg-intermediate text-intermediate-content">
+										<i class="ti ti-key text-2xl"></i>
+									</span>
+
+									<template x-if="user.api_key">
+										<div>
+											<div class="font-medium">
+												{{ __('Secret key') }}
+											</div>
+
+											<x-copy class="mt-1 badge" :data-copy="user.api_key">
+												<span x-text="user.api_key"></span>
+											</x-copy>
+										</div>
+									</template>
+
+									<template x-if="!user.api_key">
+										<div>
+											<div class="text-sm text-content-dimmed">
+												{{ __('Click to Generate button to create an API key') }}
+											</div>
+										</div>
+									</template>
+								</div>
+
+								<button type="button" class="md:ms-auto button button-outline button-sm" @click="user.api_key ? modal.open('api-confirmation-modal') : generateApiKey" :processing="generatingApiKey">
+									{% include "/snippets/spinner.twig" %}
+
+									<span x-text="user.api_key ? `{{ p__('button', 'Regenerate') }}` : `{{ p__('button', 'Generate') }}`"></span>
+								</button>
+							</div>
+
+							<hr>
+
+							<div>
+								<a href="/app/api-docs" target="_blank" class="text-xs text-content-dimmed hover:text-content">
+									{{ p__('button', 'Documentation') }}
+
+									<i class="text-xs ti ti-external-link"></i>
+								</a>
+							</div>
+						</div>
+					</section>
+				{% endif %}
+			</div>
+		</form>
+	</x-form>
+
+	{% if apiEnabled %}
+		<modal-element name="api-confirmation-modal">
+			<form class="flex flex-col gap-8 modal" @submit.prevent>
+				<div class="flex justify-between items-center">
+					<h2 class="text-xl">{{ p__('heading', 'New Api Key') }}</h2>
+
+					<button class="flex justify-center items-center w-8 h-8 rounded-full border border-transparent bg-line-dimmed hover:border-line" @click="modal.close()" type="button">
+						<i class="text-xl ti ti-x"></i>
+					</button>
+				</div>
+
+				<p class="mt-2 text-sm">
+					{{ __('Do you really want to generate a new API key? Current key will be replaced and will no longer be usable.') }}
+				</p>
+
+				<div class="flex items-center">
+					<button class="w-full button" type="button" @click="generateApiKey" :processing="generatingApiKey">
+						{% include "/snippets/spinner.twig" %}
+						{{ p__('button', 'Generate new key') }}
+					</button>
+				</div>
+			</form>
+		</modal-element>
+
+		<modal-element name="api-modal">
+			<form class="flex flex-col gap-8 modal" @submit.prevent>
+				<div class="flex justify-between items-center">
+					<h2 class="text-xl">{{ p__('heading', 'New Api Key') }}</h2>
+
+					<button class="flex justify-center items-center w-8 h-8 rounded-full border border-transparent bg-line-dimmed hover:border-line" @click="modal.close()" type="button">
+						<i class="text-xl ti ti-x"></i>
+					</button>
+				</div>
+
+				<div>
+					<label>{{ p__('label', 'Api Key') }}</label>
+
+					<div class="relative mt-2" x-data="{isVisible: false}">
+						<input type="text" class="pe-10 input" readonly x-model="user.api_key">
+
+						<button type="button" class="absolute end-3 top-1/2 text-2xl -translate-y-1/2 text-content-dimmed">
+							<x-copy data-msg="{{ __('Copied to clipboard') }}" :data-copy="user.api_key">
+								<i class="ti ti-copy"></i>
+							</x-copy>
+						</button>
+					</div>
+				</div>
+
+				<div>
+					<div class="flex gap-1 items-center text-sm font-bold">
+						<i class="text-lg ti ti-info-square-rounded"></i>
+						{{ __('Important') }}
+					</div>
+
+					<p class="mt-2 text-sm">
+						{{ __('Keep this secret key in a safe and accessible place. For security purposes, it will not be viewable again through your account. If you lose it, you will have to generate a new one.') }}
+					</p>
+				</div>
+
+				<div class="flex items-center">
+					<button class="w-full button" type="button" @click="modal.close()">
+						{{ p__('button', 'I copied the key, close') }}
+					</button>
+				</div>
+			</form>
+		</modal-element>
+	{% endif %}
+{% endblock %}

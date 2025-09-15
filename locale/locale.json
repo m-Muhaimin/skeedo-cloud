@@ -1,0 +1,185 @@
+{
+    "default": "en-US",
+    "locales": [
+        {
+            "code": "af-ZA",
+            "label": "Afrikaans",
+            "enabled": false,
+            "dir": "ltr"
+        },
+        {
+            "code": "ar-SA",
+            "label": "Arabic",
+            "enabled": false,
+            "dir": "rtl"
+        },
+        {
+            "code": "ca-ES",
+            "label": "Catalan",
+            "enabled": false,
+            "dir": "ltr"
+        },
+        {
+            "code": "cs-CZ",
+            "label": "Czech",
+            "enabled": false,
+            "dir": "ltr"
+        },
+        {
+            "code": "da-DK",
+            "label": "Danish",
+            "enabled": false,
+            "dir": "ltr"
+        },
+        {
+            "code": "de-DE",
+            "label": "German",
+            "enabled": false,
+            "dir": "ltr"
+        },
+        {
+            "code": "el-GR",
+            "label": "Greek",
+            "enabled": false,
+            "dir": "ltr"
+        },
+        {
+            "code": "es-ES",
+            "label": "Spanish",
+            "enabled": false,
+            "dir": "ltr"
+        },
+        {
+            "code": "en-US",
+            "label": "English (US)",
+            "enabled": true,
+            "dir": "ltr"
+        },
+        {
+            "code": "fi-FI",
+            "label": "Finnish",
+            "enabled": false,
+            "dir": "ltr"
+        },
+        {
+            "code": "fr-FR",
+            "label": "French",
+            "enabled": false,
+            "dir": "ltr"
+        },
+        {
+            "code": "he-IL",
+            "label": "Hebrew",
+            "enabled": false,
+            "dir": "rtl"
+        },
+        {
+            "code": "hu-HU",
+            "label": "Hungarian",
+            "enabled": false,
+            "dir": "ltr"
+        },
+        {
+            "code": "it-IT",
+            "label": "Italian",
+            "enabled": false,
+            "dir": "ltr"
+        },
+        {
+            "code": "ja-JP",
+            "label": "Japanese",
+            "enabled": false,
+            "dir": "ltr"
+        },
+        {
+            "code": "ko-KR",
+            "label": "Korean",
+            "enabled": false,
+            "dir": "ltr"
+        },
+        {
+            "code": "nl-NL",
+            "label": "Dutch",
+            "enabled": false,
+            "dir": "ltr"
+        },
+        {
+            "code": "no-NO",
+            "label": "Norwegian",
+            "enabled": false,
+            "dir": "ltr"
+        },
+        {
+            "code": "pl-PL",
+            "label": "Polish",
+            "enabled": false,
+            "dir": "ltr"
+        },
+        {
+            "code": "pt-BR",
+            "label": "Portuguese (Brazilian)",
+            "enabled": false,
+            "dir": "ltr"
+        },
+        {
+            "code": "pt-PT",
+            "label": "Portuguese (Portugal)",
+            "enabled": false,
+            "dir": "ltr"
+        },
+        {
+            "code": "ro-RO",
+            "label": "Romanian",
+            "enabled": false,
+            "dir": "ltr"
+        },
+        {
+            "code": "ru-RU",
+            "label": "Russian",
+            "enabled": false,
+            "dir": "ltr"
+        },
+        {
+            "code": "sr-SP",
+            "label": "Serbian (Cyrillic)",
+            "enabled": false,
+            "dir": "ltr"
+        },
+        {
+            "code": "sv-SE",
+            "label": "Swedish",
+            "enabled": false,
+            "dir": "ltr"
+        },
+        {
+            "code": "tr-TR",
+            "label": "Turkish",
+            "enabled": false,
+            "dir": "ltr"
+        },
+        {
+            "code": "uk-UA",
+            "label": "Ukrainian",
+            "enabled": false,
+            "dir": "ltr"
+        },
+        {
+            "code": "vi-VN",
+            "label": "Vietnamese",
+            "enabled": false,
+            "dir": "ltr"
+        },
+        {
+            "code": "zh-CN",
+            "label": "Chinese (Simplified)",
+            "enabled": false,
+            "dir": "ltr"
+        },
+        {
+            "code": "zh-TW",
+            "label": "Chinese (Traditional)",
+            "enabled": false,
+            "dir": "ltr"
+        }
+    ]
+}

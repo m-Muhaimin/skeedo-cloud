@@ -1,0 +1,59 @@
+{% extends "/layouts/main.twig" %}
+
+{% set xdata %}
+list("/workspaces/{{ workspace.id }}/logs/usage", [], 100, false)
+{% endset %}
+
+{% block title p__('title', 'Usage logs')|title %}
+
+{% block template %}
+<div>
+  {% include "snippets/back.twig" with {link: 'app', label: p__('button', 'Dashboard')} %}
+  <h1>{{ __('Usage logs') }}</h1>
+</div>
+
+{# List #}
+<div class="group/list" data-state="initial" :data-state="state">
+  <div class="hidden group-data-[state=empty]/list:block">
+    {% include "sections/empty.twig" with { title: p__('heading', 'Empty result set'), message: __('There are no usage logs yet.') } %}
+  </div>
+
+  <div
+    class="hidden md:grid grid-cols-2 gap-3 items-center px-3 py-2 text-content-dimmed text-xs group-data-[state=empty]/list:hidden">
+    <div>{{ p__('label', 'Date') }}</div>
+    <div>{{ p__('label', 'Credits') }}</div>
+  </div>
+
+  <ul class="text-sm group-data-[state=empty]/list:hidden flex flex-col gap-1">
+    {% for i in range(1,5) %}
+    <li
+      class="hidden grid-cols-2 justify-between gap-3 items-center p-3 box group-data-[state=initial]/list:grid">
+
+      <div class="my-0.5 w-24 h-4 loading"></div>
+      <div class="my-0.5 w-28 h-4 loading"></div>
+    </li>
+    {% endfor %}
+
+    <template x-for="log in resources" :key="log.id">
+      <li
+        class="grid relative grid-cols-2 gap-3 justify-between items-center p-3 box hover:border-line"
+        x-data>
+
+        <div>
+          <x-time :datetime="log.date" data-type="date" timezone="UTC"></x-time>
+        </div>
+
+        <div>
+          <x-credit :data-value="log.metric" x-tooltip="log.metric"
+            format="{{ __(':count credits') }}"></x-credit>
+        </div>
+      </li>
+    </template>
+  </ul>
+</div>
+
+{% include "sections/delete-modal.twig" with { 
+  message: __('Do you really want to delete :title from documents?'),
+  title: 'currentResource.title'
+} %}
+{% endblock %}

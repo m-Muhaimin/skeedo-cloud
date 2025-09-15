@@ -1,0 +1,48 @@
+{
+  "name": "aikeedo",
+  "version": "3.x",
+  "description": "AIKEEDO - AI Generator",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git"
+  },
+  "author": "",
+  "license": "SEE LICENSE IN <LICENSE>",
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.10",
+    "@tailwindcss/typography": "^0.5.16",
+    "@tailwindcss/vite": "^4.1.6",
+    "tailwindcss": "^4.1.6",
+    "vite": "^6.3.6",
+    "vite-plugin-full-reload": "^1.2.0"
+  },
+  "dependencies": {
+    "@alpinejs/mask": "^3.14.8",
+    "@alpinejs/sort": "^3.14.9",
+    "@ryangjchandler/alpine-tooltip": "^2.0.1",
+    "alpinejs": "^3.14.8",
+    "apexcharts": "^4.5.0",
+    "card-validator": "^10.0.2",
+    "eventsource-parser": "^3.0.0",
+    "fast-blurhash": "^1.1.4",
+    "filesize": "^10.1.6",
+    "highlight.js": "^11.11.1",
+    "jwt-decode": "^4.0.0",
+    "katex": "^0.16.21",
+    "libphonenumber-js": "^1.12.6",
+    "morphdom": "^2.7.5",
+    "remarkable": "^2.0.1",
+    "restricted-input": "^4.1.4",
+    "wavesurfer.js": "^7.9.1"
+  }
+}

@@ -1,0 +1,9 @@
+x-dropzone {
+  @apply fixed inset-0 z-1000 bg-main/90 backdrop-blur-xs transition-all duration-300 pointer-events-none
+  flex items-center justify-center
+  invisible opacity-0;
+}
+
+x-dropzone[data-state='visible'] {
+  @apply visible opacity-100;
+}

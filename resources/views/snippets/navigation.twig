@@ -1,0 +1,94 @@
+{% set active_menu = active_menu ?? null %}
+
+<nav class="flex overflow-y-auto overflow-x-hidden flex-col gap-4 px-4 group-data-collapsed/html:overflow-visible">
+	{% set cls = 'flex items-center gap-1 p-1 rounded-lg text-sm transition hover:bg-intermediate lg:hover:bg-main hover:text-intermediate-content lg:hover:text-content lg:dark:hover:bg-[#040505]' %}
+	{% set active = 'bg-main no-underline text-content dark:bg-[#040505]' %}
+
+	{% if view_namespace == 'admin' %}
+		{% for key, section in nav.admin|filter((section,key) => key not in ['account', 'settings']) %}
+			{% if section.items|default([])|length > 0 %}
+				<div>
+					{% if section.label %}
+						<h4 class="p-1 text-xs font-medium text-intermediate-content-dimmed">{{ p__('nav', section.label) }}</h4>
+					{% endif %}
+
+					<ul class="flex flex-col gap-0.5">
+						{% for item in section.items %}
+							<li>
+								<a href="{{ item.url }}" class="{{ cls }} {{ item.from or item.to ? 'p-1.5 gap-1.5' : '' }} {{ active_menu == item.url ? active : '' }}">
+									{% set iconcls = 'flex items-center justify-center size-6 rounded-[40%] ' %}
+
+									{% if item.from or item.to %}
+										{% set iconcls = iconcls ~ 'text-white bg-black from-black to-black bg-linear-to-br' %}
+									{% endif %}
+
+									<div class="{{ iconcls }}" style="--tw-gradient-from: {{ item.from ?? item.to }}; --tw-gradient-to: {{ item.to ?? item.from ?? '#006ABF' }}">
+										{% if item.iconType.value == 'ti' %}
+											<i class="text-lg ti ti-{{ item.icon }}"></i>
+										{% elseif item.iconType.value == 'svg' %}
+											{{ item.icon|raw }}
+										{% elseif item.iconType.value == 'src' %}
+											<img src="{{ item.icon }}" alt="{{ item.label }}">
+										{% elseif item.iconType.value == 'include' %}
+											{% include item.icon %}
+										{% endif %}
+									</div>
+
+									{{ p__('nav', item.label) }}
+								</a>
+							</li>
+						{% endfor %}
+					</ul>
+				</div>
+			{% endif %}
+		{% endfor %}
+	{% else %}
+		{% if user.is_email_verified == false and option.site.email_verification_policy is defined and option.site.email_verification_policy == 'strict' %}
+			{% set cls = cls ~ " opacity-50 hover:opacity-100 group grayscale hover:grayscale-0" %}
+			{% set lock %}
+			<i class="hidden ms-auto text-base ti ti-lock group-hover:block" x-tooltip.raw.placement.right="{{ __('Email verification required') }}"></i>
+			{% endset %}
+		{% else %}
+			{% set lock = '' %}
+		{% endif %}
+
+		{% for key, section in nav.app|filter((section,key) => key not in [ 'secondary', 'account', 'workspace']) %}
+			{% if section.items|length > 0 %}
+				<div>
+					{% if section.label %}
+						<h4 class="p-1 text-xs font-medium text-intermediate-content-dimmed">{{ p__('nav', section.label) }}</h4>
+					{% endif %}
+
+					<ul class="flex flex-col gap-0.5">
+						{% for item in section.items %}
+							<li>
+								<a href="{{ item.url }}" class="{{ cls }} {{ item.from or item.to ? 'p-1.5 gap-1.5' : '' }} {{ active_menu == item.url ? active : '' }}">
+									{% set iconcls = 'flex items-center justify-center size-6 rounded-[40%] ' %}
+
+									{% if item.from or item.to %}
+										{% set iconcls = iconcls ~ 'text-white bg-black from-black to-black bg-linear-to-br' %}
+									{% endif %}
+
+									<div class="{{ iconcls }}" style="--tw-gradient-from: {{ item.from ?? item.to }}; --tw-gradient-to: {{ item.to ?? item.from ?? '#006ABF' }}">
+										{% if item.iconType.value == 'ti' %}
+											<i class="text-lg ti ti-{{ item.icon }}"></i>
+										{% elseif item.iconType.value == 'svg' %}
+											{{ item.icon|raw }}
+										{% elseif item.iconType.value == 'src' %}
+											<img src="{{ item.icon }}" alt="{{ item.label }}">
+										{% elseif item.iconType.value == 'include' %}
+											{% include item.icon %}
+										{% endif %}
+									</div>
+
+									{{ p__('nav', item.label) }}
+									{{ lock }}
+								</a>
+							</li>
+						{% endfor %}
+					</ul>
+				</div>
+			{% endif %}
+		{% endfor %}
+	{% endif %}
+</nav>

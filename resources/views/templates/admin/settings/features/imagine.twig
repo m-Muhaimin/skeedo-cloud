@@ -1,0 +1,68 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% set xdata = 'settings' %}
+{% block title p__('title', 'Imagine configuration')|title %}
+
+{% set services = config.model.registry.directory|filter(service => service.models|filter(model => model.type == 'image')|length > 0) %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {link: 'admin/settings/features', label: 'Features'} %}
+
+		<h1 class="mt-4">{{ p__('heading', 'Imagine') }}</h1>
+	</div>
+
+	<x-form>
+		<form class="flex flex-col gap-8" @submit.prevent="submit" x-ref="form">
+			<div class="flex flex-col gap-2">
+				<section class="flex flex-col gap-6 box" data-density="comfortable">
+					<h2 class="col-span-2">{{ p__('heading', 'Configuration') }}</h2>
+
+					<div class="flex justify-between items-center p-3 rounded-lg bg-intermediate">
+						{{ p__('label', 'Status') }}
+
+						<label class="inline-flex gap-2 items-center cursor-pointer">
+							<input type="checkbox" name="features[imagine][is_enabled]" class="hidden peer" {{ option.features.imagine.is_enabled is defined and option.features.imagine.is_enabled ? 'checked' : '' }}>
+
+							<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+							<span class="text-content-dimmed peer-checked:hidden">
+								{{ p__('input-value', 'Disabled') }}
+							</span>
+
+							<span class="hidden text-success peer-checked:inline">
+								{{ p__('input-value', 'Enabled') }}
+							</span>
+						</label>
+					</div>
+
+					<div>
+						<label>{{ p__('label', 'Default model') }}</label>
+
+						<select name="features[imagine][default_model]" class="mt-2 input">
+							{% for service in services %}
+								{% for model in service.models|filter(model => model.type == 'image') %}
+									<option value="{{ model.key }}" {{ option.features.imagine.default_model is defined and option.features.imagine.default_model == model.key ? 'selected' : '' }}>
+										{{ model.name }}</option>
+								{% endfor %}
+							{% endfor %}
+						</select>
+					</div>
+				</section>
+      </div>
+
+			<div class="flex gap-4 justify-end">
+				<a href="admin/settings" class="button button-outline">
+					{{ p__('button', 'Cancel') }}
+				</a>
+
+				<button class="button button-accent" type="submit" :processing="isProcessing">
+					{% include "/snippets/spinner.twig" %}
+
+					{{ p__('button', 'Save changes') }}
+				</button>
+			</div>
+		</form>
+	</x-form>
+{% endblock %}

@@ -1,0 +1,296 @@
+{% extends "/layouts/main.twig" %}
+
+{% set xdata = 'billing' %}
+{% block title p__('title', 'Billing overview')|title %}
+
+{% block template %}
+	<div class="flex flex-col gap-8">
+		<div>
+			{% include "snippets/back.twig" with {link: 'app', label: p__('button', 'Dashboard')} %}
+
+			<h1 class="mt-4">
+				{{ p__('heading', 'Billing overview') }}
+			</h1>
+		</div>
+
+		<div class="grid gap-1 md:grid-cols-2">
+			<div class="flex flex-col gap-6 p-8 box {{ workspace.subscription ? '' : 'border-line' }}">
+				<i class="flex justify-center items-center text-2xl w-10 h-10 rounded-full ti ti-refresh bg-button text-button-content"></i>
+
+				{% if workspace.subscription %}
+					<div>
+						<div class="flex gap-2 items-center">
+							<h2>{{ workspace.subscription.plan.title }}</h2>
+							<span class="badge">{{ __('Recurring') }}</span>
+						</div>
+
+						<p class="mt-1 text-sm">
+							{{ workspace.subscription.plan.description }}
+						</p>
+					</div>
+
+					<div class="flex justify-between">
+						<div>
+							<div class="text-lg font-bold">
+								<x-credit data-value="{{ workspace.subscription.plan.credit_count }}"></x-credit>
+							</div>
+
+							<p class="text-sm text-content-dimmed">
+								{{ __('Credits per month') }}
+							</p>
+						</div>
+
+						{% if workspace.subscription.currency %}
+							<div class="text-end">
+								<div class="text-lg font-bold">
+									<x-money :data-value="$store.workspace.subscription.plan.price" :currency="$store.workspace.subscription.currency.code" :minor-units="$store.workspace.subscription.currency.fraction_digits"></x-money>
+								</div>
+
+								<p class="text-sm text-content-dimmed">
+									{{ workspace.subscription.plan.billing_cycle == 'yearly' ? __('Yearly') : __('Monthly') }}
+								</p>
+							</div>
+						{% endif %}
+					</div>
+
+					<hr>
+
+					<div>
+						<div class="text-lg font-bold">
+							<x-credit data-value="{{ workspace.subscription.credit_count }}"></x-credit>
+						</div>
+
+						<div class="flex justify-between items-center text-sm">
+							<span class="text-content-dimmed">{{ p__('label', 'Credits left') }}</span>
+							<span>{{ workspace.subscription.credit_percentage }}</span>
+						</div>
+
+						<div class="overflow-hidden mt-4 rounded-full bg-intermediate">
+							{% set style %}
+							style="width:
+							{{ workspace.subscription.credit_percentage }};"
+							{% endset %}
+							<div class="h-2 bg-linear-to-br from-gradient-from to-gradient-to" {{style}}></div>
+						</div>
+					</div>
+
+					{% if workspace.owner.id == user.id %}
+						<div class="mt-2">
+							{% if workspace.subscription.plan.price > 0 %}
+								<a href="app/billing/plans" class="button button-sm">
+									<i class="ti ti-arrows-exchange"></i>
+									{{ p__('button', 'Change plan') }}
+								</a>
+							{% else %}
+								<a href="app/billing/plans" class="button button-accent button-sm">
+									<i class="ti ti-click"></i>
+									{{ p__('button', 'Upgrade plan') }}
+								</a>
+							{% endif %}
+						</div>
+					{% endif %}
+
+					{% if workspace.subscription.cancel_at %}
+						<p class="mt-2 text-xs text-content-dimmed">
+							{{ __("Subscription will be cancelled at %s", '<x-time datetime="' ~ workspace.subscription.cancel_at ~ '"></x-time>')|raw }}
+						</p>
+					{% elseif workspace.subscription.renew_at %}
+						<div class="mt-2">
+							<p class="text-xs text-content-dimmed">
+								{{ __("Usage renews at %s", '<x-time datetime="' ~ workspace.subscription.renew_at ~ '"></x-time>')|raw }}
+							</p>
+
+							{% if workspace.owner.id == user.id and workspace.subscription.currency and workspace.subscription.plan.price > 0 %}
+								<div class="mt-0.5 text-xs">
+									{% if option.stripe.is_enabled|default(false) and option.stripe.customer_portal|default(false) and workspace.subscription.payment_gateway == 'stripe' %}
+										<form method="POST" action="/app/billing/customer-portal">
+											<button type="submit" class="text-xs font-bold hover:underline text-content">
+												{{ p__('button', 'Manage billing')}}
+												<i class="ti ti-external-link"></i>
+											</button>
+										</form>
+									{% else %}
+										<button class="text-xs font-bold hover:underline text-content" @click="modal.open('cancel-subscription')">
+											{{ p__('button', 'Cancel subscription')}}
+										</button>
+									{% endif %}
+								</div>
+							{% endif %}
+						</div>
+					{% endif %}
+				{% else %}
+					<div>
+						<h2>{{ p__('heading', 'No current plan') }}</h2>
+
+						<p class="mt-1 text-sm">
+							{{ __('Workspace is currently not subscribed to any plans.') }}
+						</p>
+					</div>
+
+					<div class="mt-auto"></div>
+
+					{% if workspace.owner.id == user.id %}
+						<div class="mt-2">
+							<a href="app/billing/plans" class="button button-accent button-sm">
+								<i class="ti ti-click"></i>
+								{{ p__('button', 'Choose a plan') }}
+							</a>
+						</div>
+
+						<p class="mt-2 text-xs text-content-dimmed">
+							{{ __("Explore our options to find one that suits your needs.") }}
+						</p>
+					{% else %}
+						<p class="mt-2 text-xs text-content-dimmed">
+							{{ __("Workspace owner can change the plan") }}
+						</p>
+					{% endif %}
+				{% endif %}
+			</div>
+
+			<div class="flex flex-col gap-6 p-8 box {{ workspace.subscription ? '' : 'opacity-50 grayscale' }}">
+				<i class="flex justify-center items-center text-2xl w-10 h-10 bg-linear-to-br rounded-full ti ti-square-rounded-letter-t text-gradient-content from-gradient-from to-gradient-to"></i>
+
+				<div>
+					<div class="flex gap-2 items-center">
+						<h2>{{ p__('heading', 'Add-on credits') }}</h2>
+						<span class="badge">{{ __('One-time, non-expiring') }}</span>
+					</div>
+
+					<p class="mt-1 text-sm">
+						{{ __('Permanent, non-renewing extras for your subscription, used only after recurring credits run out.') }}
+					</p>
+				</div>
+
+				<div class="mt-auto">
+					<div class="text-lg font-bold flex items-center gap-1">
+						<x-credit data-value="{{ workspace.credit_count }}"></x-credit>
+
+						{% if workspace.credit_count < 0 %}
+							<i class="ti ti-info-square-rounded-filled text-content-dimmed hover:text-content text-sm" x-tooltip.raw="{{ __('Overuse deducted from next payment.') }}"></i>
+						{% endif %}
+					</div>
+
+					<p class="text-sm text-content-dimmed">
+						{{ workspace.credit_count < 0 ? __('Overused credits') : __('Credits left') }}
+					</p>
+				</div>
+
+				{% if workspace.owner.id == user.id %}
+					<div class="mt-2">
+						{% if workspace.subscription %}
+							{% if option.billing.custom_credits.enabled|default(false) %}
+								<button type="button" @click="modal.open('custom-credits')" class="button button-outline button-sm">
+									<i class="ti {{ workspace.subscription.plan.price > 0 ? 'ti-click' : 'ti-cube-plus' }}"></i>
+
+									{{ p__('button', 'Buy additional credits') }}
+								</button>
+							{% else %}
+								<a href="app/billing/packs" class="button button-outline button-sm">
+									<i class="ti {{ workspace.subscription.plan.price > 0 ? 'ti-click' : 'ti-cube-plus' }}"></i>
+
+									{{ p__('button', 'Buy additional credits') }}
+								</a>
+							{% endif %}
+						{% else %}
+							<button class="button button-outline button-sm" disabled>
+								<i class="ti ti-cube-plus"></i>
+								{{ p__('button', 'Buy additional credits') }}
+							</button>
+						{% endif %}
+					</div>
+				{% endif %}
+
+				{% if workspace.subscription %}
+					<p class="mt-2 text-xs text-content-dimmed">
+						{% if workspace.owner.id ==  user.id %}
+							{{ __('You can purchase additional credits to supplement your existing subscription.') }}
+						{% else %}
+							{{ __('Workspace owner can purchase additional credits to supplement the existing subscription.') }}
+						{% endif %}
+					</p>
+				{% else %}
+					<p class="mt-2 text-xs">
+						{{ __('Addon credits reactivate with any plan subscription.') }}
+					</p>
+				{% endif %}
+			</div>
+
+			<template x-if="orders.length > 0">
+				<section class="flex flex-col gap-6 md:col-span-2 box" data-density="comfortable">
+					<div class="flex gap-2 items-center">
+						<h2>{{ p__('heading', 'Latest orders') }}</h2>
+
+						<a class="badge" :href="`app/billing/orders?sort=created_at:desc`">
+							{{ p__('button', 'View all') }}
+						</a>
+					</div>
+
+					<div>
+						<div class="hidden md:grid grid-cols-12 gap-3 items-center px-3 py-2 text-content-dimmed text-xs group-data-[state=empty]/list:hidden">
+							<div class="col-span-3">{{ p__('label', 'Order') }}</div>
+							<div class="col-span-2">{{ p__('label', 'Status') }}</div>
+							<div class="col-span-2">{{ p__('label', 'Credits') }}</div>
+							<div class="col-span-2">{{ p__('label', 'Total') }}</div>
+							<div class="col-span-2">{{ p__('label', 'Created') }}</div>
+							<div class="col-span-1"></div>
+						</div>
+
+						<div class="text-sm flex flex-col gap-1 group-data-[state=empty]:hidden">
+							<template x-for="order in orders" :key="order.id">
+								{% include "snippets/cards/order.twig" with {ref: 'order', type: 'app'} %}
+							</template>
+						</div>
+					</div>
+				</section>
+			</template>
+		</div>
+	</div>
+
+	{% if workspace.subscription %}
+		<modal-element name="cancel-subscription">
+			<form class="modal" @submit.prevent="cancelSubscription($store.workspace.id);">
+				<div class="flex relative justify-center items-center mx-auto w-24 h-24 rounded-full text-failure/25">
+
+					<svg class="absolute top-0 left-0 w-full h-full" width="112" height="112" viewbox="0 0 112 112" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<circle cx="56" cy="56" r="55.5" stroke="currentColor" stroke-dasharray="8 8"/>
+					</svg>
+
+					<div class="flex justify-center items-center w-20 h-20 text-4xl rounded-full transition-all bg-failure/25 text-failure">
+						<i class="text-4xl ti ti-trash"></i>
+					</div>
+				</div>
+
+				<div class="mt-4 text-lg text-center">
+					{% set plan %}
+					<strong>
+						{{ workspace.subscription.plan.title }}
+					</strong>
+					{% endset %}
+
+					{% set ws %}
+					<strong>
+						{{ workspace.name }}
+					</strong>
+					{% endset %}
+
+					{{ __('Do you really want to cancel subscription to :plan for :workspace workspace?')|replace({':plan': plan, ':workspace': ws})|raw }}
+				</div>
+
+				<div class="flex gap-4 justify-center items-center mt-10">
+					<button class="button button-outline" @click="modal.close()" type="button">
+						{{ p__('button', 'No') }}
+					</button>
+
+					<button class="button button-failure" type="submit">
+						{{ p__('button', 'Yes, cancel sbuscription') }}
+					</button>
+				</div>
+			</form>
+		</modal-element>
+	{% endif %}
+
+	{% if option.billing.custom_credits.enabled|default(false) %}
+		{% include "snippets/custom-credits.twig" %}
+	{% endif %}
+{% endblock %}

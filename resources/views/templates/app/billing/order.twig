@@ -1,0 +1,80 @@
+{% extends "/layouts/main.twig" %}
+
+{% block title p__('title', 'Order details')|title %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {
+    link: 'app/billing/orders', 
+    label: p__('button', 'Orders')
+  } %}
+		<h1 class="mt-4">{{ p__('heading', 'Order details') }}</h1>
+
+		<p class="mt-2 text-content-dimmed">
+			<x-uuid>{{ order.id }}</x-uuid>
+		</p>
+	</div>
+
+	<section class="flex flex-col gap-6 box" data-density="comfortable">
+		<div>
+			<div class="flex gap-2 items-center">
+				<h2>{{ p__('heading', 'Order') }}</h2>
+
+				{% if order.status == 'completed' %}
+					<span class="badge badge-success">
+						{{ p__('order-status', 'Completed') }}
+					</span>
+				{% elseif order.status == 'pending' %}
+					<span class="badge badge-alert">
+						{{ p__('order-status', 'Pending') }}
+					</span>
+				{% elseif order.status == 'failed' %}
+					<span class="badge badge-failure">
+						{{ p__('order-status', 'Failed') }}
+					</span>
+				{% endif %}
+			</div>
+
+			<p class="text-sm text-content-dimmed">
+				{{ __('Order created on %s', '<x-time datetime="'~ order.created_at ~'"></x-time>')|raw }}
+			</p>
+		</div>
+
+		<div class="flex flex-col gap-6">
+			<div class="flex flex-wrap gap-y-6 gap-x-10 items-center">
+				<div class="min-w-min">
+					<div class="label">{{ p__('label', 'Plan') }}</div>
+					<div>
+						<span class="group-hover:underline">{{ order.plan.title }}</span>
+					</div>
+				</div>
+
+				<div class="min-w-min">
+					<div class="label">
+						{{ order.plan.billing_cycle == 'one-time' ? p__('label', 'Add-on credits') : p__('label', 'Monthly credits') }}
+					</div>
+
+					<div>
+						<x-credit data-value="{{ order.plan.credit_count }}"></x-credit>
+					</div>
+				</div>
+
+				<div class="min-w-min">
+					{% if order.plan.billing_cycle == "monthly" %}
+						<div class="label">{{ __('Monthly') }}</div>
+					{% elseif order.plan.billing_cycle == "yearly" %}
+						<div class="label">{{ __('Yearly') }}</div>
+					{% elseif order.plan.billing_cycle == "lifetime" %}
+						<div class="label">{{ __('Lifetime') }}</div>
+					{% elseif order.plan.billing_cycle == "one-time" %}
+						<div class="label">{{ __('Payment') }}</div>
+					{% endif %}
+
+					<div class="flex gap-2 items-center">
+						<x-money data-value="{{ order.total }}" currency="{{ order.currency.code }}" minor-units="{{ order.currency.fraction_digits }}"></x-money>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+{% endblock %}

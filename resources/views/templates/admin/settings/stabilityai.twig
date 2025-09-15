@@ -1,0 +1,49 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% set xdata = 'settings' %}
+{% block title p__('title', 'StabilityAI Configuration') %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {link: 'admin/settings', label: 'Settings'} %}
+
+		<h1 class="mt-4">StabilityAI</h1>
+	</div>
+
+	<x-form>
+		<form class="flex flex-col gap-8" @submit.prevent="submit" x-ref="form" data-path="/stabilityai">
+			<div class="flex flex-col gap-2">
+				<section class="grid gap-6 box" data-density="comfortable">
+					<h2>{{ p__('heading', 'API') }}</h2>
+
+					<div>
+						<label for="stabilityai[api_key]">
+							{{ p__('label', 'API Key') }}
+						</label>
+
+						<div class="relative mt-2" x-data="{isVisible: false}">
+							<input class="input pe-11" :type="isVisible ? 'text' : 'password'" id="stabilityai[api_key]" name="stabilityai[api_key]" autocomplete="off" placeholder="{{ __('Include your Stability AI API secret key')|e('html_attr') }}" value="{{ environment == 'demo' ? 'hidden-in-demo' : option.stabilityai.api_key ?? '' }}" required>
+
+							<button type="button" class="absolute text-2xl -translate-y-1/2 top-1/2 end-3 text-content-dimmed" @click="isVisible = !isVisible">
+								<i class="block ti" :class="{'ti-eye-closed' : isVisible, 'ti-eye':!isVisible}"></i>
+							</button>
+						</div>
+					</div>
+				</section>
+			</div>
+
+			<div class="flex justify-end gap-4">
+				<a href="admin/settings" class="button button-outline">
+					{{ p__('button', 'Cancel') }}
+				</a>
+
+				<button type="submit" class="button button-accent" :processing="isProcessing">
+					{% include "/snippets/spinner.twig" %}
+
+					{{ p__('button', 'Save changes') }}
+				</button>
+			</div>
+		</form>
+	</x-form>
+{% endblock %}

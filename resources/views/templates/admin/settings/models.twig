@@ -1,0 +1,85 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% set directory = config.model.registry.directory|map(service => service|merge({'is_available': option[service.key]|default(null) is not empty or service.key == 'ollama' or service.custom|default(false)})) %}
+{% set types = {
+	"llm": __("Text model"),
+	"image": __("Image model"),
+	"transcription": __("Audio model"),
+	"embedding": __("Embedding model"),
+	"tts": __("Text-to-speech model"),
+	"video": __("Video model"),
+	"voice-isolation": __("Voice isolation model"),
+	"composition": __("Composition model")
+} %}
+
+{% set xdata %}
+	models({{ directory|json_encode }}, {{ option.models|default([])|json_encode }}, {{ types|json_encode }})
+{% endset %}
+
+{% block title p__('title', 'Models') %}
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {link: 'admin/settings', label: 'Settings'} %}
+		<h1 class="mt-4">{{ p__('heading', 'Models') }}</h1>
+	</div>
+
+	<div class="flex flex-col gap-8">
+		<div class="flex flex-col gap-2">
+			<template x-for="service in directory">
+				<section class="flex flex-col gap-6 box" data-density="comfortable">
+					<div class="flex flex-col gap-1">
+						<h2 x-text="service.name"></h2>
+
+						<template x-if="service.is_available">
+							<div class="text-sm text-content-dimmed">
+								{% set link %}
+									<a :href="`/admin/settings/${service.key}`" class="text-content group font-medium" target="_blank">
+										<span class="group-hover:underline" x-text="service.name"></span>
+
+										<i class="ti ti-external-link"></i>
+									</a>
+								{% endset %}
+
+								{{ __('Following models are provided by %s integration.', link)|raw }}
+							</div>
+						</template>
+
+						<template x-if="!service.is_available">
+							<div class="flex gap-1 items-center text-sm text-content-dimmed">
+								<i class="text-base ti ti-alert-square-rounded-filled text-failure"></i>
+								{% set service %}
+									<span x-text="service.name"></span>
+								{% endset %}
+
+								{{ __('%s integration is not configured.', service)|raw }}
+
+								<a :href="`/admin/settings/${service.key}`" class="text-content group font-medium flex items-center gap-1" target="_blank">
+									<span class="group-hover:underline" x-text="service.name"></span>
+
+									<i class="ti ti-external-link"></i>
+								</a>
+							</div>
+						</template>
+					</div>
+
+					<div class="grid gap-1 md:grid-cols-2">
+						<template x-for="model in service.models">
+							<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+								<div>
+									<div class="flex gap-2 items-center text-sm" x-text="model.name"></div>
+									<div class="font-normal text-content-dimmed capitalize" x-text="types[model.type] ?? model.type"></div>
+								</div>
+
+								<div class="ms-auto">
+									<input type="checkbox" class="hidden peer" name="models[]" :value="model.key" :checked="model.enabled" @change="update(service, model, {'enabled': $event.target.checked})">
+									<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+								</div>
+							</label>
+						</template>
+					</div>
+				</section>
+			</template>
+		</div>
+	</div>
+{% endblock %}

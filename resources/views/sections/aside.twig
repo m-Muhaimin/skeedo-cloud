@@ -1,0 +1,41 @@
+<aside class="sticky z-10 py-4 top-0 hidden lg:flex flex-col gap-4 h-screen shrink-0 w-64 bg-intermediate text-intermediate-content group-data-collapsed/html:-ms-64 border-e border-line dark:border-line-dimmed transition-[margin] ease-in" x-data>
+	<div class="relative flex items-center justify-between px-4">
+		<a href="{{ view_namespace }}">
+			<img src="{{ option.brand.logo_dark ?? '/assets/logo-light.svg' }}" alt="{{ option.site.name ?? 'Logo' }}" class="hidden dark:block max-w-[140px] h-6 object-contain object-left">
+			<img src="{{ option.brand.logo ?? '/assets/logo-dark.svg' }}" alt="{{ option.site.name ?? 'Logo' }}" class="block dark:hidden max-w-[140px] h-6 object-contain object-left">
+		</a>
+
+		{% if option.color_scheme.modes is not defined or option.color_scheme.modes|length > 1 %}
+			<mode-switcher>
+				<button type="button" @click.stop>
+					<i class="text-xl ti ti-moon dark:hidden" x-tooltip.placement.right.raw="{{ __('Toggle theme') }}"></i>
+					<i class="text-xl ti ti-sun hidden dark:block" x-tooltip.placement.right.raw="{{ __('Toggle theme') }}"></i>
+				</button>
+			</mode-switcher>
+		{% endif %}
+	</div>
+
+	{% include "/snippets/workspace/menu.twig" %}
+	{% include "/snippets/navigation.twig" %}
+
+	<div class="flex flex-col gap-4 px-4 mt-auto">
+		{% if view_namespace == 'admin' %}
+			<a href="app" class="button button-sm">
+				{{ p__('button', 'View app') }}
+			</a>
+		{% elseif workspace.owner.id == user.id and (workspace.subscription == null or workspace.subscription.plan.price <= 0) %}
+			<a href="app/billing/plans" class="button button-sm">
+				<i class="ti ti-click"></i>
+				{{ p__('button', 'Upgrade plan') }}
+			</a>
+		{% endif %}
+
+		{% include "/snippets/account-menu.twig" %}
+	</div>
+
+	<template x-ref="sidebarTooltip">
+		<p x-text="document.documentElement.dataset.collapsed ? `{{ __('Open sidebar') }}` : `{{ __('Close sidebar') }}`"></p>
+	</template>
+
+	<button type="button" class="absolute top-1/2 start-full ms-4 w-1.5 h-12 bg-line-dimmed rounded-sm -translate-y-1/2 transition-all hover:scale-125 hover:bg-line group-data-collapsed/html:bg-line" x-tooltip.placement.right="{ content: () => $refs.sidebarTooltip.innerHTML, allowHTML: true }" @click="document.documentElement.dataset.collapsed ? (delete document.documentElement.dataset.collapsed, delete localStorage.collapsed) : (document.documentElement.dataset.collapsed = localStorage.collapsed = true)"></button>
+</aside>

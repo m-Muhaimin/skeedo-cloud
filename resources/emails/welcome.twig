@@ -1,0 +1,36 @@
+{% extends "@emails/layout.twig" %}
+
+{% block subject %}
+	{% if option.site.name is defined and option.site.name %}
+		Welcome to
+		{{ option.site.name }}!
+	{% else %}
+		Thank you for signing up!
+	{% endif %}
+{% endblock %}
+
+{% block content %}
+	<div>
+		Dear
+		<strong>{{ user.first_name }}</strong>,
+
+		<p>
+			Welcome to
+			<strong>{{ option.site.name ?? '' }}</strong>!
+		</p>
+
+		<p>
+			We are thrilled to have you on board. Our team is committed to providing you with an exceptional experience, and we are here to support you every step of the way.
+		</p>
+
+		<p>
+			Warm regards,
+			<br/>
+
+			<strong>
+				{{ option.site.name ?? '' }}
+				team
+			</strong>
+		</p>
+	</div>
+{% endblock %}

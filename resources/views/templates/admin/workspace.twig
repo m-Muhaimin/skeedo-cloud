@@ -1,0 +1,694 @@
+{% extends "/layouts/main.twig" %}
+
+{% set ranges = [
+  {
+    "range": "today",
+    "label": __("Today"),
+  },
+  {
+    "range": "last_7_days",
+    "label": __("Last 7 days"),
+  },
+  {
+    "range": "last_30_days",
+    "label": __("Last 30 days"),
+  },
+  {
+    "range": "month_to_date",
+    "label": __("Month to date"),
+  },
+  {
+    "range": "last_month",
+    "label": __("Last month"),
+  },
+  {
+    "range": "last_3_months",
+    "label": __("Last 3 months"),
+  },
+] %}
+
+{% set active_menu = '/admin/workspaces' %}
+
+{% set xdata %}
+workspace({{ current_workspace|json_encode }},
+{{ ranges|json_encode }},
+"last_30_days")
+{% endset %}
+
+{% block title p__('title', 'Workspace details')|title %}
+
+{% block template %}
+<div class="flex flex-col gap-8">
+	<div>
+		{% include "snippets/back.twig" with {link: 'admin/workspaces', label: 'Workspaces'} %}
+
+		<h1 class="mt-4">
+			<span>
+				{{ p__('heading', 'Workspace') }}:
+				<span class="font-normal text-intermediate-content" x-text="workspace.name"></span>
+			</span>
+		</h1>
+
+		<div class="mt-2">
+			<x-uuid x-text="workspace.id"></x-uuid>
+		</div>
+	</div>
+
+	<div class="flex flex-col gap-2">
+		<section class="flex flex-col gap-6 box" data-density="comfortable">
+			<div>
+				<h2>{{ p__('heading', 'General') }}</h2>
+				<p class="text-sm text-content-dimmed">
+					{{ __('Workspace created on %s', '<x-time :datetime="workspace.created_at"></x-time>')|raw }}
+				</p>
+			</div>
+
+			<div class="flex flex-col gap-1">
+				<div class="flex gap-3 justify-between items-center p-4 rounded-2xl bg-intermediate text-intermediate-content">
+					<x-avatar class="bg-main text-content" icon="building"></x-avatar>
+
+					<div>
+						<label>{{ p__('label', 'Workspace name') }}</label>
+						<div x-text="workspace.name"></div>
+					</div>
+
+					<button type="button" @click="modal.open('workspace-name')" class="flex justify-center items-center ms-auto w-8 h-8 rounded-full bg-main outline-1 outline-line hover:outline outline-offset-0">
+						<i class="text-base ti ti-pencil"></i>
+					</button>
+				</div>
+
+				<div class="flex gap-3 items-center p-4 rounded-2xl bg-intermediate text-intermediate-content">
+					<x-avatar class="bg-main text-content" :title="`${workspace.owner.first_name} ${workspace.owner.last_name}`" :src="workspace.owner.avatar"></x-avatar>
+
+					<div>
+						<label x-text="`${workspace.owner.first_name} ${workspace.owner.last_name}`"></label>
+						<div class="text-sm text-content-dimmed">{{ p__('role', 'Owner') }}
+						</div>
+					</div>
+
+					<a type="button" :href="`admin/users/${workspace.owner.id}`" class="flex justify-center items-center ms-auto w-8 h-8 rounded-full bg-main outline-1 outline-line hover:outline outline-offset-0">
+						<i class="text-base ti ti-chevron-right"></i>
+					</a>
+				</div>
+
+				<template x-if="workspace.address">
+					<div class="flex gap-3 items-center p-4 rounded-2xl bg-intermediate text-intermediate-content">
+						<x-avatar class="bg-main text-content" icon="map-pin-filled"></x-avatar>
+
+						<div class="flex flex-col gap-1">
+							<div class="label">{{ p__('label', 'Billing address') }}</div>
+
+							<address class="text-sm not-italic text-content-dimmed">
+								<div>
+									<span x-text="workspace.address.line1"></span>
+
+									<template x-if="workspace.address.line2">
+										<span x-text="`, ${workspace.address.line2}`"></span>
+									</template>
+								</div>
+
+								<div>
+									<span x-text="workspace.address.city"></span>
+
+									<template x-if="workspace.address.state">
+										<span x-text="`, ${workspace.address.state}`"></span>
+									</template>
+									<span x-text="`, ${workspace.address.zip}`"></span>
+									,
+									<span x-text="workspace.address.country"></span>
+								</div>
+							</address>
+						</div>
+					</div>
+				</template>
+			</div>
+		</section>
+
+		<section class="flex flex-col gap-6 box" data-density="comfortable">
+			<div class="flex gap-2 items-center">
+				<h2>{{ p__('heading', 'Credit usage') }}</h2>
+
+				<div class="relative ms-auto" @click.outside=" $refs.context.removeAttribute('data-open')" x-data>
+					<button type="button" class="button button-sm button-dimmed" @click="$refs.context.toggleAttribute('data-open')">
+						<span x-text="range.label"></span>
+						<i class="ti ti-chevron-down"></i>
+					</button>
+
+					<div class="menu" x-ref="context">
+						<ul>
+							<template x-for="r in ranges">
+								<li>
+									<button type="button" class="px-4 py-2 w-full text-start blockl hover:bg-intermediate hover:text-intermediate-content" @click="range = r; $refs.context.removeAttribute('data-open');">
+										<span x-text="r.label"></span>
+									</button>
+								</li>
+							</template>
+						</ul>
+					</div>
+				</div>
+
+				<div class="relative" @click.outside="$refs.context.removeAttribute('data-open')">
+
+					<button class="relative z-10" @click="$refs.context.toggleAttribute('data-open')">
+						<i class="text-2xl ti ti-dots-vertical text-content-dimmed hover:text-intermediate-content"></i>
+					</button>
+
+					<div class="menu" x-ref="context">
+						<ul>
+							<li><a :href="`admin/workspaces/${workspace.id}/logs/usage`" class="flex gap-2 items-center px-4 py-2 hover:no-underline hover:bg-intermediate"><i class="ti ti-mist"></i>{{ p__('button', 'Usage log') }}</a></li>
+						</ul>
+					</div>
+				</div>
+			</div>
+
+			<div class="h-64">
+				<x-chart :set="JSON.stringify(datasets.usage)" class="block">
+					<div chart class="h-64"></div>
+				</x-chart>
+			</div>
+		</section>
+
+		<section class="flex flex-col gap-6 box" data-density="comfortable">
+			<div>
+				<div class="flex gap-2 items-center">
+					<h2>{{ p__('heading', 'Subscription') }}</h2>
+
+					<template x-if="workspace.subscription">
+						<div>
+							<template x-if="workspace.subscription.status == 'active'">
+								<span class="badge badge-success">{{ p__('subscription-status', 'Active') }}</span>
+							</template>
+
+							<template x-if="workspace.subscription.status == 'trialing'">
+								<span class="badge badge-info">{{ p__('subscription-status', 'Trialing') }}</span>
+							</template>
+
+							<template x-if="workspace.subscription.status == 'canceled'">
+								<span class="badge">{{ p__('subscription-status', 'Canceled') }}</span>
+							</template>
+
+							<template x-if="workspace.subscription.status == 'ended'">
+								<span class="badge badge-failure">{{ p__('subscription-status', 'Ended') }}</span>
+							</template>
+						</div>
+					</template>
+				</div>
+
+				<template x-if="workspace.subscription">
+					<p class="text-sm text-content-dimmed">
+						{{ __('Workspace is subscribed to %s plan.', '<a class="hover:underline" :href="`admin/plan-snapshots/${workspace.subscription.plan.id}`" x-text="workspace.subscription.plan.title"></a>')|raw }}
+					</p>
+				</template>
+
+				<template x-if="!workspace.subscription">
+					<p class="text-sm text-content-dimmed">
+						{{ __('This workspace is not subscribed to any plan.') }}
+					</p>
+				</template>
+			</div>
+
+			<template x-if="workspace.subscription">
+				<div class="flex flex-col gap-6">
+					<div class="flex flex-wrap gap-6 items-center">
+						<div class="w-40 min-w-min">
+							<div class="label">{{ p__('label', 'Plan') }}</div>
+							<div>
+								<a :href="`admin/plan-snapshots/${workspace.subscription.plan.id}`" class="inline-flex gap-1 items-center group">
+									<span class="group-hover:underline" x-text="workspace.subscription.plan.title"></span>
+									<i class="text-base ti ti-corner-right-up text-content-dimmed"></i>
+								</a>
+							</div>
+						</div>
+
+						<div class="w-40 min-w-min">
+							<div class="label">
+								{{ p__('label', 'Monthly credits') }}
+							</div>
+
+							<x-credit :data-value="workspace.subscription.plan.credit_count"></x-credit>
+						</div>
+
+						<div class="w-40 min-w-min">
+							<div class="label">
+								{{ p__('label', 'Credits left') }}
+							</div>
+
+							<x-credit :data-value="workspace.subscription.credit_count"></x-credit>
+						</div>
+
+						<div class="w-40 min-w-min">
+							<template x-if="workspace.subscription.plan.billing_cycle == 'monthly'">
+								<div class="label">{{ __('Monthly') }}</div>
+							</template>
+
+							<template x-if="workspace.subscription.plan.billing_cycle == 'yearly'">
+								<div class="label">{{ __('Yearly') }}</div>
+							</template>
+
+							<template x-if="workspace.subscription.plan.billing_cycle == 'lifetime'">
+								<div class="label">{{ __('Lifetime') }}</div>
+							</template>
+
+							<div class="flex gap-2 items-center">
+								<x-money :data-value="workspace.subscription.order ? workspace.subscription.plan.price : 0" :currency="workspace.subscription.order ? workspace.subscription.order.currency.code : `{{ currency.code }}`" :minor-units="workspace.subscription.order ? workspace.subscription.order.currency.fraction_digits : `{{ currency.fraction_digits }}`"></x-money>
+
+								<template x-if="!workspace.subscription.order">
+									<i class="text-lg ti ti-info-square-rounded" x-tooltip.raw="{{ __('Subscription created with no charge') }}"></i>
+								</template>
+							</div>
+						</div>
+					</div>
+
+					<hr>
+
+					<template x-if="workspace.subscription.cancel_at">
+						<p class="text-xs text-content-dimmed">
+							{{ __("Subscription will be cancelled at %s", '<x-time :datetime="workspace.subscription.cancel_at"></x-time>')|raw }}
+						</p>
+					</template>
+
+					<template x-if="!workspace.subscription.cancel_at && workspace.subscription.renew_at">
+						<p class="text-xs text-content-dimmed">
+							{{ __("Usage renews at %s", '<x-time :datetime="workspace.subscription.renew_at"></x-time>')|raw }}
+						</p>
+					</template>
+
+					<div class="flex gap-1 items-center">
+						<button type="button" class="button button-accent button-sm" @click="modal.open('workspace-subscription')">
+							<i class="ti ti-click"></i>
+
+							{{ p__('button', 'Change plan') }}
+						</button>
+
+						<a :href="`admin/subscriptions/${workspace.subscription.id}`" class="button button-outline button-sm">
+							{{ p__('button', 'View details')}}
+						</a>
+					</div>
+				</div>
+			</template>
+
+			<template x-if="!workspace.subscription">
+				<div class="flex gap-1 items-center">
+					<button type="button" class="button button-accent button-sm" @click="modal.open('workspace-subscription')">
+						<i class="ti ti-click"></i>
+
+						{{ p__('button', 'Create subscription') }}
+					</button>
+				</div>
+			</template>
+
+			<div class="flex">
+				<a :href="`admin/subscriptions/?workspace=${workspace.id}&sort=created_at:desc`" class="flex gap-1 items-center text-xs text-content-dimmed hover:text-content">
+					<i class="text-base ti ti-history"></i>
+
+					{{ p__('button', 'View subscription history')}}
+				</a>
+			</div>
+		</section>
+
+		<section class="flex flex-col gap-6 box" data-density="comfortable">
+			<div>
+				<h2>{{ p__('heading', 'Add-on credits') }}</h2>
+
+				<p class="text-sm text-content-dimmed">
+					{{ __('Permanent, non-renewing extras for the subscription, used only after recurring credits run out.') }}
+				</p>
+			</div>
+
+			<div>
+				<div class="label">{{ p__('label', 'Credits left') }}</div>
+
+				<div class="flex gap-1 items-center">
+					<x-credit :data-value="workspace.credit_count === null ? 'null' : workspace.credit_count"></x-credit>
+					<button type="button" class="text-lg ti ti-square-rounded-plus text-content-dimmed hover:text-content" @click="modal.open('workspace-addon-credits')" x-tooltip.raw="{{ __('Add add-on credits') }}"></button>
+				</div>
+
+				<template x-if="workspace.credits_adjusted_at">
+					<div class="mt-2 text-sm text-content-dimmed">
+						{{ __('Credits last adjusted at %s', '<x-time :datetime="workspace.credits_adjusted_at"></x-time>')|raw }}
+					</div>
+				</template>
+			</div>
+
+			<hr>
+
+			<p class="text-xs text-content-dimmed">
+				{{ __("Add-on credits are valid with a subscription and transferable between plan changes.") }}
+			</p>
+
+			<div class="flex">
+				<a :href="`admin/orders?billing_cycle=one-time&workspace=${workspace.id}`" class="button button-sm">
+					<i class="ti ti-history"></i>
+
+					{{ p__('button', 'View addon credit orders') }}
+				</a>
+			</div>
+		</section>
+
+		<section class="grid gap-6 box" data-density="comfortable">
+			<div>
+				<h2>{{ p__('heading', 'Team') }}</h2>
+				<template x-if="workspace.users.concat(workspace.invitations).length == 0">
+					<p class="text-sm text-content-dimmed">
+						{{ __('This workspace has no members yet.') }}
+					</p>
+				</template>
+			</div>
+
+			<template x-if="workspace.users.concat(workspace.invitations).length > 0">
+				<ul class="flex flex-col gap-1">
+					<template x-for="u in workspace.users" :key="u.id">
+						<li>
+							<a :href="`admin/users/${u.id}`" class="grid relative grid-cols-2 gap-3 items-center p-3 box hover:border-line">
+								<div class="flex gap-3 items-center">
+									<div class="avatar">
+										<span x-text="`${u.first_name} ${u.last_name}`.match(/(\b\S)?/g).join('').slice(0, 2)"></span>
+
+										<template x-if="u.avatar">
+											<img :src="u.avatar" :alt="`${u.first_name} ${u.last_name}`">
+										</template>
+									</div>
+
+									<div>
+										<div class="flex gap-2 items-center">
+											<div class="font-bold" x-text="`${u.first_name} ${u.last_name}`"></div>
+
+											<template x-if="u.id == `{{ user.id }}`">
+												<span class="badge badge-success">{{ __('You') }}</span>
+											</template>
+										</div>
+
+
+										<div class="text-xs text-content-dimmed" x-text="u.email"></div>
+									</div>
+								</div>
+
+								<div class="justify-self-start">
+									<div class="badge">
+										{{ p__('input-value', 'Member') }}
+									</div>
+								</div>
+							</a>
+						</li>
+					</template>
+
+					<template x-for="u in workspace.invitations" :key="u.id">
+						<li class="grid relative grid-cols-4 gap-3 items-center p-3 box" x-data>
+							<div class="flex col-span-2 gap-3 items-center">
+								<x-avatar :title="u.email"></x-avatar>
+
+								<div class="text-xs text-content-dimmed" x-text="u.email"></div>
+							</div>
+
+							<div class="justify-self-start">
+								<div class="flex gap-2 items-center">
+									<div class="opacity-50 badge">
+										{{ p__('input-value', 'Invited') }}
+									</div>
+
+									<x-copy class="button button-xs button-dimmed" x-tooltip.raw="{{ __("Click to copy invitation link") }}" class="flex gap-1 items-center" :data-copy="`${window.location.origin}/app/workspace/${ workspace.id }/invitations/${ u.id}`">
+										<i class="ti ti-link"></i>
+									</x-copy>
+								</div>
+							</div>
+						</li>
+					</template>
+				</ul>
+			</template>
+		</section>
+
+		<template x-if="voices.length > 0">
+			<section class="grid grid-cols-1 gap-6 box" data-density="comfortable">
+				<div class="flex gap-2 items-center">
+					<h2>{{ p__('heading', 'Cloned voices') }}</h2>
+
+					<a class="badge" :href="`admin/voices?workspace=${workspace.id}`">
+						{{ p__('button', 'View all') }}
+					</a>
+				</div>
+
+				<ul class="flex flex-col gap-1">
+					<template x-for="voice in voices" :key="voice.id">
+						<li class="grid relative grid-cols-4 gap-3 items-center p-3 box" x-data>
+							<div class="flex col-span-3 gap-3 items-start md:col-span-2">
+								<x-avatar :title="`${voice.name}`"></x-avatar>
+
+								<div>
+									<div class="font-bold" x-text="`${voice.name}`"></div>
+
+									<div class="flex gap-1 items-center text-xs text-content-dimmed">
+										<div>
+											{% set by %}
+											<span x-text="`${voice.user.first_name} ${voice.user.last_name}`"></span>
+											{% endset %}
+
+											{{ __('By :owner')|replace({':owner': by})|raw }}
+										</div>
+
+										<i class="text-xs text-content-success ti ti-point-filled"></i>
+
+										<x-time :datetime="voice.created_at" data-type="datetime"></x-time>
+									</div>
+								</div>
+							</div>
+
+							<div class="hidden justify-self-start md:block"></div>
+
+							<div class="justify-self-end">
+								<template x-if="voice.visibility === 0">
+									<i class="text-2xl ti ti-lock" x-tooltip.placement.left.raw="{{ __('Accessible to owner only') }}"></i>
+								</template>
+
+								<template x-if="voice.visibility === 1">
+									<i class="text-2xl ti ti-building" x-tooltip.placement.left.raw="{{ __('Accessible to all workspace members') }}"></i>
+								</template>
+
+								<template x-if="voice.visibility === 2">
+									<i class="text-2xl ti ti-world" x-tooltip.placement.left.raw="{{ __('Accessible to all users') }}"></i>
+								</template>
+							</div>
+						</li>
+					</template>
+				</ul>
+
+				<div>
+					<div class="label">{{ p__('label', 'Important notes:') }}</div>
+
+					<ul class="info mt-2">
+						<li>
+							{{ p__('label', 'Workspace owner can view and delete all cloned voices created by other members.') }}
+						</li>
+
+						<li>
+							{{ p__('label', 'Only owner of the cloned voice can manage it.') }}
+						</li>
+
+						<li>
+							{{ p__('label', 'Cloned voices are not accessible to other workspace members unless shared.') }}
+						</li>
+					</ul>
+				</div>
+			</section>
+		</template>
+
+		<template x-if="orders.length > 0">
+			<section class="flex flex-col gap-6 box" data-density="comfortable">
+				<div class="flex gap-2 items-center">
+					<h2>{{ p__('heading', 'Latest orders') }}</h2>
+
+					<a class="badge" :href="`admin/orders?workspace=${workspace.id}&sort=created_at:desc`">
+						{{ p__('button', 'View all') }}
+					</a>
+				</div>
+
+				<div>
+					<div class="hidden md:grid grid-cols-12 gap-3 items-center px-3 py-2 text-content-dimmed text-xs group-data-[state=empty]/list:hidden">
+						<div class="col-span-3">{{ p__('label', 'Order') }}</div>
+						<div class="col-span-2">{{ p__('label', 'Status') }}</div>
+						<div class="col-span-2">{{ p__('label', 'Credits') }}</div>
+						<div class="col-span-2">{{ p__('label', 'Total') }}</div>
+						<div class="col-span-2">{{ p__('label', 'Created') }}</div>
+						<div class="col-span-1"></div>
+					</div>
+
+					<div class="text-sm flex flex-col gap-1 group-data-[state=empty]:hidden">
+						<template x-for="order in orders" :key="order.id">
+							{% include "snippets/cards/order.twig" with {ref: 'order', type: 'admin'} %}
+						</template>
+					</div>
+				</div>
+			</section>
+		</template>
+	</div>
+</div>
+
+<modal-element name="workspace-name">
+	<x-form>
+		<form class="flex flex-col gap-8 modal" @submit.prevent="rename($refs.name.value)">
+			<div class="flex justify-between items-center">
+				<h2 class="text-xl">{{ p__('heading', 'Rename workspace') }}</h2>
+
+				<button class="flex justify-center items-center w-8 h-8 rounded-full border border-transparent bg-line-dimmed hover:border-line" @click="modal.close()" type="button">
+					<i class="text-xl ti ti-x"></i>
+				</button>
+			</div>
+
+			<div>
+				<label for="workspace-name">{{ p__('label', 'Workspace name') }}</label>
+				<input type="text" class="mt-2 input" id="workspace-name" required x-ref="name" :value.trim="workspace.name">
+			</div>
+
+			<div class="flex gap-4 justify-end">
+				<button type="button" class="button button-outline" @click="modal.close()" type="button">
+					{{ p__('button', 'Cancel') }}
+				</button>
+
+				<button type="submit" class="button button-accent" :processing="isProcessing" :disabled="isProcessing">
+					{% include "/snippets/spinner.twig" %}
+
+					{{ p__('button', 'Save changes') }}
+				</button>
+			</div>
+		</form>
+	</x-form>
+</modal-element>
+
+<modal-element name="workspace-subscription">
+	<x-form>
+		<form class="flex flex-col gap-8 modal" @submit.prevent="subscribe($refs.plan.value)">
+			<div class="flex justify-between items-center">
+				<h2 class="text-xl">{{ p__('heading', 'New subscription') }}</h2>
+
+				<button class="flex justify-center items-center w-8 h-8 rounded-full border border-transparent bg-line-dimmed hover:border-line" @click="modal.close()" type="button">
+					<i class="text-xl ti ti-x"></i>
+				</button>
+			</div>
+
+			<div>
+				<label for="plan">{{ p__('label', 'Plan') }}</label>
+				<select name="plan" id="plan" class="mt-2 input" :disabled="plans.length == 0" x-ref="plan" required>
+					<option value="">{{ p__('input-value', 'Select a plan') }}</option>
+
+					<template x-for="plan in plans" :key="plan.id">
+						<option :value="plan.id" x-text="`${plan.title} / ${plan.billing_cycle}`"></option>
+					</template>
+				</select>
+			</div>
+
+			<div>
+				<div class="flex gap-1 items-center text-sm font-bold">
+					<i class="text-lg ti ti-info-square-rounded"></i>
+					{{ __('Important') }}
+				</div>
+
+				<p class="mt-2 text-sm">
+					{{ __('This action creates a new subscription with the selected plan for the workspace, ending the current one.') }}
+					<strong>{{ __('No charges apply, even if the plan isn\'t free.') }}</strong>
+        </p>
+      </div>
+
+      <div class="flex gap-4 justify-end">
+        <button type="button" class="button button-outline"
+          @click="modal.close()" type="button">
+          {{ p__('button', 'Cancel') }}
+        </button>
+
+        <button type="submit" class="button button-accent"
+          :processing="isProcessing">
+          {% include "/snippets/spinner.twig" %}
+
+          {{ p__('button', 'Create subscription') }}
+        </button>
+      </div>
+    </form>
+  </x-form>
+</modal-element>
+
+<modal-element name="workspace-addon-credits" x-data="{ 
+    total: workspace.credit_count === null ? true : false,
+    value: workspace.credit_count === null ? workspace.credit_count : ''
+}">
+  <x-form>
+    <form class="flex flex-col gap-8 modal"
+      @submit.prevent="adjustCredits(value, total)">
+      <div class="flex justify-between items-center"> 
+        <h2 class="text-xl">{{ p__('heading', 'Adjust add-on credits') }}</h2>
+
+        <button
+          class="flex justify-center items-center w-8 h-8 rounded-full border border-transparent bg-line-dimmed hover:border-line"
+          @click="modal.close()" type="button">
+          <i class="text-xl ti ti-x"></i>
+        </button>
+      </div>
+
+      <div>
+        <label for="addon-credits" x-text="total ? `{{ p__('label', 'Total add-on credits') }}` : `{{ p__('label', 'Add-on credits') }}`"></label>
+        <input type="number" class="mt-2 input" id="addon-credits" :placeholder="total ? workspace.credit_count : `{{ __('Include a number of new add-on credits') }}`"
+          x-model="value"  min="0" step="0.00000000001" maxlength="23" max="99999999999.99999999999"
+          :required="!total">
+
+        <ul class="info mt-2" x-show="total">
+          <li>
+            {{ __('Leave blank for unlimited.') }}
+          </li>
+        </ul>
+      </div>
+
+      <div class="flex justify-between items-center p-3 rounded-lg bg-intermediate">
+        {{ p__('label', 'Set as total') }}
+
+        <label class="inline-flex gap-2 items-center cursor-pointer">
+          <input type="checkbox" name="total" class="hidden peer" x-model="total" :disabled="workspace.credit_count == null">
+
+          <span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-disabled:opacity-50 peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+          <span class="text-content-dimmed peer-checked:hidden peer-disabled:opacity-50">
+            {{ p__('input-value', 'No') }}
+          </span>
+
+          <span class="hidden text-success peer-checked:inline peer-disabled:opacity-50">
+            {{ p__('input-value', 'Yes') }}
+          </span>
+        </label>
+      </div>
+
+      <div class="grid grid-cols-2 gap-8">
+        <div>
+          <div class="label">{{ p__('label', 'Current value') }}</div>
+          <x-credit :data-value="workspace.credit_count === null ? 'null' : workspace.credit_count"></x-credit>
+        </div>
+
+        <div>
+          <div class="label">{{ p__('label', 'New value') }}</div>
+          <x-credit :data-value="total ? value : 1 * value + workspace.credit_count"></x-credit>
+        </div>
+      </div>
+
+      <div>
+        <div class="flex gap-1 items-center text-sm font-bold">
+          <i class="text-lg ti ti-info-square-rounded"></i>
+          {{ __('Important') }}
+        </div>
+
+        <p class="mt-2 text-sm">
+          {{ __('This action adjusts the add-on credits for the workspace. No transactional data will be generated. This action is irreversible, use with caution.') }}
+        </p>
+      </div>
+
+      <div class="flex gap-4 justify-end">
+        <button type="button" class="button button-outline"
+          @click="modal.close()" type="button">
+          {{ p__('button', 'Cancel') }}
+        </button>
+
+        <button type="submit" class="button button-accent"
+          :processing="isProcessing">
+          {% include "/snippets/spinner.twig" %}
+
+          <span x-text="total ? `{{ p__('button', 'Set total') }}` : `{{ p__('button', 'Adjust credits') }}`"></span>
+        </button>
+      </div>
+    </form>
+  </x-form>
+</modal-element>
+{% endblock %}

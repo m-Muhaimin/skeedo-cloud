@@ -1,0 +1,47 @@
+#quick-access {
+  @apply h-[calc(100dvh-5rem-0.25rem-2rem)] lg:h-[calc(100dvh-2.5rem-2rem)] flex flex-col justify-center;
+
+  .links .button {
+    @apply transition-all duration-500 delay-250;
+
+    &:nth-child(1) {
+      @apply delay-0;
+    }
+
+    &:nth-child(2) {
+      @apply delay-100;
+    }
+
+    &:nth-child(3) {
+      @apply delay-150;
+    }
+
+    &:nth-child(4) {
+      @apply delay-150;
+    }
+
+    &:nth-child(5) {
+      @apply delay-200;
+    }
+
+    svg {
+      @apply size-6;
+    }
+  }
+
+  &[data-collapsed] {
+    .links .button {
+      @apply opacity-0 invisible -translate-y-3;
+    }
+  }
+}
+
+@media (min-height: 1127px) {
+  #quick-access {
+    @apply h-[calc(50dvh-2.5rem-6.125rem)] justify-end pb-16;
+
+    .scroll {
+      @apply hidden;
+    }
+  }
+}

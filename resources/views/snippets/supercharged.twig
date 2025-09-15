@@ -1,0 +1,88 @@
+{% set capabilities = [
+  {
+    'key': 'embedding_search',
+    'icon': 'file-text-ai',
+    'name': __('Document Intelligence'),
+    'description': __('Upload and chat with your documents - PDFs, Word files, and more')
+  },
+  {
+    'key': 'google_search',
+    'icon': 'brand-google',
+    'name': __('Live Web Search'),
+    'description': __('Get real-time information from across the web')
+  },
+  {
+    'key': 'youtube',
+    'icon': 'brand-youtube',
+    'name': __('YouTube Insights'),
+    'description': __('Get detailed information about YouTube videos and channels')
+  },
+  {
+    'key': 'web_scrap',
+    'icon': 'world-www',
+    'name': __('Smart Web Reading'),
+    'description': __('Extract and analyze information from any webpage')
+  },
+  {
+    'key': 'generate_image',
+    'icon': 'photo-ai',
+    'name': __('AI Image Creation'),
+    'description': __('Create stunning images from your descriptions')
+  },
+  {
+    'key': 'memory',
+    'icon': 'database',
+    'name': __('Conversation Memory'),
+    'description': __('Remember your preferences and conversation history')
+  }
+] %}
+
+<modal-element name="supercharged">
+	<div class="flex flex-col gap-6 modal">
+		<div class="flex justify-between items-center">
+			<h2 class="text-xl">{{ p__('heading', 'Supercharged') }}</h2>
+
+			<button type="button" class="flex justify-center items-center w-8 h-8 rounded-full border border-transparent bg-line-dimmed hover:border-line" @click="modal.close()">
+				<i class="text-xl ti ti-x"></i>
+			</button>
+		</div>
+
+		<p class="text-content-dimmed">
+			{{ __('Supercharged models can use powerful tools to provide you with the most accurate and up-to-date responses.') }}
+		</p>
+
+		<div class="flex flex-col gap-1">
+			{% for capability in capabilities %}
+				{% if option.features.tools[capability.key].is_enabled|default(false) %}
+					{% if workspace.subscription.plan.config.tools[capability.key]|default(false) %}
+						<div class="box relative flex items-center gap-2">
+							<x-avatar icon="{{ capability.icon }}" class="avatar-outline"></x-avatar>
+
+							<div class="flex flex-col">
+								<div class="text-sm font-bold">{{ capability.name }}</div>
+								<div class="text-xs text-content-dimmed">{{ capability.description }}</div>
+							</div>
+						</div>
+					{% endif %}
+				{% endif %}
+			{% endfor %}
+
+			{% for capability in capabilities %}
+				{% if option.features.tools[capability.key].is_enabled|default(false) %}
+					{% if workspace.subscription.plan.config.tools[capability.key]|default(false) is empty %}
+						<a href="app/billing" class="box relative flex items-center gap-2 opacity-50 hover:opacity-100">
+							<x-avatar icon="{{ capability.icon }}" class="avatar-outline"></x-avatar>
+
+							<div class="flex flex-col">
+								<div class="text-sm font-bold">{{ capability.name }}</div>
+								<div class="text-xs text-content-dimmed">{{ capability.description }}</div>
+							</div>
+
+							<i class="text-xl ti ti-diamond ms-auto" x-tooltip.raw="{{ __('Upgrade to use this feature') }}"></i>
+						</a>
+					{% endif %}
+				{% endif %}
+			{% endfor %}
+		</div>
+	</div>
+</modal-element>

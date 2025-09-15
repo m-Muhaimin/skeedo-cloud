@@ -1,0 +1,130 @@
+{
+    "name": "heyaikeedo/aikeedo",
+    "description": "Aikeedo - AI Powered Content Platform - Saas Ready",
+    "type": "project",
+    "authors": [
+        {
+            "name": "Aikeedo Team",
+            "email": "hey@aikeedo.com"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "ext-intl": "*",
+        "ext-gd": "*",
+        "ext-bcmath": "*",
+        "psr/container": "^2.0",
+        "psr/http-message": "^2.0",
+        "psr/http-server-handler": "^1.0",
+        "psr/http-server-middleware": "^1.0",
+        "psr/http-client": "^1.0",
+        "psr/event-dispatcher": "^1.0",
+        "iziphp/http-server-dispatcher": "^1.0",
+        "iziphp/http-response-emitter": "^1.0",
+        "iziphp/http-message-util": "^1.0",
+        "iziphp/autoloader": "^1.0",
+        "iziphp/container": "^1.2",
+        "iziphp/http-server-handler": "^1.0",
+        "iziphp/router": "^1.2",
+        "iziphp/event-dispatcher": "^1.0",
+        "iziphp/emitter": "^1.0",
+        "symfony/http-client": "^7.2",
+        "laminas/laminas-diactoros": "^3.5",
+        "vlucas/phpdotenv": "^5.6",
+        "doctrine/orm": "^3.3",
+        "doctrine/dbal": "^4.2",
+        "symfony/cache": "^7.2",
+        "symfony/console": "^7.2",
+        "doctrine/migrations": "^3.8",
+        "adbario/php-dot-notation": "^3.3",
+        "psr/cache": "^3.0",
+        "psr/simple-cache": "^3.0",
+        "psr/http-factory": "^1.1",
+        "psr/log": "^3.0",
+        "monolog/monolog": "^3.8",
+        "ramsey/uuid-doctrine": "^2.1",
+        "somnambulist/validation": "^1.12",
+        "twig/twig": "^3.20",
+        "firebase/php-jwt": "^6.11",
+        "heyaikeedo/integrity": "^1.0",
+        "symfony/yaml": "^7.2",
+        "nette/php-generator": "^4.1",
+        "symfony/intl": "^7.2",
+        "symfony/mailer": "^7.2",
+        "iziphp/menv": "^2.0",
+        "stripe/stripe-php": "^16.6",
+        "gioni06/gpt3-tokenizer": "^1.2",
+        "twig/intl-extra": "^3.20",
+        "league/commonmark": "^2.6",
+        "gettext/gettext": "^5.7",
+        "gettext/translator": "^1.2",
+        "composer/composer": "^2.8",
+        "league/flysystem": "^3.29",
+        "kornrunner/blurhash": "^1.2",
+        "google/cloud-text-to-speech": "^1.12",
+        "php-http/multipart-stream-builder": "^1.4",
+        "smalot/pdfparser": "^2.11",
+        "phpoffice/phpword": "^1.3",
+        "gettext/php-scanner": "^2.0",
+        "giggsey/libphonenumber-for-php-lite": "^9.0",
+        "mattketmo/email-checker": "^2.4",
+        "twig/markdown-extra": "^3.21",
+        "heyaikeedo/default": "^2.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.6",
+        "phpstan/phpstan": "^1.10",
+        "squizlabs/php_codesniffer": "^3.9",
+        "phpmd/phpmd": "^2.15",
+        "phpcompatibility/php-compatibility": "^9.3",
+        "kint-php/kint": "^5.1",
+        "symfony/var-dumper": "^6.4"
+    },
+    "scripts": {
+        "phpstan": "phpstan analyse",
+        "phpcs": "phpcs",
+        "phpcbf": "phpcbf -v",
+        "phpmd": "phpmd src ansi phpmd.xml --suffixes=php",
+        "unit-test": "phpunit",
+        "code-coverage": "phpunit --coverage-html coverage",
+        "analyse": [
+            "@phpstan",
+            "@phpcs",
+            "@phpmd",
+            "@unit-test"
+        ],
+        "fix": [
+            "@phpcbf"
+        ]
+    },
+    "autoload": {
+        "files": [
+            "helpers/helpers.php"
+        ]
+    },
+    "config": {
+        "allow-plugins": {
+            "php-http/discovery": true,
+            "heyaikeedo/*": true
+        }
+    },
+    "repositories": [
+        {
+            "type": "path",
+            "url": "extra/artifacts/*/*"
+        },
+        {
+            "type": "path",
+            "url": "extra/extensions/*/*"
+        },
+        {
+            "type": "artifact",
+            "url": "extra/artifacts"
+        }
+    ],
+    "extra": {
+        "paths": {
+            "extensions": "extra/extensions/"
+        }
+    }
+}

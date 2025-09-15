@@ -1,0 +1,112 @@
+{% extends "/layouts/main.twig" %}
+
+{% set active_menu = '/app/library' %}
+
+{% set strings = {
+  delete_success: __("Image has been deleted successfully.")
+} %}
+
+{% set xdata %}
+list("library/images",
+{{ strings|json_encode }})
+{% endset %}
+
+{% block title p__('title', 'Image library')|title %}
+
+{% block template %}
+	{# Header #}
+	<div>
+		{% include "snippets/back.twig" with {link: 'app/library', label: p__('button', 'Library')} %}
+		<h1>{{ __('Image library') }}</h1>
+
+		<template x-if="total !== null">
+			<div class="mt-2 text-sm text-content-dimmed">
+				{{ __('Total :count images')|replace({':count': '<span x-text="total"></span>'})|raw }}
+			</div>
+		</template>
+	</div>
+
+	{# List #}
+	<div class="group/list flex flex-col gap-10" data-state="initial" :data-state="state">
+		<div class="hidden group-data-[state=empty]/list:block">
+			{% include "sections/empty.twig" with { title: p__('heading', 'Empty result set'), message: __('There are no image yet.'), reset: __('There are no image matching your search.') } %}
+		</div>
+
+		<div class="text-sm group-data-[state=empty]/list:hidden grid grid-cols-2 gap-1 md:grid-cols-3" x-data="masonry">
+			<template x-for="column in set" :key="column.id">
+				<ul class="flex flex-col gap-1">
+					{% for i in range(1,4) %}
+						<li class="hidden group-data-[state=initial]/list:block">
+							<div class="loading rounded-none" :class="['aspect-video', 'aspect-square', 'aspect-2/3', 'aspect-3/4'][Math.floor(Math.random() * 4)]"></div>
+						</li>
+					{% endfor %}
+
+					<template x-for="image in column.items" :key="image.id">
+						<li x-data>
+							<div class="relative group bg-line-dimmed">
+								<a :href="`app/imagine/${image.id}`" class="relative">
+									<template x-if="image.output_file?.blur_hash">
+										<canvas is="x-blurhash" class="absolute top-0 left-0 w-full h-full" width="56" height="56" :hash="image.output_file.blur_hash" type="color"></canvas>
+									</template>
+
+									<template x-if="image.output_file?.url">
+										<img :src="image.output_file.url" :alt="image.params.prompt || ''" class="object-cover relative" :width="image.output_file.width" :height="image.output_file.height">
+									</template>
+
+									<template x-if="!image.output_file">
+										<div class="aspect-square"></div>
+									</template>
+
+									<template x-if="image.state < 3">
+										<div class="absolute top-0 left-0 w-full h-full z-10 flex items-center justify-center">
+											{% include "snippets/spinner.twig" with {size: '2rem'} %}
+										</div>
+									</template>
+
+									<template x-if="image.state == 4">
+										<div class="absolute top-0 left-0 w-full h-full z-10 flex items-center justify-center">
+											<i class="text-2xl ti ti-photo-x"></i>
+										</div>
+									</template>
+
+									<div class="absolute top-0 left-0 z-10 w-full h-full bg-linear-to-bl from-[rgba(63,66,70,1)] to-[rgba(63,66,70,0)] invisible group-hover:visible"></div>
+								</a>
+
+								<div class="hidden absolute top-2 end-2 z-10 group-hover:block" @click.outside="$refs.context.removeAttribute('data-open')">
+									<button @click="$refs.context.toggleAttribute('data-open')">
+										<i class="text-2xl text-white ti ti-dots-vertical"></i>
+									</button>
+
+									<div class="z-10 menu" x-ref="context">
+										<ul>
+											<li>
+												<button class="flex gap-2 items-center px-4 py-2 w-full hover:no-underline hover:bg-intermediate" @click.prevent="currentResource = image; modal.open('delete-modal')">
+													<i class="ti ti-trash"></i>
+													{{ __('Delete') }}
+												</button>
+											</li>
+										</ul>
+									</div>
+								</div>
+							</div>
+						</li>
+					</template>
+				</ul>
+			</template>
+		</div>
+
+		<template x-if="hasMore">
+			<div class="group-data-[state=initial]/list:hidden flex justify-center" :class="isLoading ? 'animate-pulse' : null">
+				<button type="button" @click="retrieveResources()" class="font-semibold hover:underline text-sm disabled:pointer-events-none disabled:opacity-50" :disabled="isLoading">
+					{{ p__('button', 'Load more') }}
+				</button>
+			</div>
+		</template>
+	</div>
+
+	{% include "sections/delete-modal.twig" with { 
+  message: __('Do you really want to delete the image?'),
+  title: '',
+  details: __('All associated content and files will be permanently removed. This action cannot be reverted once confirmed.')
+} %}
+{% endblock %}

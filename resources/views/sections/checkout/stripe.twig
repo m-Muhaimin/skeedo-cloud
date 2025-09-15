@@ -1,0 +1,50 @@
+{% set type = option.stripe.type ?? 'card' %}
+
+{% set options %}
+  {
+    type: '{{ type }}',
+    mode: '{{ plan.billing_cycle in ['monthly', 'yearly'] ? 'subscription' : 'payment' }}',
+    amount: {{ plan.price }},
+    currency: '{{ currency.code|lower }}',
+    isCustom: {{ is_custom ? 'true' : 'false' }}
+  }
+{% endset %}
+
+<script src="https://js.stripe.com/v3/"></script>
+
+<form @submit.prevent="submit" x-data="stripe('{{ (option.stripe.publishable_key ?? "") }}', {{ options }})" class="flex flex-col gap-2">
+  {# <label for="">{{ p__('label', 'Pay with card') }}</label> #}
+
+  {% if type == 'card' %}
+    <div class="flex items-center input">
+      <div x-ref="element" class="w-full"></div>
+    </div>
+  {% else %}
+    <div class="">
+      <div x-ref="element" class="w-full"></div>
+    </div>
+  {% endif %}
+
+  <button type="submit" class="w-full button"
+    :disabled="disabled || processing" :processing="processing=='stripe'">
+    {% include "/snippets/spinner.twig" %}
+
+    {{ plan.billing_cycle in ['monthly', 'yearly'] ?  p__('button', 'Subscribe') : p__('button', 'Purchase') }}
+  </button>
+
+  <template x-if="error">
+    <p
+      class="flex gap-1 items-center text-xs list-disc list-inside text-failure">
+      <i class="text-base ti ti-square-rounded-x-filled"></i>
+      <span x-text="error"></span>
+    </p>
+  </template>
+
+  <template x-if="!error">
+    <p
+      class="flex gap-1 justify-center items-center text-xs list-disc list-inside text-content-dimmed">
+      <i class="text-base ti ti-lock"></i>
+      {{ __('All card payments secured with :gateway.')|replace({':gateway' : card_gateway.name}) }}
+    </p>
+  </template>
+</form>

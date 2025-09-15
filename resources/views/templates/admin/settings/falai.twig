@@ -1,0 +1,50 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% set xdata = 'settings' %}
+{% block title p__('title', 'FalAI Configuration') %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {link: 'admin/settings', label: 'Settings'} %}
+
+		<h1 class="mt-4">FalAI</h1>
+	</div>
+
+	<x-form>
+		<form class="flex flex-col gap-8" @submit.prevent="submit" x-ref="form">
+			<div class="flex flex-col gap-2">
+				<section class="flex flex-col gap-6 box" data-density="comfortable">
+					<h2>{{ p__('heading', 'API') }}</h2>
+
+					<div>
+						<label for="falai.api_key">
+							{{ p__('label', 'API Secret') }}
+						</label>
+
+						<div class="relative mt-2" x-data="{isVisible: false}">
+							<input class="pe-11 input" :type="isVisible ? 'text' : 'password'" id="falai.api_key" name="falai[api_key]" autocomplete="off" placeholder="{{ __('Include your Open AI API secret key')|e('html_attr') }}" value="{{ environment == 'demo' ? 'hidden-in-demo' : option.falai.api_key ?? '' }}" required>
+
+							<button type="button" class="absolute end-3 top-1/2 text-2xl -translate-y-1/2 text-content-dimmed" @click="isVisible = !isVisible">
+								<i class="block ti" :class="{'ti-eye-closed' : isVisible, 'ti-eye':!isVisible}"></i>
+							</button>
+						</div>
+
+					</div>
+				</section>
+			</div>
+
+			<div class="flex gap-4 justify-end">
+				<a href="admin/settings" class="button button-outline">
+					{{ p__('button', 'Cancel') }}
+				</a>
+
+				<button class="button button-accent" type="submit" :processing="isProcessing">
+					{% include "/snippets/spinner.twig" %}
+
+					{{ p__('button', 'Save changes') }}
+				</button>
+			</div>
+		</form>
+	</x-form>
+{% endblock %}

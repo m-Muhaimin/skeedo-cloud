@@ -1,0 +1,250 @@
+{% extends "/layouts/main.twig" %}
+
+{% set active_menu = '/admin/assistants' %}
+
+{% set xdata %}
+assistant({{ assistant|json_encode }})
+{% endset %}
+
+{% block title p__('title', 'Train assistant')|title %}
+
+{% block template %}
+	<div class="flex flex-col gap-8">
+		<div>
+			{% include "snippets/back.twig" with {link: 'admin/assistants/' ~ assistant.id, label: 'Assistant details'} %}
+
+			<h1 class="mt-4">
+				{{ p__('heading', 'Train assistant') }}:
+				<span class="font-normal text-intermediate-content" x-text="assistant.name"></span>
+			</h1>
+
+			<div class="mt-2">
+				<x-uuid x-text="assistant.id"></x-uuid>
+			</div>
+		</div>
+
+		<div class="flex flex-col gap-2">
+			<section class="grid gap-6 box" data-density="comfortable">
+				<h2>{{ p__('heading', 'Files') }}</h2>
+
+				<template x-if="files.length > 0 || assistant.dataset.filter(item => item.object === 'file_unit').length > 0">
+					<div class="grid grid-cols-1 gap-1">
+						<template x-for="unit in assistant.dataset.filter(item => item.object === 'file_unit')">
+							<div class="flex gap-2 items-center p-2 pe-4 box min-w-72 hover:border-line group" :key="unit.id" x-data>
+								<div class="flex justify-center items-center w-10 h-10 shrink-0">
+									<i class="text-2xl ti ti-file-description"></i>
+								</div>
+
+								<div class="min-w-0 grow">
+									<div class="text-sm font-bold truncate" x-text="unit.title"></div>
+
+									<div class="mt-0.5 text-xs truncate text-content-dimmed">
+										<span class="uppercase" x-text="unit.file.extension"></span>
+										·
+										<x-filesize :data-value="unit.file.size"></x-filesize>
+										·
+										{{ __('Ready to use') }}
+									</div>
+								</div>
+
+								<div class="relative shrink-0" @click.outside="$refs.context.removeAttribute('data-open')">
+
+									<button type="button" class="relative z-10" @click="$refs.context.toggleAttribute('data-open')">
+										<i class="text-2xl ti ti-dots-vertical text-content-dimmed hover:text-intermediate-content"></i>
+									</button>
+
+									<div class="menu" x-ref="context">
+										<ul>
+											<li>
+												<a :href="unit.file.url" download target="_blank" class="flex gap-2 items-center px-4 py-2 hover:no-underline hover:bg-intermediate">
+													{{ p__('button', 'Download') }}
+												</a>
+											</li>
+
+											<li>
+												<button class="flex gap-2 items-center px-4 py-2 w-full hover:no-underline hover:bg-intermediate" @click.prevent="currentResource = unit; modal.open('delete-modal')">
+													{{ p__('button', 'Delete') }}
+												</button>
+											</li>
+										</ul>
+									</div>
+								</div>
+							</div>
+						</template>
+
+						<template x-for="file in files">
+							<div class="flex gap-2 items-center p-2 pe-4 box min-w-72 hover:border-line" :class="['pending', 'error'].includes(file.status) ? 'opacity-50 hover:opacity-100' : null" :key="file.id">
+								<div class="flex justify-center items-center w-10 h-10 shrink-0">
+									<i class="text-2xl ti ti-file-description"></i>
+								</div>
+
+								<div class="min-w-0 grow">
+									<div class="text-sm font-bold truncate" x-text="file.name"></div>
+
+									<div class="mt-0.5 text-xs truncate text-content-dimmed">
+										<span class="uppercase" x-text="file.extension"></span>
+										·
+										<x-filesize :data-value="file.size"></x-filesize>
+										·
+										<template x-if="file.status == 'pending'">
+											<span class="text-orange-500">{{ __('Pending') }}</span>
+										</template>
+
+										<template x-if="file.status == 'error'">
+											<span class="inline-flex gap-1 items-center text-failure">
+												{{ __('Error') }}
+												<i class="text-sm ti ti-alert-circle" x-tooltip="file.error"></i>
+											</span>
+										</template>
+									</div>
+								</div>
+
+								<div class="text-content-dimmed shrink-0">
+									<template x-if="file.status != 'uploading'">
+										<button type="button" @click="removeFile(file)">
+											<i class="text-2xl ti ti-trash" x-tooltip.raw="{{ __('Remove') }}"></i>
+										</button>
+									</template>
+
+									<template x-if="file.status == 'uploading'">
+										{% include "snippets/spinner.twig" %}
+									</template>
+								</div>
+							</div>
+						</template>
+					</div>
+				</template>
+
+				<div class="flex relative flex-col gap-4 items-center p-10 group">
+					<svg class="absolute top-0 left-0 w-full h-full rounded-lg text-line group-hover:text-content-dimmed group-data-selected:hidden stroke-2 stroke-current" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<rect cx="56" width="100%" height="100%" stroke-dasharray="4 4" rx="8" ry="8"/>
+					</svg>
+
+					<i class="text-3xl text-content-dimmed ti ti-upload"></i>
+
+					<div class="flex flex-col gap-1 items-center">
+						<h3>{{ p__('heading', 'Import files') }}</h3>
+						<p class="text-sm text-content-dimmed">
+							{{ p__('info', 'Drag and drop files here or click to browse.') }}
+						</p>
+					</div>
+
+					<p class="text-xs text-content-dimmed">
+						{{ p__('info', 'Supported file types: pdf, csv, json, txt, xml, doc, docx, odt') }}
+					</p>
+
+					<button type="button" class="absolute inset-0 z-10" @click="$refs.file.click()"></button>
+
+					<x-dropzone>
+						<input type="file" @change="pushFiles($refs.file.files)" name="file" multiple class="hidden" x-ref="file" accept=".pdf,.json,.csv,text/*,.doc,.docx,.odt,.xml,.yml,.yaml">
+
+						<div class="flex flex-col gap-6 items-center">
+							<i class="text-6xl ti ti-upload text-content-dimmed"></i>
+							<div class="flex flex-col gap-2 text-center max-w-[30rem]">
+								<h2>{{ p__('heading', 'Drop files here') }}</h2>
+
+								<div class="text-sm text-content-dimmed">
+									{{ p__('info', 'Supported file types: pdf, csv, json, txt, doc, docx, odt') }}
+								</div>
+							</div>
+						</div>
+					</x-dropzone>
+				</div>
+			</section>
+
+			<section class="grid gap-6 box" data-density="comfortable">
+				<div class="flex justify-between items-center">
+					<h2>{{ p__('heading', 'Web pages') }}</h2>
+
+					<button class="w-8 h-8 rounded-full button button-sm button-dimmed" x-tooltip.raw="{{ __('Add new page') }}" @click="modal.open('new-page')">
+						<i class="ti ti-plus"></i>
+					</button>
+				</div>
+
+				<div>
+					<template x-if="assistant.dataset.filter(item => item.object === 'link_unit').length == 0">
+						<div class="text-sm text-content-dimmed">
+							{{ p__('info', 'No pages added yet.') }}
+						</div>
+					</template>
+
+					<template x-if="assistant.dataset.filter(item => item.object === 'link_unit').length > 0">
+						<div class="grid grid-cols-1 gap-1">
+							<template x-for="unit in assistant.dataset.filter(item => item.object === 'link_unit')">
+								<div class="flex gap-2 items-center p-2 pe-4 box min-w-72 hover:border-line group" :key="unit.id" x-data>
+									<div class="flex justify-center items-center w-10 h-10 shrink-0">
+										<i class="text-2xl ti ti-link"></i>
+									</div>
+
+									<div class="min-w-0 grow">
+										<div class="text-sm font-bold truncate">
+											<a :href="unit.url" target="_blank" x-text="unit.title" class="hover:underline"></a>
+										</div>
+
+										<div class="mt-0.5 text-xs truncate text-content-dimmed">
+											<span>
+												{{ __('Date:')}}
+												<x-time :datetime="unit.created_at" data-type="date"></x-time>
+											</span>
+											·
+											{{ __('Ready to use') }}
+										</div>
+									</div>
+
+									<div class="relative shrink-0" @click.outside="$refs.context.removeAttribute('data-open')">
+
+										<button type="button" class="relative z-10" @click="$refs.context.toggleAttribute('data-open')">
+											<i class="text-2xl ti ti-dots-vertical text-content-dimmed hover:text-intermediate-content"></i>
+										</button>
+
+										<div class="menu" x-ref="context">
+											<ul>
+												<li>
+													<button class="flex gap-2 items-center px-4 py-2 w-full hover:no-underline hover:bg-intermediate" @click.prevent="currentResource = unit; modal.open('delete-modal')">
+														{{ p__('button', 'Delete') }}
+													</button>
+												</li>
+											</ul>
+										</div>
+									</div>
+								</div>
+							</template>
+						</div>
+					</template>
+				</div>
+			</section>
+		</div>
+	</div>
+
+	<modal-element name="new-page">
+		<x-form>
+			<form class="flex flex-col gap-8 modal" @submit.prevent="addPage($refs.url.value)">
+				<div class="flex justify-between items-center">
+					<h2 class="text-xl">{{ p__('heading', 'New page') }}</h2>
+
+					<button class="flex justify-center items-center w-8 h-8 rounded-full border border-transparent bg-line-dimmed hover:border-line" @click="modal.close()" type="button">
+						<i class="text-xl ti ti-x"></i>
+					</button>
+				</div>
+
+				<div>
+					<label for="new-page">{{ p__('label', 'URL') }}</label>
+					<input type="url" class="mt-2 input" id="new-page" required placeholder="https://example.com" x-ref="url">
+				</div>
+
+				<div class="flex">
+					<button type="submit" class="w-full button" :processing="isProcessing">
+						{% include "/snippets/spinner.twig" %}
+
+						{{ p__('button', 'Add page') }}
+					</button>
+				</div>
+			</form>
+		</x-form>
+	</modal-element>
+
+	{% include "sections/delete-modal.twig" with { 
+    message: __('Do you really want to delete :title?'),
+    title: '`${currentResource.title}`'
+  } %}
+{% endblock %}

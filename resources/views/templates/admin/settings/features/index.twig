@@ -1,0 +1,261 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% set xdata = 'settings' %}
+{% block title p__('title', 'Features') %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {link: 'admin/settings', label: 'Settings'} %}
+
+		<h1 class="mt-4">{{ p__('heading', 'Features') }}</h1>
+	</div>
+
+	<x-form>
+		<form class="flex flex-col gap-8" @submit.prevent="submit" x-ref="form">
+			<div class="flex flex-col gap-2">
+				<section class="flex flex-col gap-6 box" data-density="comfortable">
+					<h2 class="col-span-2">{{ p__('heading', 'General') }}</h2>
+
+					<div>
+						<div class="flex gap-2 items-center p-3 rounded-lg bg-intermediate">
+							{{ p__('label', 'Safety checker') }}
+
+							<i class="text-base cursor-auto ti ti-test-pipe text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Experimental') }}"></i>
+
+							<label class="inline-flex gap-2 items-center ms-auto cursor-pointer">
+								<input type="checkbox" name="features[is_safety_enabled]" class="hidden peer" {{ option.features.is_safety_enabled is not defined or option.features.is_safety_enabled ? 'checked' : '' }}>
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+								<span class="text-content-dimmed peer-checked:hidden">
+									{{ p__('input-value', 'Disabled') }}
+								</span>
+
+								<span class="hidden text-success peer-checked:inline">
+									{{ p__('input-value', 'Enabled') }}
+								</span>
+							</label>
+						</div>
+
+						<ul class="info mt-2">
+							<li>
+								{{ p__('label', 'Enable the safety checker to prevent generation of harmful content. May not work with all models.') }}
+							</li>
+						</ul>
+					</div>
+				</section>
+
+				<section class="flex flex-col gap-6 box" data-density="comfortable">
+					<h2 class="col-span-2">{{ p__('heading', 'Tools') }}</h2>
+
+					<div class="grid grid-cols-2 gap-1">
+						<a href="admin/settings/features/chat" class="flex gap-4 items-center text-sm cursor-pointer box hover:border-line">
+							<div>
+								<div class="font-bold">{{ p__('heading', 'Chat') }}</div>
+								<p class="text-content-dimmed">
+									{{ p__('chat-tool-description', 'Chat with AI assistants') }}
+								</p>
+							</div>
+
+							<i class="ms-auto text-2xl ti ti-chevron-right"></i>
+						</a>
+
+						<a href="admin/settings/features/writer" class="flex gap-4 items-center text-sm cursor-pointer box hover:border-line">
+							<div>
+								<div class="label">{{ p__('heading', 'Writer') }}</div>
+								<p class="font-normal text-content-dimmed">
+									{{ p__('writer-tool-description', 'Write SEO optimized blogs, sales emails and more...') }}
+								</p>
+							</div>
+
+							<i class="ms-auto text-2xl ti ti-chevron-right"></i>
+						</a>
+
+						<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+							<div>
+								<div class="label">{{ p__('heading', 'Coder') }}</div>
+								<p class="font-normal text-content-dimmed">
+									{{ p__('coder-tool-description', 'Ready to write code at the speed of light?') }}
+								</p>
+							</div>
+
+							<div class="ms-auto">
+								<input type="checkbox" name="features[coder][is_enabled]" class="hidden peer" {{ option.features.coder.is_enabled is defined and option.features.coder.is_enabled ? 'checked' : '' }}>
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</div>
+						</label>
+
+						<a href="admin/settings/features/video" class="flex gap-4 items-center text-sm cursor-pointer box hover:border-line">
+							<div>
+								<div class="font-bold">{{ p__('heading', 'Video') }}</div>
+								<p class="text-content-dimmed">
+									{{ p__('video-tool-description', 'Create videos from text and images.') }}
+								</p>
+							</div>
+
+							<i class="ms-auto text-2xl ti ti-chevron-right"></i>
+						</a>
+
+						<a href="admin/settings/features/imagine" class="flex gap-4 items-center text-sm cursor-pointer box hover:border-line">
+							<div>
+								<div class="font-bold">{{ p__('heading', 'Imagine') }}</div>
+								<p class="text-content-dimmed">
+									{{ p__('imagine-tool-description', 'Visualize what you dream of. Create images from text.') }}
+								</p>
+							</div>
+
+							<i class="ms-auto text-2xl ti ti-chevron-right"></i>
+						</a>
+
+						<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+							<div>
+								<div class="label">{{ p__('heading', 'Transcriber') }}</div>
+								<p class="font-normal text-content-dimmed">
+									{{ p__('transcriber-tool-description', 'Instantly transcribe spoken words into text.')  }}
+								</p>
+							</div>
+
+							<div class="ms-auto">
+								<input type="checkbox" name="features[transcriber][is_enabled]" class="hidden peer" {{ option.features.transcriber.is_enabled is defined and option.features.transcriber.is_enabled ? 'checked' : '' }}>
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</div>
+						</label>
+
+						<a href="admin/settings/features/voiceover" class="flex gap-4 items-center text-sm cursor-pointer box hover:border-line">
+							<div>
+								<div class="font-bold">{{ p__('heading', 'Voiceover') }}</div>
+								<p class="text-content-dimmed">
+									{{ p__('voiceover-tool-description', 'Convert your texts into lifelike speech') }}
+								</p>
+							</div>
+
+							<i class="ms-auto text-2xl ti ti-chevron-right"></i>
+						</a>
+
+						<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+							<div>
+								<div class="flex gap-2 items-center label">
+									{{ p__('heading', 'Voice isolator') }}
+
+									{% if option.elevenlabs.api_key is not defined or option.elevenlabs.api_key is empty %}
+										<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Missing ElevenLabs API key') }}"></i>
+									{% endif %}
+								</div>
+
+								<p class="font-normal text-content-dimmed">
+									{{ p__('voice-isolator-tool-description', 'Isolate voice from background noise.')  }}
+								</p>
+							</div>
+
+							<div class="ms-auto">
+								<input type="checkbox" name="features[voice_isolator][is_enabled]" class="hidden peer" {{ option.features.voice_isolator.is_enabled is defined and option.features.voice_isolator.is_enabled ? 'checked' : '' }}>
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</div>
+						</label>
+
+						<label class="flex gap-4 items-center cursor-pointer box hover:border-line">
+							<div>
+								<div class="flex gap-2 items-center label">
+									{{ p__('heading', 'Classifier') }}
+
+									<div class="flex gap-1 items-center">
+										<i class="text-base cursor-auto ti ti-test-pipe text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Experimental') }}"></i>
+
+										{% if option.openai.api_secret_key is not defined or option.openai.api_secret_key is empty %}
+											<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Missing OpenAI API key') }}"></i>
+										{% endif %}
+									</div>
+								</div>
+
+								<p class="font-normal text-content-dimmed">
+									{{ p__('classifier-tool-description', 'Classify content as potentially harmful across several categories.')  }}
+								</p>
+							</div>
+
+							<div class="ms-auto">
+								<input type="checkbox" name="features[classifier][is_enabled]" class="hidden peer" {{ option.features.classifier.is_enabled is defined and option.features.classifier.is_enabled ? 'checked' : '' }}>
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+							</div>
+						</label>
+
+						<a href="admin/settings/features/composer" class="flex gap-4 items-center text-sm cursor-pointer box hover:border-line">
+							<div>
+								<div class="flex gap-2 items-center label">
+									{{ p__('heading', 'Composer') }}
+
+									<div class="flex gap-1 items-center">
+										<i class="text-base cursor-auto ti ti-test-pipe text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Experimental') }}"></i>
+
+										{% if option.aimlapi.api_key is not defined or option.aimlapi.api_key is empty %}
+											<i class="text-base ti ti-alert-square-rounded-filled text-failure" x-tooltip.raw="{{ __('Missing AI/ML API key') }}"></i>
+										{% endif %}
+									</div>
+								</div>
+
+								<p class="font-normal text-content-dimmed">
+									{{ p__('composer-tool-description', 'Create music and sounds.')  }}
+								</p>
+							</div>
+
+							<i class="ms-auto text-2xl ti ti-chevron-right"></i>
+						</a>
+
+						<a href="admin/settings/features/rest-api" class="flex gap-4 items-center text-sm cursor-pointer box hover:border-line">
+							<div>
+								<div class="font-bold">{{ p__('heading', 'API') }}</div>
+								<p class="text-content-dimmed">
+									{{ p__('api-access-description', 'Access through REST API') }}
+								</p>
+							</div>
+
+							<i class="ms-auto text-2xl ti ti-chevron-right"></i>
+						</a>
+
+						{% for item in nav.admin.settings.features.items|default([]) %}
+							<a href="{{ item.url }}" class="flex gap-4 items-center text-sm cursor-pointer box hover:border-line">
+								<div>
+									<div class="flex gap-2 items-center label">
+										{{ p__('nav', item.label) }}
+
+										<div class="flex gap-1 items-center">
+											{% if item.isExperimental %}
+												<i class="text-base cursor-auto ti ti-test-pipe text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Experimental') }}"></i>
+											{% endif %}
+
+											{% if item.isBuiltIn == false %}
+												<i class="text-base cursor-auto ti ti-puzzle text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Plugin addition') }}"></i>
+											{% endif %}
+										</div>
+									</div>
+
+									<p class="font-normal text-content-dimmed">
+										{{ p__('nav', item.description) }}
+									</p>
+								</div>
+
+								<i class="ms-auto text-2xl ti ti-chevron-right"></i>
+							</a>
+						{% endfor %}
+					</div>
+				</section>
+			</div>
+
+			<div class="flex gap-4 justify-end">
+				<a href="admin/settings" class="button button-outline">
+					{{ p__('button', 'Cancel') }}
+				</a>
+
+				<button class="button button-accent" type="submit" :processing="isProcessing">
+					{% include "/snippets/spinner.twig" %}
+
+					{{ p__('button', 'Save changes') }}
+				</button>
+			</div>
+		</form>
+	</x-form>
+{% endblock %}

@@ -1,0 +1,133 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% set xdata = 'settings' %}
+{% block title p__('title', 'Appearance')|title %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {link: 'admin/settings', label: 'Settings'} %}
+
+		<h1 class="mt-4">{{ p__('heading', 'Appearance') }}</h1>
+	</div>
+
+	<x-form>
+		<form class="flex flex-col gap-8" @submit.prevent="submit" x-ref="form">
+			<div class="flex flex-col gap-2">
+				<section class="grid grid-cols-1 gap-6 box" data-density="comfortable" x-data="colorSchemes(
+																														          {{ option.color_scheme.modes is not defined or 'light' in option.color_scheme.modes ? 'true' : 'false' }},
+																														          {{ option.color_scheme.modes is not defined or 'dark' in option.color_scheme.modes ? 'true' : 'false' }},
+																														          `{{ option.color_scheme.default ?? 'system'  }}`
+																														        )">
+					<h2>{{ p__('heading', 'Color schemes') }}</h2>
+
+					<template x-if="light">
+						<input type="hidden" name="color_scheme[modes][]" value="light">
+					</template>
+
+					<template x-if="dark">
+						<input type="hidden" name="color_scheme[modes][]" value="dark">
+					</template>
+
+					<div class="flex items-center justify-between p-3 rounded-lg bg-intermediate">
+						{{ p__('label', 'Light mode') }}
+
+						<label class="inline-flex items-center gap-2 cursor-pointer">
+							<input type="checkbox" class="hidden peer" x-model="light">
+
+							<span class="h-6 w-10 rounded-3xl bg-line relative block peer-checked:bg-success transition-all after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+							<span class="text-content-dimmed peer-checked:hidden">
+								{{ __('Disabled') }}
+							</span>
+
+							<span class="hidden text-success peer-checked:inline">
+								{{ __('Enabled') }}
+							</span>
+						</label>
+					</div>
+
+					<div class="flex items-center justify-between p-3 rounded-lg bg-intermediate">
+						{{ p__('label', 'Dark mode') }}
+
+						<label class="inline-flex items-center gap-2 cursor-pointer">
+							<input type="checkbox" class="hidden peer" x-model="dark">
+
+							<span class="h-6 w-10 rounded-3xl bg-line relative block peer-checked:bg-success transition-all after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+							<span class="text-content-dimmed peer-checked:hidden">
+								{{ __('Disabled') }}
+							</span>
+
+							<span class="hidden text-success peer-checked:inline">
+								{{ __('Enabled') }}
+							</span>
+						</label>
+					</div>
+
+					<template x-if="dark && light">
+						<div>
+							<label for="color_scheme[default]">{{ p__('label', 'Default color scheme') }}</label>
+
+							<select id="color_scheme[default]" name="color_scheme[default]" class="mt-2 input" required x-model="def">
+								<option value="system">
+									{{ p__('input-value', 'Sytem') }}
+								</option>
+
+								<option value="light">
+									{{ p__('input-value', 'Light') }}
+								</option>
+
+								<option value="dark">
+									{{ p__('input-value', 'Dark') }}
+								</option>
+							</select>
+						</div>
+					</template>
+
+					<div class="grid grid-cols-2 gap-6">
+						<div>
+							<label for="color_scheme[accent]">{{ p__('label', 'Accent color') }}</label>
+
+							<div class="relative mt-2" x-data="{color: null}">
+								<span class="absolute w-6 h-6 -translate-y-1/2 rounded-full bg-accent start-3 top-1/2" :style="{ backgroundColor:color }"></span>
+
+								<input type="text" id="color_scheme[accent]" name="color_scheme[accent]" pattern="^#([A-Fa-f0-9]{6})$" class="ps-12 input" autocomplete="off" placeholder="#d3f36b" minlength="7" maxlength="7" x-mask="#******" value="{{ option.color_scheme.accent.hex ?? '' }}" x-model.fill="color"/>
+							</div>
+						</div>
+
+						<div>
+							<label for="color_scheme[accent_content]">{{ p__('label', 'Accent text color') }}</label>
+
+							<div class="relative mt-2" x-data="{color: null}">
+								<span class="absolute w-6 h-6 -translate-y-1/2 rounded-full bg-accent-content start-3 top-1/2" :style="{ backgroundColor:color }"></span>
+
+								<input type="text" id="color_scheme[accent_content]" name="color_scheme[accent_content]" class="ps-12 input" autocomplete="off" pattern="^#([A-Fa-f0-9]{6})$" placeholder="#3f4246" minlength="7" maxlength="7" x-mask="#******" value="{{ option.color_scheme.accent_content.hex ?? '' }}" x-model.fill="color"/>
+							</div>
+
+						</div>
+					</div>
+
+					<ul class="info">
+
+						<li>
+							{{ __('These settings apply to admin and app UI. Depending on the theme, these settings may not apply to the landing page.') }}
+						</li>
+					</ul>
+				</section>
+			</div>
+
+			<div class="flex justify-end gap-4">
+				<a href="admin/settings" class="button button-outline">
+					{{ p__('button', 'Cancel') }}
+				</a>
+
+				<button type="submit" class="button button-accent" :processing="isProcessing">
+					{% include "/snippets/spinner.twig" %}
+
+					{{ p__('button', 'Save changes') }}
+				</button>
+			</div>
+		</form>
+	</x-form>
+{% endblock %}

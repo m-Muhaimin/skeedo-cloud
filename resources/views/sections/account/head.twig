@@ -1,0 +1,59 @@
+<section class="grid relative gap-6 box" data-density="comfortable">
+	<template x-if="user.longitude && user.latitude">
+		<div class="absolute inset-0 rounded-xl">
+			<iframe :src="`https://www.openstreetmap.org/export/embed.html?bbox=${user.longitude-0.05},${user.latitude-0.05},${user.longitude+0.05},${user.latitude+0.05}&layer=mapnik&show_controls=false`" class="w-full h-full rounded-xl border-none grayscale dark:mix-blend-hard-light" loading="lazy" scrolling="no" frameborder="0"></iframe>
+			<div class="absolute inset-0 bg-linear-to-tr to-transparent rounded-xl opacity-50 pointer-events-none from-main"></div>
+
+			<div class="absolute inset-0 bg-linear-to-r to-transparent via-20% rounded-xl rounded-r-none pointer-events-none from-main via-transparent"></div>
+			<div class="absolute inset-0 bg-linear-to-r via-80% via-transparent to-transparent rounded-xl from-main pointer-events-none"></div>
+		</div>
+	</template>
+
+	<div class="flex relative gap-4 items-center justify-between pointer-events-none" :class="{'pt-14': user.longitude && user.latitude}">
+		<div class="flex items-center gap-4">
+			<x-avatar :title="`${user.first_name} ${user.last_name}`" :src="user.avatar" class="pointer-events-auto avatar-lg shadow" x-tooltip.raw="{{ __('Profile images are provided by %s', 'Gravatar') }}"></x-avatar>
+
+			<div class="flex flex-col items-start">
+				<div class="flex gap-2 items-center">
+					<h2 class="pointer-events-auto" x-text="`${user.first_name} ${user.last_name}`"></h2>
+					<template x-if="user.ip">
+						<x-copy class="pointer-events-auto badge" x-text="`${user.ip}`" x-tooltip.raw="{{ __('The IP address used to register this account') }}"></x-copy>
+					</template>
+				</div>
+
+				<div class="flex gap-2 items-center text-sm pointer-events-auto text-content-dimmed" :class="{'bg-main px-1.5 py-0.5 rounded-md shadow': user.longitude && user.latitude}">
+					<div class="hidden gap-1 items-center md:flex">
+						<span>{{ __('First seen') }}:</span>
+						<x-time :datetime="user.created_at"></x-time>
+					</div>
+
+					<x-time class="md:hidden" :datetime="user.created_at" data-type="date"></x-time>
+
+					<template x-if="user.country">
+						<i class="text-xs ti ti-point-filled"></i>
+					</template>
+
+					<template x-if="user.country">
+						<span x-text="(user.city_name ? user.city_name + (user.country ? ', ' : '') : '') + user.country.name"></span>
+					</template>
+				</div>
+			</div>
+		</div>
+
+		{% if menu|default(false) %}
+			<div class="relative pointer-events-auto" @click.outside="$refs.context.removeAttribute('data-open')">
+				<button type="button" class="relative z-10 size-10 rounded-2xl bg-main flex items-center justify-center" :class="{'shadow': user.longitude && user.latitude}" @click="$refs.context.toggleAttribute('data-open')">
+					<i class="text-2xl ti ti-dots-vertical"></i>
+				</button>
+
+				<div class="menu" x-ref="context">
+					<ul>
+						<li><a href="/app/account/profile" class="flex gap-2 items-center px-4 py-2 hover:no-underline hover:bg-intermediate"><i class="ti ti-pencil"></i>{{ p__('button', 'Edit profile') }}</a></li>
+						<li><a href="/app/account/email" class="flex gap-2 items-center px-4 py-2 hover:no-underline hover:bg-intermediate"><i class="ti ti-mail"></i>{{ p__('button', 'Change email') }}</a></li>
+						<li><a href="/app/account/password" class="flex gap-2 items-center px-4 py-2 hover:no-underline hover:bg-intermediate"><i class="ti ti-lock"></i>{{ p__('button', 'Update password') }}</a></li>
+					</ul>
+				</div>
+			</div>
+		{% endif %}
+	</div>
+</section>

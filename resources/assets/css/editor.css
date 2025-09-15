@@ -1,0 +1,60 @@
+.editor {
+  @apply prose 
+    max-w-none 
+    font-editor 
+    prose-headings:font-editor-heading
+    prose-headings:font-semibold
+    prose-h1:text-2xl
+    prose-h2:text-xl
+    prose-h3:text-lg
+    prose-h4:text-base
+    prose-pre:p-6
+    prose-pre:relative
+    prose-pre:rounded-lg
+    prose-pre:bg-line-super-dimmed;
+
+  & > *:first-child {
+    @apply mt-0;
+  }
+
+  & > *:last-child {
+    @apply mb-0;
+  }
+
+  pre {
+    @apply whitespace-pre-wrap border border-line-dimmed p-0;
+  }
+
+  pre svg {
+    @apply absolute top-0 left-0 w-full h-full rounded-lg text-line-dimmed group-hover:text-line group-data-selected:hidden -z-10;
+  }
+
+  pre .actions {
+    @apply flex items-center gap-2 text-content-dimmed justify-between px-6 py-1 bg-line-dimmed;
+  }
+
+  pre .lang {
+    @apply uppercase pointer-events-none text-xs;
+  }
+
+  pre .copy {
+    @apply cursor-pointer hover:text-content;
+  }
+
+  --tw-prose-body: var(--color-content);
+  --tw-prose-headings: var(--color-content);
+  --tw-prose-lead: var(--color-content);
+  --tw-prose-links: var(--color-content);
+  --tw-prose-bold: var(--color-content);
+  --tw-prose-counters: var(--color-content-dimmed);
+  --tw-prose-bullets: var(--color-content-dimmed);
+  --tw-prose-hr: var(--color-line-dimmed);
+  --tw-prose-quotes: var(--color-content-dimmed);
+  --tw-prose-quote-borders: var(--color-line-dimmed);
+  --tw-prose-captions: var(--color-content-dimmed);
+  --tw-prose-code: var(--color-content);
+  --tw-prose-pre-code: var(--color-content);
+  --tw-prose-pre-bg: var(--color-main);
+  --tw-prose-th-borders: var(--color-line-dimmed);
+  --tw-prose-td-borders: var(--color-line-dimmed);
+}

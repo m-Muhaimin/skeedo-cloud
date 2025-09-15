@@ -1,0 +1,127 @@
+{% extends "/layouts/main.twig" %}
+
+{% set active_menu = '/app/library' %}
+
+{% set strings = {
+  delete_success: __("Voice has been deleted successfully.")
+} %}
+
+{% set xdata %}
+list("/library/isolated-voices",
+{{ strings|json_encode }})
+{% endset %}
+
+{% block title p__('title', 'Isolated voices')|title %}
+
+{% block template %}
+	{# Header #}
+	<div>
+		{% include "snippets/back.twig" with {link: 'app/library', label: __('Library')} %}
+		<h1>{{ __('Isolated voices') }}</h1>
+	</div>
+
+	{# Filters #}
+	{% include "/snippets/filters.twig" with { 
+  total: __("Total :count voices"),
+  sort: [
+    {
+      value: null,
+      label: p__('label', 'Default')
+    },
+  
+    {
+      value: 'created_at',
+      label: p__('label', 'Date')
+    },
+  
+    {
+      value: 'title',
+      label: p__('label', 'Title')
+    }
+  ]
+} %}
+
+	{# List #}
+	<div class="group/list" data-state="initial" :data-state="state">
+		<div class="hidden group-data-[state=empty]/list:block">
+			{% include "sections/empty.twig" with { title: p__('heading', 'Empty result set'), message: __('There are no voice yet.'), reset: __('There are no voice matching your search.') } %}
+		</div>
+
+		<div class="hidden md:grid grid-cols-12 gap-3 items-center px-3 py-2 text-content-dimmed text-xs group-data-[state=empty]/list:hidden">
+			<div class="col-span-11">{{ p__('label', 'Speech') }}</div>
+			<div class="col-span-1"></div>
+		</div>
+
+		<ul class="text-sm group-data-[state=empty]/list:hidden flex flex-col gap-1">
+			{% for i in range(1,5) %}
+				<li class="hidden md:grid-cols-12 justify-between gap-3 items-center p-3 box group-data-[state=initial]/list:flex md:group-data-[state=initial]/list:grid">
+					<div class="flex col-span-11 gap-3 items-center">
+
+						<div class="avatar loading"></div>
+
+						<div>
+							<div class="my-0.5 w-32 h-5 loading"></div>
+
+							<div class="my-0.5 w-20 h-5 loading md:hidden"></div>
+						</div>
+					</div>
+
+					<div class="justify-self-end md:col-span-1">
+						<i class="text-2xl ti ti-dots-vertical text-content-dimmed"></i>
+					</div>
+				</li>
+			{% endfor %}
+
+			<template x-for="doc in resources" :key="doc.id">
+				<li class="flex relative gap-3 justify-between items-center p-3 md:grid md:grid-cols-12 box hover:border-line" x-data>
+					<a :href="`app/voice-isolator/${doc.id}`" class="absolute top-0 left-0 w-full h-full cursor-pointer"></a>
+
+					<div class="flex gap-3 items-center md:col-span-11">
+						<x-avatar :title="doc.title"></x-avatar>
+
+						<div>
+							<div x-html="doc.title || `{{ __('Untitled resource') }}`" class="line-clamp-1" :class="doc.title ? '' : 'text-content-dimmed'"></div>
+
+							<div class="flex gap-1 items-center mt-1 text-xs text-content-dimmed">
+								<x-time :datetime="doc.created_at" data-type="date"></x-time>
+							</div>
+						</div>
+					</div>
+
+					<div class="justify-self-end md:col-span-1">
+						<div class="relative" @click.outside="$refs.context.removeAttribute('data-open')">
+
+							<button @click="$refs.context.toggleAttribute('data-open')">
+								<i class="text-2xl ti ti-dots-vertical text-content-dimmed hover:text-intermediate-content"></i>
+							</button>
+
+							<div class="z-10 menu" x-ref="context">
+								<ul>
+									<li>
+										<a :href="`app/voice-isolator/${doc.id}`" class="flex gap-2 items-center px-4 py-2 hover:no-underline hover:bg-intermediate">
+											<i class="ti ti-pencil"></i>
+											{{ __('Edit') }}
+										</a>
+									</li>
+
+									<li>
+										<button class="flex gap-2 items-center px-4 py-2 w-full hover:no-underline hover:bg-intermediate" @click.prevent="currentResource = doc; modal.open('delete-modal')">
+											<i class="ti ti-trash"></i>
+											{{ __('Delete') }}
+										</button>
+									</li>
+								</ul>
+							</div>
+						</div>
+					</div>
+				</li>
+			</template>
+		</ul>
+	</div>
+
+{% include "sections/delete-modal.twig" with { 
+  message: __('Do you really want to delete the isolated voice?'),
+  title: 'currentResource.title',
+  details: __('All associated content and files will be permanently removed. This action cannot be reverted once confirmed.')
+} %}
+{% endblock %}

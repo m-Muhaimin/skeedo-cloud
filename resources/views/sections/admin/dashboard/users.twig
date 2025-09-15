@@ -1,0 +1,71 @@
+<template x-if="users.length > 0">
+	<section class="flex flex-col gap-6 box" data-density="comfortable" x-data="list('/users')">
+		<div class="flex gap-2 items-center">
+			<h2>{{ p__('heading', 'Users') }}</h2>
+
+			<a class="badge" :href="`admin/users?sort=created_at:desc`">
+				{{ p__('button', 'View all') }}
+			</a>
+		</div>
+
+		<div>
+			<div class="hidden md:grid grid-cols-12 gap-3 items-center px-3 py-2 text-content-dimmed text-xs group-data-[state=empty]/list:hidden">
+				<div class="col-span-6">{{ p__('label', 'User') }}</div>
+				<div class="col-span-3">{{ p__('label', 'Created') }}</div>
+				<div class="col-span-2">{{ p__('label', 'Status') }}</div>
+				<div class="col-span-1"></div>
+			</div>
+
+			<ul class="text-sm flex flex-col gap-1 group-data-[state=empty]:hidden">
+				<template x-for="user in users" :key="user.id">
+					<li class="grid relative grid-cols-12 gap-3 items-center p-3 box hover:border-line" x-data>
+						<a :href="`admin/users/${user.id}`" class="absolute top-0 left-0 w-full h-full cursor-pointer"></a>
+
+						<div class="flex col-span-11 gap-3 items-center md:col-span-6">
+							<x-avatar :title="`${user.first_name} ${user.last_name}`" :src="user.avatar"></x-avatar>
+
+							<div class="font-bold" x-text="`${user.first_name} ${user.last_name}`"></div>
+						</div>
+
+						<div class="hidden md:block md:col-span-3">
+							<x-time :datetime="user.created_at" data-type="date"></x-time>
+						</div>
+
+						<div class="hidden md:block md:col-span-2">
+							<template x-if="user.id != '{{ user.id }}'">
+								<label class="inline-flex relative z-10 gap-2 items-center cursor-pointer">
+									<input type="checkbox" name="status" class="hidden peer" :checked="user.status == 1" @click="toggleStatus(user)">
+
+									<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+									<span class="text-content-dimmed peer-checked:hidden">
+										{{ p__('status', 'Inactive') }}
+									</span>
+
+									<span class="hidden text-success peer-checked:inline">
+										{{ p__('status', 'Active') }}
+									</span>
+								</label>
+							</template>
+						</div>
+
+						<div class="col-span-1 justify-self-end">
+							<div class="relative" @click.outside="$refs.context.removeAttribute('data-open')">
+
+								<button class="relative z-10" @click="$refs.context.toggleAttribute('data-open')">
+									<i class="text-2xl ti ti-dots-vertical text-content-dimmed hover:text-intermediate-content"></i>
+								</button>
+
+								<div class="menu" x-ref="context">
+									<ul>
+										<li><a :href="`admin/users/${user.id}`" class="flex gap-2 items-center px-4 py-2 hover:no-underline hover:bg-intermediate"><i class="ti ti-pencil"></i>{{ p__('button', 'Edit') }}</a></li>
+									</ul>
+								</div>
+							</div>
+						</div>
+					</li>
+				</template>
+			</ul>
+		</div>
+	</section>
+</template>

@@ -1,0 +1,302 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% set xdata = 'settings' %}
+{% block title p__('title', 'Account settings')|title %}
+
+{% set config %}
+{
+  user_accounts_enabled: `{{ option.site.user_accounts_enabled is not defined or option.site.user_accounts_enabled ? 1 : 0 }}`,
+  user_signup_enabled: `{{ option.site.user_signup_enabled is not defined or option.site.user_signup_enabled ? 1 : 0 }}`
+}
+{% endset %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {link: 'admin/settings', label: 'Settings'} %}
+
+		<h1 class="mt-4">{{ p__('heading', 'Account settings') }}</h1>
+	</div>
+
+	<x-form>
+		<form class="flex flex-col gap-8" @submit.prevent="submit" x-ref="form">
+			<section class="grid grid-cols-1 gap-6 px-16 box" data-density="comfortable" x-data="{{ config }}">
+
+				<h2>{{ p__('heading', 'General') }}</h2>
+
+				<div>
+					<div class="flex justify-between items-center p-3 rounded-lg bg-intermediate">
+						{{ p__('label', 'User accounts') }}
+
+						<label class="inline-flex gap-2 items-center cursor-pointer">
+							<input type="checkbox" name="site[user_accounts_enabled]" class="hidden peer" {{ option.site.user_accounts_enabled is not defined or option.site.user_accounts_enabled ? 'checked' : '' }} @change="user_accounts_enabled = $el.checked">
+
+							<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+							<span class="text-content-dimmed peer-checked:hidden">
+								{{ __('Disabled') }}
+							</span>
+
+							<span class="hidden text-success peer-checked:inline">
+								{{ __('Enabled') }}
+							</span>
+						</label>
+					</div>
+
+					<ul class="info mt-2">
+						<li>
+							{{ __('Disabling user accounts will prevent users from signing in through the sign in form and API. Admin accounts will still be able to sign in.') }}
+						</li>
+					</ul>
+				</div>
+
+				<template x-if="user_accounts_enabled == 1">
+					<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+						<div x-data="{policy: `{{ option.site.email_verification_policy ?? 'none' }}`}">
+							<div>
+								<label for="site[email_verification_policy]">{{ p__('label', 'Email verification policy') }}</label>
+
+								<select id="site[email_verification_policy]" name="site[email_verification_policy]" class="mt-2 input" required @change="policy=$el.value;">
+									<option value="none" {{ option.site.email_verification_policy is defined and option.site.email_verification_policy == 'none' ? 'selected' : '' }}>
+										{{ p__('input-value', 'None') }}
+									</option>
+
+									<option value="relaxed" {{ option.site.email_verification_policy is defined and option.site.email_verification_policy == 'relaxed' ? 'selected' : '' }}>
+										{{ p__('input-value', 'Relaxed') }}
+									</option>
+
+									<option value="strict" {{ option.site.email_verification_policy is defined and option.site.email_verification_policy == 'strict' ? 'selected' : '' }}>
+										{{ p__('input-value', 'Strict') }}
+									</option>
+								</select>
+							</div>
+
+							<ul class="info mt-2">
+								<template x-if="policy == 'none'">
+									<li>
+										{{ __('Email verification will not be required.') }}
+									</li>
+								</template>
+
+								<template x-if="policy == 'relaxed'">
+									<li>
+										{{ __('Users can sign in without having their email addresses verified. However, an alert indicating that the email is unverified will be displayed on the dashboard.') }}
+									</li>
+								</template>
+
+								<template x-if="policy == 'strict'">
+									<li>
+										{{ __('Users will be able to sign in however can not access any page except the account pages until they verify their email address.') }}
+									</li>
+								</template>
+
+								<template x-if="policy != 'none'">
+									<li>
+										{% set mailer %}
+										<a href="admin/settings/mail" class="text-content hover:underline">{{ p__('button', 'mailer transport') }}</a>
+										{% endset %}
+
+										{{ __('Configure :mailer to send emails.')|replace({':mailer': mailer })|raw }}
+									</li>
+								</template>
+
+								<li>
+									{{ __("Doesn't apply for the access to admin portal.") }}
+								</li>
+							</ul>
+						</div>
+
+						<div x-data="{policy: `{{ option.site.idp_email_status ?? 'ignore' }}`}">
+							<div>
+								<label for="site[idp_email_status]">{{ p__('label', 'OAuth email status') }}</label>
+
+								<select id="site[idp_email_status]" name="site[idp_email_status]" class="mt-2 input" required @change="policy=$el.value;">
+									<option value="ignore" {{ option.site.idp_email_status is defined and option.site.idp_email_status == 'ignore' ? 'selected' : '' }}>
+										{{ p__('input-value', 'Ignore') }}
+									</option>
+
+									<option value="auto" {{ option.site.idp_email_status is defined and option.site.idp_email_status == 'auto' ? 'selected' : '' }}>
+										{{ p__('input-value', 'Auto') }}
+									</option>
+
+									<option value="verified" {{ option.site.idp_email_status is defined and option.site.idp_email_status == 'verified' ? 'selected' : '' }}>
+										{{ p__('input-value', 'Verified') }}
+									</option>
+								</select>
+							</div>
+
+							<ul class="info mt-2">
+								<template x-if="policy == 'ignore'">
+									<li>
+										{{ __('Email verification status from the identity provider will be ignored.') }}
+									</li>
+								</template>
+
+								<template x-if="policy == 'auto'">
+									<li>
+										{{ __('Email will be marked as verified if verified by the identity provider.') }}
+									</li>
+								</template>
+
+								<template x-if="policy == 'verified'">
+									<li>
+										{{ __('Email will be marked as verified when signing in through an identity provider even if it is not verified by the identity provider.') }}
+									</li>
+								</template>
+							</ul>
+						</div>
+					</div>
+				</template>
+
+				<template x-if="user_accounts_enabled == 1">
+					<div>
+						<div class="flex justify-between items-center p-3 rounded-lg bg-intermediate">
+							{{ p__('label', 'Signup form') }}
+
+							<label class="inline-flex gap-2 items-center cursor-pointer">
+								<input type="checkbox" name="site[user_signup_enabled]" class="hidden peer" {{ option.site.user_signup_enabled is not defined or option.site.user_signup_enabled ? 'checked' : '' }} @change="user_signup_enabled = $el.checked">
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+								<span class="text-content-dimmed peer-checked:hidden">
+									{{ __('Disabled') }}
+								</span>
+
+								<span class="hidden text-success peer-checked:inline">
+									{{ __('Enabled') }}
+								</span>
+							</label>
+						</div>
+
+						<ul class="info mt-2">
+							<li>
+								{{ __('Disabling registration will prevent users from signing up through the sign up form and API. Current users will still be able to sign in.') }}
+							</li>
+						</ul>
+					</div>
+				</template>
+
+				<template x-if="user_accounts_enabled == 1 && user_signup_enabled == 1">
+					<div x-data="{policy: `{{ option.site.phone_requirement_policy|default('none') }}`}" class="flex flex-col gap-6">
+						<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+							<div>
+								<div>
+									<label for="site[phone_requirement_policy]">{{ p__('label', 'Phone number collection') }}</label>
+
+									<select id="site[phone_requirement_policy]" name="site[phone_requirement_policy]" class="mt-2 input" required @change="policy=$el.value;">
+										<option value="none" {{ option.site.phone_requirement_policy|default('none') == 'none' ? 'selected' : '' }}>
+											{{ p__('input-value', 'None') }}
+										</option>
+
+										<option value="relaxed" {{ option.site.phone_requirement_policy|default('none') == 'relaxed' ? 'selected' : '' }}>
+											{{ p__('input-value', 'Optional') }}
+										</option>
+
+										<option value="strict" {{ option.site.phone_requirement_policy|default('none') == 'strict' ? 'selected' : '' }}>
+											{{ p__('input-value', 'Mandatory') }}
+										</option>
+									</select>
+								</div>
+
+								<ul class="info mt-2">
+									<li>
+										{{ __('This setting applies to new registrations only and does not affect existing user accounts.') }}
+									</li>
+
+									<template x-if="policy == 'none'">
+										<li>
+											{{ __('Phone number collection is disabled for user registration.') }}
+										</li>
+									</template>
+
+									<template x-if="policy == 'relaxed'">
+										<li>
+											{{ __('Phone number field will be available during registration but not mandatory.') }}
+										</li>
+									</template>
+
+									<template x-if="policy == 'strict'">
+										<li>
+											{{ __('A valid phone number is mandatory for user registration.') }}
+										</li>
+									</template>
+								</ul>
+							</div>
+
+							<div>
+								<label>&nbsp;</label>
+
+								<div class="mt-2">
+									<label class="inline-flex gap-2 items-center mt-3 cursor-pointer">
+										<input type="checkbox" name="site[disposable_emails]" class="hidden peer" value="1" {{ option.site.disposable_emails|default(false) ? 'checked' : '' }}>
+
+										<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+										<span class="text-content-dimmed peer-checked:text-success">
+											{{ p__('label', 'Disposable email domains')}}
+										</span>
+									</label>
+								</div>
+
+								<ul class="info mt-2">
+									<li>
+										{{ __('If enabled, users will be able to sign up with disposable email domains.') }}
+									</li>
+									<li>
+										{{ __('This setting will be applied to new registrations only and does not affect existing user accounts.') }}
+									</li>
+								</ul>
+							</div>
+						</div>
+
+						<template x-if="['strict', 'relaxed'].includes(policy)">
+							<div>
+								<label for="site[phone_requirement_purpose]">{{ p__('label', 'Phone number collection purpose') }}</label>
+
+								<textarea id="site[phone_requirement_purpose]" name="site[phone_requirement_purpose]" class="mt-2 input" maxlength="255" placeholder="{{ __('Type the purpose for the phone number collection.') }}">{{ option.site.phone_requirement_purpose ?? '' }}</textarea>
+
+								<ul class="info mt-2">
+									<li>
+										{{ __('This message will be displayed to end users. Leave blank to hide the explanation.') }}
+									</li>
+
+									<li>
+										{{ __("Explain why you need to collect phone numbers.") }}
+										{{ __("It's recommended to explain the purpose of collecting the phone number.") }}
+									</li>
+								</ul>
+							</div>
+						</template>
+					</div>
+				</template>
+
+				<div>
+					<label for="workspace-cap" class="flex gap-2 items-center">
+						{{ p__('label', 'Owned workspace cap') }}
+					</label>
+
+					<input type="number" id="workspace-cap" name="site[workspace_cap]" class="mt-2 input" autocomplete="off" placeholder="{{ __('Unlimited') }}" min="1" value="{{ option.site.workspace_cap ?? '' }}"/>
+
+					<ul class="info mt-2">
+						<li>
+							{{ __('This setting limits the number of workspaces a user can own.') }}
+							{{ __('Leave blank for unlimited.') }}
+						</li>
+					</ul>
+				</div>
+			</section>
+
+			<div class="flex gap-4 justify-end">
+				<a href="admin/settings" class="button button-outline">
+					{{ p__('button', 'Cancel') }}
+				</a>
+
+				<button type="submit" class="button button-accent" :processing="isProcessing">
+					{% include "/snippets/spinner.twig" %}
+
+					{{ p__('button', 'Save changes') }}
+				</button>
+			</div>
+		</form>
+	</x-form>
+{% endblock %}

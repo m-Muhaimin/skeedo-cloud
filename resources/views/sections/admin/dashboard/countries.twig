@@ -1,0 +1,70 @@
+<section class="flex flex-col gap-6 box" data-density="comfortable" x-data="{showAll: false, limit: 4}">
+	<div class="flex gap-2 justify-between items-center">
+		<h2>{{ p__('heading', 'Top countries') }}</h2>
+
+		<span class="badge">
+			{{ p__('button', 'Last 30 days') }}
+		</span>
+	</div>
+
+	<div>
+		<div class="hidden md:grid grid-cols-12 gap-3 items-center px-3 py-2 text-content-dimmed text-xs group-data-[state=empty]/list:hidden">
+			<div class="col-span-10">{{ p__('label', 'Country') }}</div>
+			<div class="col-span-2 text-end">{{ p__('label', 'Signups') }}</div>
+		</div>
+
+		<ul class="text-sm flex flex-col gap-1 group-data-[state=empty]:hidden">
+			<template x-if="datasets.countries === null">
+				<li class="grid relative grid-cols-12 gap-3 items-center p-3 box" x-data>
+
+					<div class="flex col-span-10 gap-3 items-center">
+						<div class="avatar loading"></div>
+
+						<div class="my-0.5 w-32 h-4 loading"></div>
+					</div>
+
+					<div class="flex col-span-2 justify-end">
+						<div class="my-0.5 w-10 h-4 loading"></div>
+					</div>
+				</li>
+			</template>
+
+			<template x-if="datasets.countries !== null">
+				<template x-for="(stat, index) in (showAll ? datasets.countries : datasets.countries.slice(0, limit))">
+					<li :key="stat.category?.alpha2" x-data>
+						<a :href="`/admin/users?country_code=${stat.category?.alpha2}&created_at={{ '-29 days'|date('Y-m-d') }}`" class="grid relative grid-cols-12 gap-3 items-center p-3 box hover:border-line">
+							<div class="flex col-span-10 gap-3 items-center">
+								<x-avatar :title="stat.category?.alpha2" :src="stat.category?.flag_url"></x-avatar>
+
+								<div class="font-bold" x-text="stat.category ? stat.category.name : `{{ __('Unknown') }}`"></div>
+							</div>
+
+							<div class="col-span-2 text-end">
+								<x-credit :data-value="stat.value"></x-credit>
+							</div>
+						</a>
+					</li>
+				</template>
+			</template>
+
+			<template x-if="datasets.countries !== null && !showAll && datasets.countries.length > limit">
+				<li x-data>
+					<button type="button" @click="showAll = true;" class="grid relative grid-cols-12 gap-3 items-center p-3 w-full box hover:border-line">
+						<div class="flex col-span-10 gap-3 items-center">
+							<x-avatar icon="world"></x-avatar>
+
+							<div class="font-bold">
+								{{ __('Others') }}
+								(<span x-text="datasets.countries.length - limit"></span>)
+							</div>
+						</div>
+
+						<div class="col-span-2 text-end">
+							<x-credit :data-value="datasets.countries.slice(limit).reduce((total, stat) => total + stat.value, 0)"></x-credit>
+						</div>
+					</button>
+				</li>
+			</template>
+		</ul>
+	</div>
+</section>

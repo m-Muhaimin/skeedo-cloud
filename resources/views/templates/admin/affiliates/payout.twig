@@ -1,0 +1,243 @@
+{% extends "/layouts/main.twig" %}
+
+{% set active_menu = '/admin/affiliates/payouts' %}
+{% set xdata %}
+payout({{ payout|json_encode }})
+{% endset %}
+
+{% block title p__('title', 'Payout details')|title %}
+
+{% block template %}
+	<div class="flex flex-col gap-8">
+		<div>
+			{% include "snippets/back.twig" with {link: 'admin/affiliates/payouts', label: 'Payouts'} %}
+
+			<h1 class="mt-4">
+				{{ p__('heading', 'Payout') }}
+			</h1>
+
+			<div class="mt-2">
+				<x-uuid x-text="payout.id"></x-uuid>
+			</div>
+		</div>
+
+		<div class="flex flex-col gap-2">
+			<section class="flex flex-col gap-6 box" data-density="comfortable">
+				<div>
+					<div class="flex gap-2 items-center">
+						<h2>{{ p__('heading', 'Payout') }}</h2>
+
+						<template x-if="payout.status == 'pending'">
+							<span class="badge">{{ __('Pending') }}</span>
+						</template>
+
+						<template x-if="payout.status == 'approved'">
+							<span class="badge badge-success">{{ __('Approved') }}</span>
+						</template>
+
+						<template x-if="payout.status == 'rejected'">
+							<span class="badge badge-failure">{{ __('Rejected') }}</span>
+						</template>
+					</div>
+
+					<p class="text-sm text-content-dimmed">
+						{{ __('Payout created on %s', '<x-time :datetime="payout.created_at"></x-time>')|raw }}
+					</p>
+				</div>
+
+				<div class="flex flex-col gap-6">
+					<div class="flex flex-wrap gap-6 items-center">
+						<div class="w-40 min-w-min">
+							<div class="label">
+								{{ p__('label', 'Amount') }}
+							</div>
+
+							<x-money :data-value="payout.amount" :currency="payout.currency.code" :minor-units="payout.currency.fraction_digits"></x-money>
+						</div>
+
+						<div class="min-w-min">
+							<div class="label">
+								{{ p__('label', 'Payout method') }}
+								<span class="font-normal text-content-dimmed">(Current)</span>
+							</div>
+
+							<template x-if="payout.affiliate.payout_method == 'bank_transfer'">
+								<div>{{ __('Bank transfer') }}</div>
+							</template>
+
+							<template x-if="payout.affiliate.payout_method == 'paypal'">
+								<div>{{ __('PayPal') }}</div>
+							</template>
+						</div>
+
+						<div class="min-w-min">
+							<template x-if="payout.affiliate.payout_method == 'bank_transfer'">
+								<div class="label">{{ p__('label', 'Bank requisites') }}</div>
+							</template>
+
+							<template x-if="payout.affiliate.payout_method == 'paypal'">
+								<div class="label">{{ p__('label', 'PayPal email') }}</div>
+							</template>
+
+							<template x-if="payout.affiliate.payout_method == 'bank_transfer'">
+								<div x-html="payout.affiliate.bank_requisites.replace(/([^>])\n/g, '$1<br />\n')"></div>
+							</template>
+
+							<template x-if="payout.affiliate.payout_method == 'paypal'">
+								<div x-text="payout.affiliate.paypal_email"></div>
+							</template>
+						</div>
+					</div>
+				</div>
+
+				<template x-if="payout.status == 'pending'">
+					<div class="flex gap-2 items-center">
+						<button type="button" class="button button-failure button-sm" @click="modal.open('reject-modal')">
+							<i class="ti ti-x"></i>
+							{{ __('Reject payout') }}
+						</button>
+
+						<button type="button" class="button button-sm" @click="modal.open('approve-modal')">
+							<i class="ti ti-check"></i>
+							{{ __('Approve payout') }}
+						</button>
+					</div>
+				</template>
+			</section>
+
+			<section class="flex flex-col gap-6 box" data-density="comfortable">
+				<div class="flex gap-2 items-center">
+					<h2>{{ p__('heading', 'Affiliate') }}</h2>
+
+					<x-copy class="badge" x-text="payout.affiliate.code" x-tooltip.raw="{{ __('Affiliate code') }}"></x-copy>
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<div class="flex gap-3 items-center p-4 rounded-2xl bg-intermediate text-intermediate-content">
+						<x-avatar class="bg-main text-content" :title="`${payout.affiliate.user.first_name} ${payout.affiliate.user.last_name}`" :src="payout.affiliate.user.avatar"></x-avatar>
+
+						<div>
+							<div class="label" x-text="`${payout.affiliate.user.first_name} ${payout.affiliate.user.last_name}`"></div>
+							<div class="text-sm text-content-dimmed" x-text="payout.affiliate.user.email"></div>
+						</div>
+
+						<a :href="`admin/users/${payout.affiliate.user.id}`" class="flex justify-center items-center ms-auto w-8 h-8 rounded-full bg-main outline-1 outline-line hover:outline outline-offset-0">
+							<i class="text-base ti ti-chevron-right"></i>
+						</a>
+					</div>
+
+					<div class="flex gap-y-4 md:gap-4 box flex-wrap md:flex-nowrap">
+						<div class="flex flex-col gap-1 w-1/2 md:w-auto">
+							<div class="text-xs text-content-dimmed">{{ __('Balance') }}</div>
+							<x-money class="text-2xl font-bold" :data-value="payout.affiliate.balance" :currency="payout.affiliate.currency.code" :minor-units="payout.affiliate.currency.fraction_digits"></x-money>
+						</div>
+
+						<div class="w-px bg-line-dimmed hidden md:block"></div>
+
+						<div class="flex flex-col gap-1 w-1/2 md:w-auto">
+							<div class="text-xs text-content-dimmed">{{ __('Pending') }}</div>
+
+							<x-money class="text-2xl font-bold" :data-value="payout.affiliate.pending" :currency="payout.affiliate.currency.code" :minor-units="payout.affiliate.currency.fraction_digits"></x-money>
+						</div>
+
+						<div class="w-px bg-line-dimmed hidden md:block"></div>
+
+						<div class="flex flex-col gap-1 w-1/2 md:w-auto">
+							<div class="text-xs text-content-dimmed">{{ __('Paid') }}</div>
+
+							<x-money class="text-2xl font-bold" :data-value="payout.affiliate.withdrawn" :currency="payout.affiliate.currency.code" :minor-units="payout.affiliate.currency.fraction_digits"></x-money>
+						</div>
+
+						<div class="w-px bg-line-dimmed hidden md:block"></div>
+
+						<div class="flex flex-col gap-1 w-1/2 md:w-auto">
+							<div class="text-xs text-content-dimmed">{{ __('Clicks') }}</div>
+							<x-credit class="text-2xl font-bold" :data-value="payout.affiliate.clicks"></x-credit>
+						</div>
+
+						<div class="w-px bg-line-dimmed hidden md:block"></div>
+
+						<div class="flex flex-col gap-1 w-1/2 md:w-auto">
+							<div class="text-xs text-content-dimmed">{{ __('Referrals') }}</div>
+							<x-credit class="text-2xl font-bold" :data-value="payout.affiliate.referrals"></x-credit>
+						</div>
+					</div>
+				</div>
+			</section>
+		</div>
+	</div>
+
+	<modal-element name="approve-modal">
+		<x-form>
+			<form class="flex flex-col gap-8 modal" @submit.prevent="approve">
+				<div class="flex justify-between items-center">
+					<h2 class="text-xl">{{ p__('heading', 'Approve payout') }}</h2>
+
+					<button class="flex justify-center items-center w-8 h-8 rounded-full border border-transparent bg-line-dimmed hover:border-line" @click="modal.close()" type="button">
+						<i class="text-xl ti ti-x"></i>
+					</button>
+				</div>
+
+				<div>
+					<div class="flex gap-1 items-center text-sm font-bold">
+						<i class="text-lg ti ti-info-square-rounded"></i>
+						{{ __('Important') }}
+					</div>
+
+					<p class="mt-2 text-sm">
+						{{ __('Are you sure you want to approve this payout? This action is irreversible.') }}
+					</p>
+				</div>
+
+				<div class="flex flex-col gap-4 items-center">
+					<button class="w-full button" type="submit" :processing="isProcessing">
+						{% include "/snippets/spinner.twig" %}
+
+						{{ p__('button', 'Approve payout') }}
+					</button>
+
+					<p class="text-xs text-content-dimmed">
+						{{ __('This will mark the payout as paid.') }}
+					</p>
+				</div>
+			</form>
+		</x-form>
+	</modal-element>
+
+	<modal-element name="reject-modal">
+		<x-form>
+			<form class="flex flex-col gap-8 modal" @submit.prevent="reject">
+				<div class="flex justify-between items-center">
+					<h2 class="text-xl">{{ p__('heading', 'Reject payout') }}</h2>
+
+					<button class="flex justify-center items-center w-8 h-8 rounded-full border border-transparent bg-line-dimmed hover:border-line" @click="modal.close()" type="button">
+						<i class="text-xl ti ti-x"></i>
+					</button>
+				</div>
+
+				<div>
+					<div class="flex gap-1 items-center text-sm font-bold">
+						<i class="text-lg ti ti-info-square-rounded"></i>
+						{{ __('Important') }}
+					</div>
+
+					<p class="mt-2 text-sm">
+						{{ __('Are you sure you want to approve this payout? This action is irreversible.') }}
+					</p>
+				</div>
+
+				<div class="flex flex-col gap-4 items-center">
+					<button class="w-full button button-failure" type="submit" :processing="isProcessing">
+						{% include "/snippets/spinner.twig" %}
+
+						{{ p__('button', 'Reject payout') }}
+					</button>
+
+					<p class="text-xs text-content-dimmed">
+						{{ __('Funds will be returned to the affiliate balance.') }}
+					</p>
+				</div>
+			</form>
+		</x-form>
+	</modal-element>
+{% endblock %}

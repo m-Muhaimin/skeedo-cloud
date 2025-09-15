@@ -1,0 +1,178 @@
+{% extends "/layouts/main.twig" %}
+
+{% set active_menu = '/app/library' %}
+{% block title p__('title', 'Library')|title %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {link: 'app', label: p__('button', 'Dashboard')} %}
+		<h1>{{ __('Library') }}</h1>
+	</div>
+
+	<div class="grid grid-cols-2 gap-1 md:grid-cols-3">
+		{% if option.features.chat.is_enabled is defined and option.features.chat.is_enabled %}
+			<a href="app/library/conversations" class="flex flex-col gap-4 box hover:border-line">
+				<span class="avatar text-white bg-linear-to-br from-[#00A6FB] to-[#006ABF]">
+					{% include "snippets/icons/chat.twig" %}
+				</span>
+
+				<div>
+					<h3>{{ p__('heading', 'Conversations') }}</h3>
+					<p class="text-sm text-content-dimmed">
+						{{ __('Chat conversations created with the Chat tool') }}
+					</p>
+				</div>
+			</a>
+		{% endif %}
+
+		{% if option.features.writer.is_enabled is defined and option.features.writer.is_enabled %}
+			<a href="app/library/documents" class="flex flex-col gap-4 box hover:border-line">
+				<span class="avatar text-white bg-linear-to-br from-[#FCBF49] to-[#F77F00]">
+					{% include "snippets/icons/writer.twig" %}
+				</span>
+
+				<div>
+					<h3>{{ p__('heading', 'Documents') }}</h3>
+					<p class="text-sm text-content-dimmed">
+						{{ __('Documents created with the Writer tool') }}
+					</p>
+				</div>
+			</a>
+		{% endif %}
+
+		{% if option.features.coder.is_enabled is defined and option.features.coder.is_enabled %}
+			<a href="app/library/code-documents" class="flex flex-col gap-4 box hover:border-line">
+				<span class="avatar text-white bg-linear-to-br from-[#F099C3] to-[#E03339]">
+					{% include "snippets/icons/coder.twig" %}
+				</span>
+
+				<div>
+					<h3>{{ p__('heading', 'Code documents') }}</h3>
+					<p class="text-sm text-content-dimmed">
+						{{ __('Code related documents created with the Coder tool') }}
+					</p>
+				</div>
+			</a>
+		{% endif %}
+
+		{% if option.features.imagine.is_enabled is defined and option.features.imagine.is_enabled %}
+			<a href="app/library/images" class="flex flex-col gap-4 box hover:border-line">
+				<span class="avatar text-white bg-linear-to-br from-[#E6C0FE] to-[#984CF8]">
+					{% include "snippets/icons/imagine.twig" %}
+				</span>
+
+				<div>
+					<h3>{{ p__('heading', 'Images') }}</h3>
+					<p class="text-sm text-content-dimmed">
+						{{ __('Image files created with the Imagine tool') }}
+					</p>
+				</div>
+			</a>
+		{% endif %}
+
+		{% if option.features.video.is_enabled is defined and option.features.video.is_enabled %}
+			<a href="app/library/videos" class="flex flex-col gap-4 box hover:border-line">
+				<span class="avatar text-white bg-linear-to-br from-[#FF188F] to-[#F38383]">
+					{% include "snippets/icons/video.twig" %}
+				</span>
+
+				<div>
+					<h3>{{ p__('heading', 'Videos') }}</h3>
+					<p class="text-sm text-content-dimmed">
+						{{ __('Video files created with the Video tool') }}
+					</p>
+				</div>
+			</a>
+		{% endif %}
+
+		{% if option.features.transcriber.is_enabled is defined and option.features.transcriber.is_enabled %}
+			<a href="app/library/transcriptions" class="flex flex-col gap-4 box hover:border-line">
+				<span class="avatar text-white bg-linear-to-br from-[#30C862] to-[#00A6FB]">
+					{% include "snippets/icons/transcriber.twig" %}
+				</span>
+
+				<div>
+					<h3>{{ p__('heading', 'Transcriptions') }}</h3>
+					<p class="text-sm text-content-dimmed">
+						{{ __('Transcriptions created with the Transcriber tool') }}
+					</p>
+				</div>
+			</a>
+		{% endif %}
+
+		{% if option.features.voiceover.is_enabled is defined and option.features.voiceover.is_enabled %}
+			<a href="app/library/speeches" class="flex flex-col gap-4 box hover:border-line">
+				<span class="avatar text-white bg-linear-to-br from-[#BCE143] to-[#30C862]">
+					{% include "snippets/icons/voiceover.twig" %}
+				</span>
+
+				<div>
+					<h3>{{ p__('heading', 'Speeches') }}</h3>
+					<p class="text-sm text-content-dimmed">
+						{{ __('Audio speeches created from text inputs') }}
+					</p>
+				</div>
+			</a>
+
+			{% if option.features.voiceover.is_voice_cloning_enabled|default(false) %}
+				<a href="app/voiceover/voices?owner=me" class="flex flex-col gap-4 box hover:border-line">
+					<span class="avatar text-white bg-linear-to-br from-[#2ECC71] to-[#27AE60]">
+						{% include "snippets/icons/voice-cloning.twig" %}
+					</span>
+
+					<div>
+						<h3>{{ p__('heading', 'Cloned voices') }}</h3>
+						<p class="text-sm text-content-dimmed">
+							{{ __('Your cloned voices') }}
+						</p>
+					</div>
+				</a>
+			{% endif %}
+		{% endif %}
+
+		{% if option.features.voice_isolator.is_enabled is defined and option.features.voice_isolator.is_enabled %}
+			<a href="app/library/isolated-voices" class="flex flex-col gap-4 box hover:border-line">
+				<span class="avatar text-white bg-linear-to-br from-[#6283FB] to-[#C883F3]">
+					{% include "snippets/icons/voice-isolator.twig" %}
+				</span>
+
+				<div>
+					<h3>{{ p__('heading', 'Isolated voices') }}</h3>
+					<p class="text-sm text-content-dimmed">
+						{{ __('Voices isolated from the background noise') }}
+					</p>
+				</div>
+			</a>
+		{% endif %}
+
+		{% if option.features.classifier.is_enabled is defined and option.features.classifier.is_enabled %}
+			<a href="app/library/classifications" class="flex flex-col gap-4 box hover:border-line">
+				<span class="avatar text-white bg-linear-to-br from-[#E562FB] to-[#F8C06D]">
+					{% include "snippets/icons/classifier.twig" %}
+				</span>
+
+				<div>
+					<h3>{{ p__('heading', 'Classifications') }}</h3>
+					<p class="text-sm text-content-dimmed">
+						{{ __('Reports created with the Classifier tool') }}
+					</p>
+				</div>
+			</a>
+		{% endif %}
+
+		{% if option.features.composer.is_enabled is defined and option.features.composer.is_enabled %}
+			<a href="app/library/compositions" class="flex flex-col gap-4 box hover:border-line">
+				<span class="avatar text-white bg-linear-to-br from-[#600989] to-[#CF83F3]">
+					{% include "snippets/icons/composer.twig" %}
+				</span>
+
+				<div>
+					<h3>{{ p__('heading', 'Compositions') }}</h3>
+					<p class="text-sm text-content-dimmed">
+						{{ __('Compositions created with the Composer tool') }}
+					</p>
+				</div>
+			</a>
+		{% endif %}
+	</div>
+{% endblock %}

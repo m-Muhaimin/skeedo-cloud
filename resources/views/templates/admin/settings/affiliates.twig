@@ -1,0 +1,136 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% set xdata = 'settings' %}
+{% block title p__('title', 'Affiliates')|title %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {link: 'admin/settings', label: 'Settings'} %}
+
+		<h1 class="mt-4">{{ p__('heading', 'Affiliates') }}</h1>
+	</div>
+
+	<x-form>
+		<form class="flex flex-col gap-8" @submit.prevent="submit" x-ref="form">
+			<div class="flex flex-col gap-2">
+				<section class="flex flex-col gap-6 box" data-density="comfortable">
+					<h2>{{ p__('heading', 'Affiliate program') }}</h2>
+
+					<div>
+						<div class="flex justify-between items-center p-3 rounded-lg bg-intermediate">
+							{{ p__('label', 'Enabled?') }}
+
+							<label class="inline-flex gap-2 items-center cursor-pointer">
+								<input type="checkbox" name="affiliates[is_enabled]" class="hidden peer" {{ option.affiliates.is_enabled is defined and option.affiliates.is_enabled ? 'checked' : '' }}>
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+								<span class="text-content-dimmed peer-checked:hidden">
+									{{ __('No') }}
+								</span>
+
+								<span class="hidden text-success peer-checked:inline">
+									{{ __('Yes') }}
+								</span>
+							</label>
+						</div>
+
+						<ul class="info mt-2">
+
+							<li>
+								{{ __('Ensure that the currency rate provider is set up correctly.') }}
+
+								<a href="admin/settings/billing" target="_blank" class="inline-flex gap-1 items-center text-content hover:underline">
+									{{ p__('button', 'View billing settings') }}
+									<i class="text-xs ti ti-external-link"></i>
+								</a>
+							</li>
+						</ul>
+					</div>
+
+					<div class="grid grid-cols-2 gap-6">
+						<div>
+							<label for="payout" class="flex gap-2 items-center">
+								<span>{{ p__('label', 'Minimum payout') }}</span>
+							</label>
+
+							<div class="relative">
+								<input type="hidden" name="affiliates[min_payout]" value="{{ option.affiliates.min_payout ?? 0 }}" x-ref="payout">
+
+								<input type="text" id="payout" class="pe-11 mt-2 input" autocomplete="off" placeholder="{{ __('Include amount') }}" :value="({{ option.affiliates.min_payout ?? 0 }} / Math.pow(10, {{ currency.fraction_digits }})).toFixed({{ currency.fraction_digits }})" x-mask:dynamic="$money($input, '.', ' ', {{ currency.fraction_digits }})" @input="$refs.payout.value = $el.value.replaceAll(' ', '') * Math.pow(10, {{ currency.fraction_digits }}).toFixed(0)" required/>
+
+								<code class="absolute end-3 top-1/2 text-sm font-medium -translate-y-1/2 pointer-events-none text-content-dimmed">{{ currency.code }}</code>
+							</div>
+						</div>
+
+						<div>
+							<label for="affiliates[commission]" class="flex gap-2 items-center">
+								<span>{{ p__('label', 'Commission percentage') }}</span>
+							</label>
+
+							<div class="relative">
+								<input type="number" id="affiliates[commission]" name="affiliates[commission]" class="pe-11 mt-2 appearance-none input" autocomplete="off" placeholder="{{ __('Include amount between 0-100') }}" required value="{{ option.affiliates.commission ?? '' }}" min="0" max="100"/>
+
+								<code class="absolute end-3 top-1/2 text-sm font-medium -translate-y-1/2 pointer-events-none text-content-dimmed">%</code>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<section class="grid grid-cols-1 gap-6 box" data-density="comfortable">
+					<h2>{{ p__('heading', 'Payout methods') }}</h2>
+
+					<div class="flex justify-between items-center p-3 rounded-lg bg-intermediate">
+						{{ p__('label', 'PayPal') }}
+
+						<label class="inline-flex gap-2 items-center cursor-pointer">
+							<input type="checkbox" name="affiliates[payout_methods][paypal][is_enabled]" class="hidden peer" {{ option.affiliates.payout_methods.paypal.is_enabled is defined and option.affiliates.payout_methods.paypal.is_enabled ? 'checked' : '' }}>
+
+							<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+							<span class="text-content-dimmed peer-checked:hidden">
+								{{ __('No') }}
+							</span>
+
+							<span class="hidden text-success peer-checked:inline">
+								{{ __('Yes') }}
+							</span>
+						</label>
+					</div>
+
+					<div class="flex justify-between items-center p-3 rounded-lg bg-intermediate">
+						{{ p__('label', 'Bank transfer') }}
+
+						<label class="inline-flex gap-2 items-center cursor-pointer">
+							<input type="checkbox" name="affiliates[payout_methods][bank_transfer][is_enabled]" class="hidden peer" {{ option.affiliates.payout_methods.bank_transfer.is_enabled is defined and option.affiliates.payout_methods.bank_transfer.is_enabled ? 'checked' : '' }}>
+
+							<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+							<span class="text-content-dimmed peer-checked:hidden">
+								{{ __('No') }}
+							</span>
+
+							<span class="hidden text-success peer-checked:inline">
+								{{ __('Yes') }}
+							</span>
+						</label>
+					</div>
+				</section>
+			</div>
+
+			<div class="flex gap-4 justify-end">
+				<a href="admin/settings" class="button button-outline">
+					{{ p__('button', 'Cancel') }}
+				</a>
+
+				<button type="submit" class="button button-accent" :processing="isProcessing">
+					{% include "/snippets/spinner.twig" %}
+
+					{{ p__('button', 'Save changes') }}
+				</button>
+			</div>
+		</form>
+	</x-form>
+
+{% endblock %}

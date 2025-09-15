@@ -1,0 +1,80 @@
+x-avatar,
+.avatar {
+  @apply relative size-10 rounded-full bg-intermediate text-intermediate-content flex items-center justify-center font-bold shrink-0 text-xs uppercase whitespace-nowrap;
+
+  &.avatar-outline {
+    @apply border border-line bg-transparent;
+  }
+
+  & > canvas {
+    @apply absolute top-0 left-0 object-cover w-full h-full rounded-full;
+  }
+
+  & > img {
+    @apply absolute top-0 left-0 object-cover w-full h-full rounded-full;
+  }
+
+  & > .mask {
+    @apply size-6 rounded-full mask-cover mask-center mask-no-repeat bg-current bg-no-repeat;
+  }
+
+  &.contain > img {
+    @apply static size-6 object-contain;
+  }
+
+  & > svg {
+    @apply size-6;
+  }
+
+  & > i {
+    @apply text-2xl;
+  }
+
+  &.avatar-lg {
+    @apply size-14;
+
+    & > svg,
+    & > .mask,
+    &.contain > img {
+      @apply size-8;
+    }
+  }
+
+  &.avatar-sm {
+    @apply size-6;
+
+    & > svg,
+    & > .mask,
+    &.contain > img {
+      @apply size-3;
+    }
+
+    & > i {
+      @apply text-xs;
+    }
+  }
+
+  &.avatar-xs {
+    @apply size-4;
+
+    & > svg,
+    & > .mask,
+    &.contain > img {
+      @apply size-2;
+    }
+
+    & > i {
+      @apply text-xs;
+    }
+  }
+
+  &[data-status],
+  &[status] {
+    @apply after:absolute after:bottom-0 after:right-0 after:w-2.5 after:h-2.5 after:rounded-full after:bg-line after:ring-1 after:ring-line after:ring-offset-1 after:ring-offset-main;
+  }
+
+  &[data-status='online'],
+  &[status='online'] {
+    @apply after:bg-success after:ring-success;
+  }
+}

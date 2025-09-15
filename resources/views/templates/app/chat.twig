@@ -1,0 +1,576 @@
+{% extends "/layouts/main.twig" %}
+{% set mobile_head_button = {
+  link: 'app/chat' ~ (assistant is defined ? '/' ~ assistant.id : ''),
+} %}
+
+{% set types = [] %}
+{% if workspace.subscription.plan.config.tools.embedding_search|default(false) %}
+	{% set types = types|merge([
+  '.pdf',
+  '.json',
+  'text/*',
+  '.doc',
+  '.docx', 
+  '.odt',
+  '.xml',
+  '.yml',
+  '.yaml',
+  '.csv',
+  ]) %}
+{% endif %}
+
+{% set capabilities = ['embedding_search', 'google_search', 'web_scrap', 'generate_image']|filter(
+  cap => option.features.tools[cap].is_enabled|default(false)
+  and workspace.subscription.plan.config.tools[cap]|default(false)
+) %}
+
+{% set active_menu = '/app/assistants' %}
+{% set xdata %}
+chat(
+`{{ model ?? option.features.chat.default_model ?? 'gpt-3.5-turbo' }}`,
+{{ services|json_encode }},
+{{ (assistant ?? null )|json_encode }},
+{{ (conversation ?? null )|json_encode }},
+{{ types|json_encode }},
+)
+{% endset %}
+{% block title p__('title', 'Chat')|title %}
+
+{% block sidebar %}
+	<div class="hidden group-data-[key=history]/sidebar:block">
+		<div class="flex items-center justify-between p-4 border-b border-line sticky top-0 bg-main z-10">
+			<h2>{{ p__('heading', 'History') }}</h2>
+
+			<button type="button" class="text-content-dimmed hover:text-content" @click="sidebar.close()" x-tooltip.raw.placement.left="{{ __('Close') }}">
+				<i class="text-2xl ti ti-x"></i>
+			</button>
+		</div>
+
+		<div>
+			<template x-for="i in history" :key="i.id">
+				<a :href="`app/chat/${i.id}`" class="flex gap-2 items-center p-4 border-b border-line-dimmed hover:bg-line-dimmed/50" :class="conversation?.id == i.id ? 'bg-line-dimmed/50' : ''" @click.prevent="select(i)">
+					<x-avatar :title="i.title" class="shrink-0"></x-avatar>
+
+					<div class="overflow-hidden">
+						<div x-text="i.title || `{{ __('Untitled resource') }}`" class="overflow-hidden text-sm text-ellipsis text-nowrap max-w-full" :class="i.title ? '' : 'text-content-dimmed'"></div>
+
+						<div class="flex">
+							<x-time :datetime="i.created_at" data-type="date" class="text-xs text-content-dimmed"></x-time>
+						</div>
+					</div>
+				</a>
+			</template>
+
+			<template x-if="!historyLoaded">
+				<div class="my-8 flex justify-center">
+					<button type="button" @click="fetchHistory()" class="font-semibold hover:underline text-sm">
+						{{ __('Load more') }}
+					</button>
+				</div>
+			</template>
+
+			<template x-if="historyLoaded && history.length === 0">
+				<div class="p-4 text-content-dimmed">
+					{{ __('No conversations yet') }}
+				</div>
+			</template>
+		</div>
+	</div>
+{% endblock %}
+
+{% block toolbar %}
+	<div class="absolute z-10 top-4 end-10 hidden md:flex gap-2 transition-all ease-in">
+		<a href="app/chat" class="text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('New chat') }}">
+			<i class="text-2xl ti ti-square-rounded-plus"></i>
+		</a>
+
+		<a href="app/library/conversation" class="text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('History') }}" @click.prevent="sidebar.open('history')">
+			<i class="text-2xl ti ti-file-stack"></i>
+		</a>
+	</div>
+{% endblock %}
+
+{% block template %}
+	<div class="flex flex-col gap-4 grow">
+		<div class="relative" :class="conversation ? '' : 'flex justify-center my-auto'">
+			<template x-if="!conversation">
+				<div class="flex flex-col gap-6 my-10 text-center md:my-0">
+					<div class="mx-auto w-16 h-16 bg-linear-to-br from-[#00A6FB] to-[#006ABF] tool-icon">
+						<div class="bg-linear-to-br from-[#00A6FB] to-[#006ABF]"></div>
+
+						{% include "snippets/icons/chat.twig" %}
+					</div>
+
+					<template x-if="assistant">
+						<div>
+							<h1 x-text="assistant.name"></h1>
+							<p class="mt-1 text-lg font-light text-content-dimmed" x-text="assistant.description"></p>
+						</div>
+					</template>
+
+					<template x-if="!assistant">
+						<div>
+							<h1>{{ p__('heading', 'Chat with AI') }}</h1>
+							<p class="mt-1 text-lg font-light text-content-dimmed">
+								{{ __('Fast, smart, and always ready to assist.') }}
+							</p>
+						</div>
+					</template>
+				</div>
+			</template>
+
+			<template x-if="conversation">
+				<div class="flex flex-col gap-4">
+					<div class="grow">
+						<div class="text-xl autogrow-textarea font-editor-heading" :data-replicated-value="conversation.title">
+							<textarea placeholder="{{ __('Untitled resource') }}" autocomplete="off" x-model="conversation.title" rows="1" @input.debounce.750ms="save(conversation)" class="block px-0 py-0 w-full bg-transparent border-0 ring-0 transition-colors appearance-none outline-none resize-none placeholder:text-content-dimmed placeholder:opacity-50 read-only:text-content-dimmed"></textarea>
+						</div>
+
+						<div class="mt-1">
+							<x-uuid x-text="conversation.id"></x-uuid>
+						</div>
+					</div>
+
+					<div class="flex gap-4 items-center">
+						<div class="flex gap-4 items-center me-auto">
+							{% include "snippets/audience.twig" with {ref: 'conversation'} %}
+
+							<span class="flex gap-1 items-center text-sm text-content-dimmed">
+								<i class="text-base ti ti-coins"></i>
+								<x-credit :data-value="conversation.cost" format="{{ __(":count credits") }}"></x-credit>
+							</span>
+						</div>
+
+						<button @click="modal.open('delete-modal');" class="flex gap-1 items-center text-sm transition-all text-content-dimmed hover:text-content group">
+							<i class="text-xl ti ti-trash group-hover:text-failure"></i>
+						</button>
+					</div>
+
+					<div class="flex flex-col gap-6 md:gap-10 mt-6">
+						<template x-for="node in tree">
+							<div class="last:min-h-[calc(100dvh-18rem)] lg:last:min-h-[calc(100dvh-15.5rem)]">
+								{% include "snippets/cards/message.twig" with { ref: 'node.children[node.index]'} %}
+
+								<template x-if="node.children.length > 1">
+									<div class="flex gap-1 items-center ps-8 mt-2 text-xs text-content-dimmed">
+										<button type="button" :disabled="node.index==0" @click="generateTree(node.children[node.index-1].id || null)" class="hover:text-content">
+											<i class="text-xs ti ti-chevron-left rtl:rotate-180 block"></i>
+										</button>
+
+										<span>
+											<span x-text="node.index+1"></span>
+											<span>/</span>
+											<span x-text="node.children.length"></span>
+										</span>
+
+										<button type="button" :disabled="node.index+1 >= node.children.length" @click="generateTree(node.children[node.index+1].id || null)" class="hover:text-content">
+											<i class="text-xs ti ti-chevron-right rtl:rotate-180 block"></i>
+										</button>
+									</div>
+								</template>
+							</div>
+						</template>
+					</div>
+				</div>
+			</template>
+
+			<button x-ref="quote" class="hidden absolute top-0 left-1/2 z-40 gap-1 justify-center items-center px-2 py-1 -mt-8 h-6 text-sm font-bold rounded-md border shadow-md border-line bg-main" x-tooltip.raw="{{ __('Reply') }}" @click="selectQuote">
+				<i class="text-lg ti ti-corner-down-right"></i>
+				{{ p__('button', 'Reply') }}
+			</button>
+		</div>
+	</div>
+
+	<modal-element name="models">
+		<div @submit.prevent="modal.close()" class="flex flex-col gap-6 modal">
+			<div class="flex justify-between items-center">
+				<h2 class="text-xl">{{ p__('heading', 'Models') }}</h2>
+
+				<button type="button" class="flex justify-center items-center w-8 h-8 rounded-full border border-transparent bg-line-dimmed hover:border-line" @click="modal.close()">
+					<i class="text-xl ti ti-x"></i>
+				</button>
+			</div>
+
+			<div class="flex flex-col gap-2">
+				<input type="text" class="mt-2 input" placeholder="{{ __('Search models') }}" x-model="query">
+
+				<div class="scroll-area">
+					<div class="grid grid-cols-2 gap-1">
+						<template x-for="m in adapters" :key="m.key + '-' + m.model.key">
+							<template x-if="search(query, m, 'adapter')">
+								<div class="relative flex group" :class="m.model.granted ? null : 'opacity-50 hover:opacity-100'">
+									<button type="button" @click="chooseAdapter(m)" class="box w-full flex flex-col text-start gap-4">
+										<div class="flex items-center gap-2">
+											<x-avatar :mask="m.model.icon || m.model.provider?.icon || m.icon" :icon="!m.model.icon && !m.model.provider?.icon && !m.icon ? 'cpu' : null" class="contain avatar-outline"></x-avatar>
+
+											<div class="flex flex-col">
+												<h3 class="text-sm line-clamp-1" x-text="m.model.name" :title="m.model.name"></h3>
+												<div class="text-xs text-content-dimmed line-clamp-1" x-text="m.model.provider?.name || m.name"></div>
+											</div>
+										</div>
+
+										<template x-if="m.model.description">
+											<p x-text="m.model.description" class="text-xs text-content-dimmed line-clamp-3"></p>
+										</template>
+
+										<div class="flex items-center gap-1 mt-auto">
+											<template x-if="m.model.modalities?.input?.includes('image')">
+												<i class="ti ti-photo text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Can analyze images') }}"></i>
+											</template>
+
+											<template x-if="m.model.capabilities?.includes('tools')">
+												<i @click.stop="modal.open('supercharged')" class="ti ti-bolt text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Supercharged') }}"></i>
+											</template>
+
+											<template x-if="m.model.capabilities?.includes('reasoning')">
+												<i class="ti ti-brain text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Reasoning enabled') }}"></i>
+											</template>
+
+											<template x-if="m.model.attributes?.preview">
+												<i class="ti ti-test-pipe text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Experimental') }}"></i>
+											</template>
+
+											<template x-if="m.model.attributes?.turbo">
+												<i class="ti ti-progress-bolt text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Optimized for speed') }}"></i>
+											</template>
+										</div>
+
+										<template x-if="!m.model.granted">
+											<span class="flex items-center w-full gap-1">
+												<i class="ti ti-diamond"></i>
+												<span class="text-xs">{{ __('Upgrade plan') }}</span>
+											</span>
+										</template>
+									</button>
+
+									<template x-if="m.model.granted && !m.pinned">
+										<button type="button" class="ti ti-pin text-base opacity-0 group-hover:opacity-100 text-content-dimmed hover:text-content absolute top-7 right-4" x-tooltip.raw="{{ __('Pin') }}" @click="togglePin(m, 'model')"></button>
+									</template>
+
+									<template x-if="m.model.granted && m.pinned">
+										<button type="button" class="ti ti-pinned-filled text-base text-content-dimmed hover:text-content absolute top-7 right-4" x-tooltip.raw="{{ __('Unpin') }}" @click="togglePin(m, 'model')"></button>
+									</template>
+
+									<template x-if="!m.model.granted">
+										<a href="app/billing" class="full"></a>
+									</template>
+
+									<a :href="`app/models/?model=${m.model.key}`" target="_blank" class="ti ti-arrow-up-right absolute bottom-4 text-content-dimmed hover:text-content right-4 transition-all invisible group-hover:visible translate-y-2 -translate-x-2 group-hover:translate-y-0 group-hover:translate-x-0 group-hover:delay-1000" x-tooltip.raw="{{ __('View model details') }}"></a>
+								</div>
+							</template>
+						</template>
+					</div>
+				</div>
+			</div>
+		</div>
+	</modal-element>
+
+	<modal-element name="delete-modal">
+		<template x-if="conversation">
+			<form class="flex flex-col gap-6 items-center modal" @submit.prevent="remove(conversation);">
+				<div class="flex relative justify-center items-center mx-auto w-24 h-24 rounded-full text-failure/25">
+					<svg class="absolute top-0 left-0 w-full h-full" width="112" height="112" viewbox="0 0 112 112" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<circle cx="56" cy="56" r="55.5" stroke="currentColor" stroke-dasharray="8 8"/>
+					</svg>
+
+					<div class="flex justify-center items-center w-20 h-20 text-4xl rounded-full transition-all bg-failure/25 text-failure">
+						<i class="text-4xl ti ti-trash"></i>
+					</div>
+				</div>
+
+				<div class="flex flex-col gap-2 items-center text-center">
+					<div class="text-lg text-center">
+						{{ __('Do you really want to delete the conversation?') }}
+					</div>
+
+					<p class="text-sm text-content-dimmed">
+						{{ __('All associated content and files will be permanently removed. This action cannot be reverted once confirmed.') }}
+					</p>
+				</div>
+
+				<div class="flex gap-4 justify-center items-center">
+					<button class="button button-outline" @click="modal.close()" type="button">
+						{{ p__('button', 'No, cancel') }}
+					</button>
+
+					<button class="button button-failure" type="submit" :processing="isDeleting">
+						{% include "/snippets/spinner.twig" %}
+
+						{{ p__('button', 'Yes, delete') }}
+					</button>
+				</div>
+			</form>
+		</template>
+	</modal-element>
+
+	<modal-element name="options">
+		<form @submit.prevent="applyOptions" class="flex flex-col gap-6 modal">
+			<div class="flex justify-between items-center">
+				<h2 class="text-xl">{{ p__('heading', 'Options') }}</h2>
+
+				<button class="flex justify-center items-center w-8 h-8 rounded-full border border-transparent bg-line-dimmed hover:border-line" @click="modal.close()" type="button">
+					<i class="text-xl ti ti-x"></i>
+				</button>
+			</div>
+
+			<div>
+				<label>{{ p__('label', 'Model & assistant') }}</label>
+
+				<button type="button" class="flex relative gap-2 items-center mt-1 w-full text-start box hover:border-line group" @click="modal.open('assistant-list-modal')">
+					<x-avatar class="mt-0.5" :icon="options?.assistant ? 'box' : 'sparkles'" :src="options?.assistant ? options.assistant.avatar : `{{ option.features.chat.avatar is defined and option.features.chat.avatar ? option.features.chat.avatar : null }}`"></x-avatar>
+
+					<div class="grow">
+						<div class="flex gap-2 items-start">
+							<h3 x-text="options?.assistant ? options.assistant.name : `{{ option.features.chat.name ?? 'AI' }}`" class="line-clamp-1"></h3>
+						</div>
+
+						<template x-if="options?.assistant && options.assistant.expertise">
+							<div class="text-sm text-content-dimmed" x-text="options.assistant.expertise"></div>
+						</template>
+
+						<template x-if="!options?.assistant">
+							<div class="text-sm text-content-dimmed">
+								{{ __('Universal AI bot') }}
+							</div>
+						</template>
+					</div>
+
+					<i class="mt-1 text-2xl ti ti-selector text-content-dimmed"></i>
+				</button>
+
+				<button type="button" class="flex relative gap-2 items-center mt-1 w-full text-start box hover:border-line group" @click="modal.open('models')">
+					<x-avatar :mask="options?.adapter?.model.icon || options?.adapter?.model.provider?.icon || options?.adapter?.icon" :icon="!options?.adapter?.model.icon && !options?.adapter?.model.provider?.icon && !options?.adapter?.icon ? 'cpu' : null" class="contain avatar-outline"></x-avatar>
+
+					<div class="grow">
+						<div class="flex gap-2 items-start">
+							<h3 x-text="options?.adapter ? options.adapter.model.name : `{{ __('Choose model') }}`" class="line-clamp-1"></h3>
+						</div>
+
+						<template x-if="options?.adapter">
+							<div class="text-sm text-content-dimmed" x-text="options.adapter.model.provider?.name || options.adapter.name"></div>
+						</template>
+					</div>
+
+					<i class="mt-1 text-2xl ti ti-selector text-content-dimmed"></i>
+				</button>
+			</div>
+
+			<div>
+				<button type="submit" class="w-full button">
+					{{ p__('button', 'Confirm') }}
+				</button>
+			</div>
+		</form>
+	</modal-element>
+
+	<modal-element name="assistant-list-modal">
+		<div class="flex flex-col gap-6 modal">
+			<div class="flex justify-between items-center">
+				<h2 class="text-xl">{{ p__('heading', 'Assistants') }}</h2>
+
+				<button class="flex justify-center items-center w-8 h-8 rounded-full border border-transparent bg-line-dimmed hover:border-line" @click="modal.close()" type="button">
+					<i class="text-xl ti ti-x"></i>
+				</button>
+			</div>
+
+			<div class="flex flex-col gap-2">
+				<input type="text" class="mt-2 input" placeholder="{{ __('Search assistants') }}" x-model="query">
+
+				<div class="scroll-area">
+					<div class="grid grid-cols-2 gap-1">
+						<div class="relative flex group">
+							<button type="button" @click="chooseAssistant(null)" class="box w-full flex flex-col items-center text-center gap-4">
+								<div class="flex flex-col items-center gap-2">
+									<x-avatar icon="box" :src="`{{ option.features.chat.avatar is defined and option.features.chat.avatar ? option.features.chat.avatar : null }}`" :title="`{{ option.features.chat.name ?? 'AI' }}`"></x-avatar>
+
+									<div class="flex flex-col items-center">
+										<h3 class="text-sm line-clamp-1" x-text="`{{ option.features.chat.name ?? 'AI' }}`"></h3>
+										<div class="text-xs text-content-dimmed line-clamp-1" x-text="`{{ __('Universal AI bot') }}`"></div>
+									</div>
+								</div>
+							</button>
+						</div>
+
+						<template x-for="a in assistants" :key="a.id">
+							<template x-if="search(query, a, 'assistant')">
+								<div class="relative flex group" :class="a.granted ? null : 'opacity-50 hover:opacity-100'">
+									<button type="button" @click="chooseAssistant(a)" class="box w-full flex flex-col text-center items-center gap-4">
+										<div class="flex flex-col items-center gap-2">
+											<x-avatar icon="box" :src="a.avatar" :title="a.name"></x-avatar>
+
+											<div class="flex flex-col">
+												<h3 class="text-sm line-clamp-1" x-text="a.name" :title="a.name"></h3>
+												<template x-if="a.expertise">
+													<div class="text-xs text-content-dimmed line-clamp-1" x-text="a.expertise"></div>
+												</template>
+											</div>
+										</div>
+
+										<template x-if="a.description">
+											<p x-text="a.description" class="text-xs text-content-dimmed line-clamp-3"></p>
+										</template>
+
+										<template x-if="!a.granted">
+											<span class="flex items-center justify-center w-full gap-1">
+												<i class="ti ti-diamond"></i>
+												<span class="text-xs">{{ __('Upgrade plan') }}</span>
+											</span>
+										</template>
+									</button>
+
+									<template x-if="a.granted && !a.pinned">
+										<button type="button" class="ti ti-pin text-base opacity-0 group-hover:opacity-100 text-content-dimmed hover:text-content absolute top-7 right-4" x-tooltip.raw="{{ __('Pin') }}" @click="togglePin(a, 'assistant')"></button>
+									</template>
+
+									<template x-if="a.granted && a.pinned">
+										<button type="button" class="ti ti-pinned-filled text-base text-content-dimmed hover:text-content absolute top-7 right-4" x-tooltip.raw="{{ __('Unpin') }}" @click="togglePin(a, 'assistant')"></button>
+									</template>
+
+									<template x-if="!a.granted">
+										<a href="app/billing" class="full"></a>
+									</template>
+								</div>
+							</template>
+						</template>
+					</div>
+				</div>
+			</div>
+		</div>
+	</modal-element>
+
+	{% include "snippets/supercharged.twig" %}
+{% endblock %}
+
+
+{% block footer %}
+	<div class="sticky bottom-0 z-40 mt-auto">
+		<div class="h-8 to-transparent bg-linear-to-t from-main"></div>
+
+		<div class="bg-main">
+			<form @submit.prevent="{{ workspace.subscription.plan.config.chat.is_enabled|default(false) ? 'submit' : '' }}">
+				<template x-if="adapter && adapter.file_types.length > 0">
+					<x-dropzone>
+						<input type="file" @change="file = $refs.file.files[0];" name="file" :accept="adapter.file_types.join(',')" class="hidden" x-ref="file">
+
+						<div class="flex flex-col gap-6 items-center">
+							<i class="text-6xl ti ti-upload text-content-dimmed"></i>
+							<div class="flex flex-col gap-2 text-center max-w-[30rem]">
+								<h2>{{ p__('heading', 'Drop the file here') }}</h2>
+
+								<div class="text-sm text-content-dimmed" x-text="adapter.file_types.join(', ')"></div>
+							</div>
+						</div>
+					</x-dropzone>
+				</template>
+
+				<div class="flex items-center gap-2 py-3">
+					<button type="button" class="flex items-center" @click="showOptions()" x-tooltip.placement="assistant ? assistant.name : `{{ option.features.chat.name|default(p__('heading', 'AI Chat')) }}`">
+						<template x-if="assistant">
+							<x-avatar length="1" class="avatar-sm hover:outline-line-dimmed hover:outline-offset-1 hover:outline-2" :src="assistant.avatar" icon="box"></x-avatar>
+						</template>
+
+						<template x-if="!assistant">
+							<x-avatar length="1" class="avatar-sm hover:outline-line-dimmed hover:outline-offset-1 hover:outline-2" src="{{ option.features.chat.avatar|default(null) }}" icon="box"></x-avatar>
+						</template>
+					</button>
+
+					<template x-if="adapter">
+						<button type="button" class="capitalize button button-xs button-dimmed" @click="options=null; modal.open('models')">
+							<span x-text="adapter.model.name"></span>
+							<i class="ti ti-caret-up-down-filled text-xs"></i>
+						</button>
+					</template>
+
+					<div class="flex gap-1 items-center">
+						<template x-if="adapter && adapter.model.modalities?.input?.includes('image')">
+							<i class="text-base cursor-auto ti ti-photo text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('AI vision enabled') }}"></i>
+						</template>
+
+						{% if capabilities|length > 0 %}
+							<template x-if="adapter && adapter.model.capabilities?.includes('tools')">
+								<button type="button" @click="modal.open('supercharged')" class="text-base ti ti-bolt text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Supercharged') }}"></button>
+							</template>
+						{% endif %}
+
+						<template x-if="adapter && adapter.model.capabilities?.includes('reasoning')">
+							<i class="text-base cursor-auto ti ti-brain text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Reasoning enabled') }}"></i>
+						</template>
+					</div>
+				</div>
+
+				<div class="relative p-0.5 rounded-3xl bg-line-dimmed has-[textarea:focus]:bg-linear-to-br has-[textarea:focus]:from-gradient-from has-[textarea:focus]:to-gradient-to">
+					<template x-if="quote">
+						<div class="flex gap-2 border-2 border-main border-b-0 items-start p-2 ps-3 text-sm rounded-t-[1.375rem] bg-line-super-dimmed text-content-dimmed">
+
+							<i class="w-6 text-base text-center ti ti-corner-down-right mt-0.5"></i>
+
+							<div x-html="quote" class="overflow-y-auto max-h-24 grow"></div>
+
+							<button type="button" @click="quote=null" class="flex shrink-0 justify-center items-center w-10 hover:text-content mt-0.5">
+								<i class="text-base ti ti-x"></i>
+							</button>
+						</div>
+					</template>
+
+					<div class="flex gap-2 items-end p-2 rounded-[1.375rem] bg-main" :class="{'pl-4': !adapter || adapter.file_types.length <= 0, 'rounded-t-none' : quote }">
+						<template x-if="adapter && adapter.file_types.length > 0">
+							<div>
+								<template x-if="!file">
+									<button type="button" class="flex justify-center items-center w-10 h-10 text-content-dimmed hover:text-content" @click="$refs.file.click()">
+										<i class="text-2xl -rotate-45 ti ti-paperclip"></i>
+									</button>
+								</template>
+
+								<template x-if="file">
+									<button type="button" class="flex relative p-0 w-10 h-10 button button-dimmed group rounded-xl" @click="file=null; $refs.file.value=null; " x-tooltip="file.name">
+										<template x-if="file.type.startsWith('image/')">
+											<img :src="file ? URL.createObjectURL(file) : null" class="object-cover absolute top-0 left-0 w-full h-full rounded-lg">
+										</template>
+
+										<template x-if="!file.type.startsWith('image/')">
+											<i class="ti ti-file-filled"></i>
+										</template>
+
+										<div class="hidden absolute top-0 left-0 justify-center items-center w-full h-full rounded-xl bg-content/50 text-main group-hover:flex">
+											<i class="text-base rounded-full ti ti-circle-x-filled bg-content"></i>
+										</div>
+									</button>
+								</template>
+							</div>
+						</template>
+
+						<div class="overflow-y-auto pt-2 mb-2 max-h-36 autogrow-textarea text-content grow" :data-replicated-value="prompt">
+							<textarea placeholder="{{ __('Type a prompt here...') }}" autocomplete="off" rows="1" x-model="prompt" x-ref="prompt" class="block p-0 text-base bg-transparent border-none focus:ring-0 placeholder:text-content-dimmed" required @keydown.enter="{{ workspace.subscription.plan.config.chat.is_enabled is defined and workspace.subscription.plan.config.chat.is_enabled ? 'enter' : '' }}" @paste="paste"></textarea>
+						</div>
+
+						<div class="flex gap-2 items-center ms-auto">
+							{% if workspace.subscription.plan.config.chat.is_enabled|default(false) %}
+								<template x-if="adapter">
+									<button type="button" class="p-0 w-10 h-10 button button-accent rounded-[0.875rem]" :processing="isProcessing" :disabled="!prompt" @click.prevent.stop="submit">
+										{% include "/snippets/spinner.twig" %}
+
+										<template x-if="!isProcessing">
+											<i class="ti ti-arrow-up"></i>
+										</template>
+									</button>
+								</template>
+
+								<template x-if="!adapter">
+									<a href="app/billing" class="p-0 w-10 h-10 button button-dimmed rounded-[0.875rem]" x-tooltip.raw="{{ __('Upgrade your plan') }}">
+										<i class="ti ti-lock-up"></i>
+									</a>
+								</template>
+							{% else %}
+								<a href="app/billing" class="p-0 w-10 h-10 button button-dimmed rounded-[0.875rem]" x-tooltip.raw="{{ __('Upgrade your plan') }}">
+									<i class="ti ti-lock-up"></i>
+								</a>
+							{% endif %}
+						</div>
+					</div>
+				</div>
+			</form>
+
+			{% include "/sections/footer.twig" %}
+		</div>
+	</div>
+{% endblock %}

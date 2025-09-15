@@ -1,0 +1,105 @@
+.badge {
+  @apply px-1.5 h-6 text-xs bg-intermediate text-intermediate-content rounded-md flex items-center gap-1;
+
+  button&,
+  a& {
+    @apply border border-transparent hover:border-line;
+  }
+
+  & i {
+    @apply text-sm;
+  }
+
+  &:disabled {
+    @apply opacity-50 
+            cursor-not-allowed 
+            pointer-events-none
+            bg-line-dimmed
+            text-content;
+  }
+}
+
+.badge-success {
+  @apply bg-success/10 text-success;
+}
+
+.badge-alert {
+  @apply bg-alert/10 text-alert;
+}
+
+.badge-failure {
+  @apply bg-failure/10 text-failure;
+}
+
+.badge-info {
+  @apply bg-info/10 text-info;
+}
+
+.badge-outline {
+  @apply bg-transparent border border-line text-content;
+}
+
+.tool-icon {
+  @apply flex items-center justify-center relative text-main bg-content rounded-[45%];
+  & div {
+    @apply absolute w-full h-full rounded-[45%] -z-10 top-0 left-0;
+    animation: tooliconanim 5s infinite both alternate ease-in-out;
+  }
+}
+
+@keyframes tooliconanim {
+  0% {
+    opacity: 0.8;
+    transform: rotate(0deg) scale(1);
+  }
+
+  10% {
+    opacity: 0.7;
+    transform: rotate(15deg) scale(1);
+  }
+
+  20% {
+    opacity: 0.65;
+    transform: rotate(35deg) scale(1.05);
+  }
+
+  30% {
+    opacity: 0.55;
+    transform: rotate(65deg) scale(1.1);
+  }
+
+  40% {
+    opacity: 0.65;
+    transform: rotate(135deg) scale(1.05);
+  }
+
+  50% {
+    opacity: 0.8;
+    transform: rotate(180deg) scale(1);
+  }
+
+  60% {
+    opacity: 0.7;
+    transform: rotate(200deg) scale(0.95);
+  }
+
+  70% {
+    opacity: 0.65;
+    transform: rotate(235deg) scale(0.9);
+  }
+
+  80% {
+    opacity: 0.55;
+    transform: rotate(275deg) scale(0.95);
+  }
+
+  90% {
+    opacity: 0.75;
+    transform: rotate(325deg) scale(1.05);
+  }
+
+  100% {
+    opacity: 0.8;
+    transform: rotate(360deg) scale(1);
+  }
+}

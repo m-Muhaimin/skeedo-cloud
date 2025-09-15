@@ -1,0 +1,162 @@
+<!doctype html>
+<html 
+  class="group/html"
+  lang="{{ locale.code|default('en-US') }}"
+  dir="{{ locale.dir|default('ltr') }}"
+  data-color-scheme="{{ (option.color_scheme ?? {})|json_encode|raw|e("html_attr") }}">
+
+<head>
+  {% include "snippets/script-tags/head.twig" %}
+
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="">
+
+  <base href="/">
+
+  <link rel="icon" type="image/x-icon" href="{{ option.brand.favicon ?? 'favicon.ico' }}">
+
+  {% if env.HMR is defined and env.HMR %}
+  <script type="module" src="{{ '/@vite/client'|asset }}"></script>
+  {% endif %}
+
+  <link rel="stylesheet" href="{{ '/resources/assets/css/icons.css'|asset }}">
+  <link rel="stylesheet" href="{{ '/resources/assets/css/index.css'|asset }}">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Serif:wght@100;300;400;500;600;700&display=swap">
+
+  {% if option.pwa.is_enabled is defined and option.pwa.is_enabled %}
+  <link rel="manifest" href="app.webmanifest">
+  {% endif %}
+
+  {% include "snippets/css-variables.twig" %}
+
+  <script>
+    // Prevent iframe hijacking
+    this.top.location !== this.location && (this.top.location = this.location);
+
+    if ('collapsed' in localStorage) {
+      document.documentElement.dataset.collapsed = true;
+    }
+  </script>
+
+  <script>
+    let scheme = {
+      ...{
+        modes: ['light', 'dark'],
+        default: 'system',
+      },
+      ...JSON.parse(document.documentElement.dataset.colorScheme),
+    };
+
+    if (scheme.modes.length > 1) {
+      if (!('mode' in localStorage) || scheme.modes.indexOf(localStorage.mode) === -1) {
+        if (scheme.default === 'system') {
+          localStorage.mode = window.matchMedia('(prefers-color-scheme: dark)').matches
+            ? 'dark'
+            : 'light';
+        } else {
+          localStorage.mode = scheme.default;
+        }
+      }
+    } else if (scheme.modes.length === 1) {
+      localStorage.mode = scheme.modes[0];
+    } else {
+      localStorage.mode = window.matchMedia('(prefers-color-scheme: dark)').matches
+        ? 'dark'
+        : 'light';
+    }
+
+    document.documentElement.dataset.mode = localStorage.mode;
+  </script>
+
+  <script>
+    window.locale = {
+      messages: {
+        'An unexpected error occurred! Please try again later!': '{{ __("An unexpected error occurred! Please try again later!")|e("js") }}',
+        'Category has been updated successfully!': '{{ __("Category has been updated successfully!")|e("js") }}',
+        'Category has been created successfully!': '{{ __("Category has been created successfully!")|e("js") }}',
+        'Plan has been updated successfully!': '{{ __("Plan has been updated successfully!")|e("js") }}',
+        'Plan has been created successfully!': '{{ __("Plan has been created successfully!")|e("js") }}',
+        'Template has been updated successfully!': '{{ __("Template has been updated successfully!")|e("js") }}',
+        'Template has been created successfully!': '{{ __("Template has been created successfully!")|e("js") }}',
+        'Changes saved successfully!': '{{ __("Changes saved successfully!")|e("js") }}',
+        'Cache cleared successfully!': '{{ __("Cache cleared successfully!")|e("js") }}',
+        'User has been updated successfully!': '{{ __("User has been updated successfully!")|e("js") }}',
+        'User has been created successfully!': '{{ __("User has been created successfully!")|e("js") }}',
+        'Email sent successfully!': '{{ __("Email sent successfully!")|e("js") }}',
+        'You have run out of credits. Please purchase more credits to continue using the app.': '{{ __("You have run out of credits. Please purchase more credits to continue using the app.")|e("js") }}',
+        'Document copied to clipboard!': '{{ __("Document copied to clipboard!")|e("js") }}',
+        'Document saved successfully!': '{{ __("Document saved successfully!")|e("js") }}',
+        'Document deleted successfully!': '{{ __("Document deleted successfully!")|e("js") }}',
+        'Subscription cancelled!': '{{ __("Subscription cancelled!")|e("js") }}',
+        'Document has been updated successfully!': '{{ __("Document has been updated successfully!")|e("js") }}',
+        'Image copied to clipboard!': '{{ __("Image copied to clipboard!")|e("js") }}',
+        'Invalid credentials. Please try again.': '{{ __("Invalid credentials. Please try again.")|e("js") }}',
+        'Click to copy': '{{ __("Click to copy")|e("js") }}',
+        'Copied to clipboard': '{{ __("Copied to clipboard")|e("js") }}',
+        'Resource UUID is copied to the clipboard.': '{{ __("Resource UUID is copied to the clipboard.")|e("js") }}',
+        'Workspace name updated!': '{{ __("Workspace name updated!")|e("js") }}',
+        'You\'ve been added to the :name workspace!': '{{ __("You\'ve been added to the :name workspace!")|e("js") }}',
+        'Your card number is incomplete.': '{{ __("Your card number is incomplete.")|e("js") }}',
+        'Invalid card number': '{{ __("Invalid card number")|e("js") }}',
+        'Your card\'s security code is incomplete.': '{{ __("Your card\'s security code is incomplete.")|e("js") }}',
+        'Your card\'s security code is invalid.': '{{ __("Your card\'s security code is invalid.")|e("js") }}',
+        'Your card\'s expiration date is incomplete.': '{{ __("Your card\'s expiration date is incomplete.")|e("js") }}',
+        'Your card\'s expiration date is invalid.': '{{ __("Your card\'s expiration date is invalid.")|e("js") }}',
+        'Insufficient credits': '{{ __("Insufficient credits to perform this operation.")|e("js") }}',
+        'Copied to clipboard!': '{{ __("Copied to clipboard!")|e("js") }}',
+        'Conversation has been deleted successfully.': '{{ __("Conversation has been deleted successfully.")|e("js") }}',
+        'Data unit has been deleted successfully.': '{{ __("Data unit has been deleted successfully.")|e("js") }}',
+        'File size must be less than 25MB.': '{{ __("File size must be less than 25MB.")|e("js") }}',
+        'File must be in a supported audio/video format.': '{{ __("File must be in a supported audio/video format.")|e("js") }}',
+        'One time': '{{ __("One time")|e("js") }}',
+        'Lifetime': '{{ __("Lifetime")|e("js") }}',
+        'Monthly': '{{ __("Monthly")|e("js") }}',
+        'Yearly': '{{ __("Yearly")|e("js") }}',
+        'Deleted successfully!': '{{ __("Deleted successfully!")|e("js") }}',
+        'Invitation sent!': '{{ __("Invitation sent!")|e("js") }}',
+        'The email you entered is already taken.': '{{ __("The email you entered is already taken.")|e("js") }}',
+        'Order has been updated successfully!': '{{ __("Order has been updated successfully!")|e("js") }}',
+        'Voice has been cloned successfully!': '{{ __("Voice has been cloned successfully!")|e("js") }}',
+      },
+    };
+
+    document.cookie = `locale={{ locale.code }}; expires=${new Date(new Date().getTime() + 1000 * 60 * 60 * 24 * 365).toGMTString()}; path=/`
+  </script>
+
+  <script type="">
+    window.state = {
+      user: {{ user is defined ? user | json_encode | raw : '{}' }},
+      workspace: {{ workspace is defined ? workspace | json_encode | raw : '{}' }},
+    };
+  </script>
+
+  <title>
+    {% block title %}{% endblock %}
+    {{ block('title') is not empty and option.site.name is defined and option.site.name ? ' | ' : '' }}
+    {{ option.site.name ?? null }}
+  </title>
+</head>
+
+<body
+  class="bg-main text-content max-h-screen font-primary data-modal:overflow-hidden data-modal:pr-(--scrollbar-width) group/body relative"
+  x-data='{{ xdata is defined ? xdata : "" }}'>
+  {% include "snippets/script-tags/body.twig" %}
+
+  <toast-message
+    class="{{ view_namespace in ['app', 'admin'] ? 'lg:ms-[7.5rem]' : '' }} fixed start-1/2 z-50 -bottom-20 opacity-0 invisible data-open:bottom-4 md:data-open:bottom-12 mb-1 data-open:opacity-100 data-open:visible flex items-center gap-3 rounded-lg -translate-x-1/2 rtl:translate-x-1/2 px-4 py-3 bg-content text-main transition-all group/toast md:max-w-[28rem] max-w-max w-[90%] md:w-auto">
+  </toast-message>
+
+  {% block layout %}{% endblock %}
+
+  <script type="module" src="{{ '/resources/assets/js/base/index.js'|asset }}"></script>
+  {% block scripts %}{% endblock %}
+
+  {% include "snippets/script-tags/end.twig" %}
+</body>
+
+</html>

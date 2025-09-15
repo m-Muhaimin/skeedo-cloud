@@ -1,0 +1,69 @@
+{% extends "/layouts/minimal.twig" %}
+
+{% block title p__('title','Password recovery')|title %}
+{% set xdata = 'auth' %}
+
+{% block template %}
+	<div class="box" data-density="comfortable">
+		<x-form>
+			<form @submit.prevent="submit" x-ref="form" data-api-path="/recovery" class="flex flex-col gap-5">
+				<div class="flex flex-col gap-2">
+					{% include "snippets/back.twig" with {link: 'login', label: p__('button', 'Back to login')} %}
+
+					<h1>
+						<span :class="{'hidden':success}">
+							{{ p__('heading', 'Password recovery') }}
+						</span>
+
+						<template x-if="success">
+							<span>{{ p__('heading', 'Check your email!') }}</span>
+						</template>
+					</h1>
+				</div>
+
+				<template x-if="success">
+					<p class="text-content-dimmed">
+						{{ __('We send password reset instruction to your email address. Please check your inbox and follow the instructions.') }}
+					</p>
+				</template>
+
+				<fieldset :class="{'hidden':success}">
+					<label for="email">{{ p__('label', 'Email') }}</label>
+
+					<input type="email" id="email" name="email" placeholder="{{ __('Type your email address') }}" autocomplete="email" class="input" required>
+				</fieldset>
+
+				<template x-if="!success">
+					{% include "/snippets/captcha.twig" %}
+				</template>
+
+				<button type="submit" class="w-full button button-accent" :class="{'hidden':success}" :processing="isProcessing">
+					{% include "/snippets/spinner.twig" %}
+
+					{{ p__('button', 'Send request') }}
+				</button>
+
+				{% set user_accounts_enabled = option.site.user_accounts_enabled is not defined or option.site.user_accounts_enabled %}
+				{% set user_signup_enabled = option.site.user_signup_enabled is not defined or option.site.user_signup_enabled %}
+
+				{% if user_accounts_enabled and user_signup_enabled %}
+					<div class="flex flex-col gap-1 items-center text-sm md:flex-row">
+						<span class="flex gap-1 items-center">
+							<i class="text-base ti ti-help-square-rounded"></i>
+
+							{{ __("Don't have an account?") }}
+						</span>
+
+						<a href="signup" class="font-semibold hover:underline">
+							{{ p__('button', 'Sign up')  }}
+						</a>
+					</div>
+				{% endif %}
+			</form>
+		</x-form>
+	</div>
+{% endblock %}
+
+{% block scripts %}
+	<script type="module" src="{{ '/resources/assets/js/auth/index.js'|asset }}"></script>
+{% endblock %}

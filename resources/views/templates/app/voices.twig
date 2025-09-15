@@ -1,0 +1,1087 @@
+{% extends "/layouts/main.twig" %}
+
+{% set strings = {
+  delete_success: __("Voice has been deleted successfully.")
+} %}
+
+{% set active_menu = '/app/voiceover' %}
+{% set xdata %}
+list("voices",
+{{ strings|json_encode() }})
+{% endset %}
+
+{% block title p__('title', 'Voices')|title %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {link: 'app', label: p__('button', 'Dashboard')} %}
+
+		<div class="flex flex-col gap-4 justify-between mt-4 md:items-center md:flex-row">
+			<div>
+				<h1>{{ p__('heading', 'Voice over') }}</h1>
+				<p class="text-content-dimmed">
+					{{ __('Select one of the following voices and start transform your words to voice easily.') }}
+				</p>
+			</div>
+
+			{% if features.voice_cloning %}
+				<button type="button" @click="modal.open('voice-clone-modal')" class="button button-sm">
+					<i class="ti ti-square-rounded-plus"></i>
+					{{ p__('button', 'Clone your voice') }}
+				</button>
+			{% elseif option.features.voiceover.is_voice_cloning_enabled|default(false)  %}
+				<div x-tooltip.raw="{{ __('Cloned voice limit reached for the workspace.') }}">
+					<button type="button" disabled class="w-full button button-sm">
+						<i class="ti ti-lock"></i>
+						{{ p__('button', 'Clone your voice') }}
+					</button>
+				</div>
+			{% endif %}
+		</div>
+	</div>
+
+	{# Filters #}
+	{% include "/snippets/filters.twig" with { 
+  total: __("Total :count voices"),
+  showHidden: true,
+  filters: [
+    {
+      label: p__('label', 'Language'),
+      model: 'language',
+      options: [
+        {
+          value: "af-ZA",
+          label: p__('language', "Afrikaans")
+        },
+        {
+          value: "am-ET",
+          label: p__('language', "Amharic")
+        },
+        {
+          value: "ar-",
+          label: p__('language', "Arabic")
+        },
+        {
+          value: "as-IN",
+          label: p__('language', "Assamese")
+        },
+        {
+          value: "az-AZ",
+          label: p__('language', "Azerbaijani")
+        },
+        {
+          value: "be-BY",
+          label: p__('language', "Belarusian")
+        },
+        {
+          value: "bg-BG",
+          label: p__('language', "Bulgarian")
+        },
+        {
+          value: "bn-",
+          label: p__('language', "Bengali")
+        },
+        {
+          value: "bs-BA",
+          label: p__('language', "Bosnian")
+        },
+        {
+          value: "ca-ES",
+          label: p__('language', "Catalan")
+        },
+        {
+          value: "CN",
+          label: p__('language', "Chinese")
+        },
+        {
+          value: "cs-CZ",
+          label: p__('language', "Czech")
+        },
+        {
+          value: "cy-GB",
+          label: p__('language', "Welsh")
+        },
+        {
+          value: "da-DK",
+          label: p__('language', "Danish")
+        },
+        {
+          value: "de-",
+          label: p__('language', "German")
+        },
+        {
+          value: "el-GR",
+          label: p__('language', "Greek")
+        },
+        {
+          value: "en-",
+          label: p__('language', "English")
+        },
+        {
+          value: "es-",
+          label: p__('language', "Spanish")
+        },
+        {
+          value: "et-EE",
+          label: p__('language', "Estonian")
+        },
+        {
+          value: "eu-ES",
+          label: p__('language', "Basque")
+        },
+        {
+          value: "fa-IR",
+          label: p__('language', "Persian")
+        },
+        {
+          value: "fi-FI",
+          label: p__('language', "Finnish")
+        },
+        {
+          value: "fil-PH",
+          label: p__('language', "Filipino")
+        },
+        {
+          value: "fr-",
+          label: p__('language', "French")
+        },
+        {
+          value: "ga-IE",
+          label: p__('language', "Irish")
+        },
+        {
+          value: "gl-ES",
+          label: p__('language', "Galician")
+        },
+        {
+          value: "gu-IN",
+          label: p__('language', "Gujarati")
+        },
+        {
+          value: "he-IL",
+          label: p__('language', "Hebrew")
+        },
+        {
+          value: "hi-IN",
+          label: p__('language', "Hindi")
+        },
+        {
+          value: "hr-HR",
+          label: p__('language', "Croatian")
+        },
+        {
+          value: "hu-HU",
+          label: p__('language', "Hungarian")
+        },
+        {
+          value: "hy-AM",
+          label: p__('language', "Armenian")
+        },
+        {
+          value: "id-ID",
+          label: p__('language', "Indonesian")
+        },
+        {
+          value: "is-IS",
+          label: p__('language', "Icelandic")
+        },
+        {
+          value: "it-IT",
+          label: p__('language', "Italian")
+        },
+        {
+          value: "ja-JP",
+          label: p__('language', "Japanese")
+        },
+        {
+          value: "jv-ID",
+          label: p__('language', "Javanese")
+        },
+        {
+          value: "ka-GE",
+          label: p__('language', "Georgian")
+        }, 
+        {
+          value: "kk-KZ",
+          label: p__('language', "Kazakh")
+        },
+        {
+          value: "km-KH",
+          label: p__('language', "Khmer")
+        },
+        {
+          value: "kn-IN",
+          label: p__('language', "Kannada")
+        },
+        {
+          value: "ko-KR",
+          label: p__('language', "Korean")
+        },
+        {
+          value: "lo-LA",
+          label: p__('language', "Lao")
+        },
+        {
+          value: "lt-LT",
+          label: p__('language', "Lithuanian")
+        },
+        {
+          value: "lv-LV",
+          label: p__('language', "Latvian")
+        },
+        {
+          value: "mk-MK",
+          label: p__('language', "Macedonian")
+        },
+        {
+          value: "mi-NZ",
+          label: p__('language', "Maori")
+        },
+        {
+          value: "ml-IN",
+          label: p__('language', "Malayalam")
+        },
+        {
+          value: "mn-MN",
+          label: p__('language', "Mongolian")
+        },
+        {
+          value: "mr-IN",
+          label: p__('language', "Marathi")
+        },
+        {
+          value: "ms-MY",
+          label: p__('language', "Malay")
+        },
+        {
+          value: "mt-MT",
+          label: p__('language', "Maltese")
+        },
+        {
+          value: "my-MM",
+          label: p__('language', "Burmese")
+        },
+        {
+          value: "ne-NP",
+          label: p__('language', "Nepali")
+        },
+        {
+          value: "nl-",
+          label: p__('language', "Dutch")
+        },
+        {
+          value: "nb-NO",
+          label: p__('language', "Norwegian")
+        },
+        {
+          value: "or-IN",
+          label: p__('language', "Oriya")
+        },
+        {
+          value: "pa-IN",
+          label: p__('language', "Punjabi")
+        },
+        {
+          value: "pl-PL",
+          label: p__('language', "Polish")
+        },
+        {
+          value: "ps-AF",
+          label: p__('language', "Pashto")
+        },
+        {
+          value: "pt-",
+          label: p__('language', "Portuguese")
+        },
+        {
+          value: "ro-RO",
+          label: p__('language', "Romanian")
+        },
+        {
+          value: "ru-RU",
+          label: p__('language', "Russian")
+        },
+        {
+          value: "si-LK",
+          label: p__('language', "Sinhala")
+        },
+        {
+          value: "sk-SK",
+          label: p__('language', "Slovak")
+        },
+        {
+          value: "sl-SI",
+          label: p__('language', "Slovenian")
+        },
+        {
+          value: "so-SO",
+          label: p__('language', "Somali")
+        },
+        {
+          value: "sq-AL",
+          label: p__('language', "Albanian")
+        },
+        {
+          value: "sr-",
+          label: p__('language', "Serbian")
+        },
+        {
+          value: "su-ID",
+          label: p__('language', "Sundanese")
+        },
+        {
+          value: "sv-SE",
+          label: p__('language', "Swedish")
+        },
+        {
+          value: "sw-",
+          label: p__('language', "Swahili")
+        },
+        {
+          value: "ta-IN",
+          label: p__('language', "Tamil")
+        },
+        {
+          value: "te-IN",
+          label: p__('language', "Telugu")
+        },
+        {
+          value: "th-TH",
+          label: p__('language', "Thai")
+        },
+        {
+          value: "tl-PH",
+          label: p__('language', "Tagalog")
+        },
+        {
+          value: "tr-TR",
+          label: p__('language', "Turkish")
+        },
+        {
+          value: "uk-UA",
+          label: p__('language', "Ukrainian")
+        },
+        {
+          value: "ur-",
+          label: p__('language', "Urdu")
+        },
+        {
+          value: "uz-UZ",
+          label: p__('language', "Uzbek")
+        },
+        {
+          value: "vi-VN",
+          label: p__('language', "Vietnamese")
+        },
+        {
+          value: "zh-HK,yue-HK",
+          label: p__('language', "Chinese (Hong Kong)")
+        },
+        {
+          value: "zh-TW,cmn-TW",
+          label: p__('language', "Chinese (Taiwan)")
+        },
+        {
+          value: "zu-ZA",
+          label: p__('language', "Zulu")
+        },
+      ]
+    },
+    {
+      label: p__('label', 'Use case'),
+      model: 'use_case',
+      options: [
+        {
+          value: 'general',
+          label: p__('use-case', 'General')
+        },
+        {
+          value: 'narration',
+          label: p__('use-case', 'Narration')
+        },
+        {
+          value: "news",
+          label: p__('use-case', "News")
+        },
+        {
+          value: "video-games",
+          label: p__('use-case', "Video games")
+        },
+        {
+          value: "meditation",
+          label: p__('use-case', "Meditation")
+        },
+        {
+          value: "conversational",
+          label: p__('use-case', "Conversational")
+        },
+        {
+          value: "characters",
+          label: p__('use-case', "Characters")
+        },
+        {
+          value: "children-stories",
+          label: p__('use-case', "Children's stories")
+        },
+        {
+          value: "newscast",
+          label: p__('use-case', "Newscast")
+        },
+        {
+          value: "chat",
+          label: p__('use-case', "Chat")
+        },
+        {
+          value: "customer-service",
+          label: p__('use-case', "Customer service")
+        },
+        {
+          value: "narration-professional",
+          label: p__('use-case', "Narration professional")
+        },
+        {
+          value: "newscast-casual",
+          label: p__('use-case', "Newscast casual")
+        },
+        {
+          value: "newscast-formal",
+          label: p__('use-case', "Newscast formal")
+        },
+        {
+          value: "poetry-reading",
+          label: p__('use-case', "Poetry reading")
+        },
+        {
+          value: "narration-relaxed",
+          label: p__('use-case', "Narration relaxed")
+        },
+        {
+          value: "sports-commentary",
+          label: p__('use-case', "Sports commentary")
+        },
+        {
+          value: "sports-commentary-excited",
+          label: p__('use-case', "Sports commentary excited")
+        },
+        {
+          value: "documentary-narration",
+          label: p__('use-case', "Documentary narration")
+        },
+        {
+          value: "live-commercial",
+          label: p__('use-case', "Live commercial")
+        },
+        {
+          value: "advertisement-upbeat",
+          label: p__('use-case', "Advertisement upbeat")
+        },
+        {
+          value: "chat-casual",
+          label: p__('use-case', "Chat casual")
+        },
+        {
+          value: "audiobook",
+          label: p__('use-case', "Audiobook")
+        },
+        {
+          value: "asmr",
+          label: p__('use-case', "ASMR")
+        },
+        {
+          value: "animation",
+          label: p__('use-case', "Animation")
+        },
+        {
+          value: "interactive", 
+          label: p__('use-case', "Interactive")
+        },
+        {
+          value: "informative_educational",
+          label: p__('use-case', "Informative/Educational")
+        }
+      ]
+    },
+    {
+      label: p__('label', 'Tone'),
+      model: 'tone',
+      options: [
+        {
+          value: "authoritative",
+          label: p__('tone', "Authoritative")
+        },
+        {
+          value: "pleasant",
+          label: p__('tone', "Pleasant")
+        },
+        {
+          value: "deep",
+          label: p__('tone', "Deep")
+        },
+        {
+          value: "raspy",
+          label: p__('tone', "Raspy")
+        },
+        {
+          value: "witchy",
+          label: p__('tone', "Witchy")
+        },
+        {
+          value: "foreigner",
+          label: p__('tone', "Foreigner")
+        },
+        {
+          value: "childish",
+          label: p__('tone', "Childish")
+        },
+        {
+          value: "angry",
+          label: p__('tone', "Angry")
+        },
+        {
+          value: "cheerful",
+          label: p__('tone', "Cheerful")
+        },
+        {
+          value: "sad",
+          label: p__('tone', "Sad")
+        },
+        {
+          value: "excited",
+          label: p__('tone', "Excited")
+        },
+        {
+          value: "friendly",
+          label: p__('tone', "Friendly")
+        },
+        {
+          value: "terrified",
+          label: p__('tone', "Terrified")
+        },
+        {
+          value: "shouting",
+          label: p__('tone', "Shouting")
+        },
+        {
+          value: "unfriendly",
+          label: p__('tone', "Unfriendly")
+        },
+        {
+          value: "whispering",
+          label: p__('tone', "Whispering")
+        },
+        {
+          value: "hopeful",
+          label: p__('tone', "Hopeful")
+        },
+        {
+          value: "empathetic",
+          label: p__('tone', "Empathetic")
+        },
+        {
+          value: "calm",
+          label: p__('tone', "Calm")
+        },
+        {
+          value: "disgruntled",
+          label: p__('tone', "Disgruntled")
+        },
+        {
+          value: "fearful",
+          label: p__('tone', "Fearful")
+        },
+        {
+          value: "gentle",
+          label: p__('tone', "Gentle")
+        },
+        {
+          value: "serious",
+          label: p__('tone', "Serious")
+        },
+        {
+          value: "sorry",
+          label: p__('tone', "Sorry")
+        },
+        {
+          value: "embarrassed",
+          label: p__('tone', "Embarrassed")
+        },
+        {
+          value: "envious",
+          label: p__('tone', "Envious")
+        },
+        {
+          value: "lyrical",
+          label: p__('tone', "Lyrical")
+        },
+        {
+          value: "casual",
+          label: p__('tone', "Casual")
+        },
+        {
+          value: "well-rounded",
+          label: p__('tone', "Well-rounded")
+        },
+        {
+          value: "war-veteran",
+          label: p__('tone', "War-veteran")
+        },
+        {
+          value: "ground-reporter",
+          label: p__('tone', "Ground-reporter")
+        },
+        {
+          value: "strong",
+          label: p__('tone', "Strong")
+        },
+        {
+          value: "sailor",
+          label: p__('tone', "Sailor")
+        },
+        {
+          value: "warm",
+          label: p__('tone', "Warm")
+        },
+        {
+          value: "emotional",
+          label: p__('tone', "Emotional")
+        },
+        {
+          value: "intense",
+          label: p__('tone', "Intense")
+        },
+        {
+          value: "shouty",
+          label: p__('tone', "Shouty")
+        },
+        {
+          value: "anxious",
+          label: p__('tone', "Anxious")
+        },
+        {
+          value: "crisp",
+          label: p__('tone', "Crisp")
+        },
+        {
+          value: "seductive",
+          label: p__('tone', "Seductive")
+        },
+        {
+          value: "confident",
+          label: p__('tone', "Confident")
+        },
+        {
+          value: "orotund",
+          label: p__('tone', "Orotund")
+        },
+        {
+          value: "overhyped",
+          label: p__('tone', "Overhyped")
+        },
+        {
+          value: "mature",
+          label: p__('tone', "Mature")
+        },
+      ]
+    },
+    {
+      label: p__('label', 'Age'),
+      model: 'age',
+      options: [
+        {
+          value: "young",
+          label: p__('age-group', "Young")
+        },
+        {
+          value: "middle-aged",
+          label: p__('age-group', "Middle aged")
+        },
+        {
+          value: "old",
+          label: p__('age-group', "Old")
+        }
+      ]
+    },
+    {
+      label: p__('label', 'Gender'),
+      model: 'gender',
+      options: [
+        {
+          value: "male",
+          label: p__('gender', "Male")
+        },
+        {
+          value: "female",
+          label: p__('gender', "Female")
+        },
+        {
+          value: "neutral",
+          label: p__('gender', "Neutral")
+        }
+      ]
+    },
+    {
+      label: p__("label", "Owner"),
+      model: "owner",
+      hidden: true
+    }
+  ],
+  sort:[
+    {
+      value: null,
+      label: p__('label', 'Default')
+    },
+  
+    {
+      value: 'name',
+      label: p__('label', 'Name')
+    }
+  ]
+} %}
+
+	<div class="group/grid" data-state="initial" :data-state="state">
+		<div class="hidden group-data-[state=empty]/grid:block">
+			{% include "sections/empty.twig" with { title: p__('heading', 'Empty result set'), message: __('There are no voice available.'), reset: __('There are no voice matching your search.') } %}
+		</div>
+
+		<div class="grid gap-1 grid-cols-2 md:grid-cols-3 group-data-[state=empty]/grid:hidden">
+			{% for i in range(1,6) %}
+				<div class="hidden group-data-[state=initial]/grid:block">
+					{% include "/snippets/cards/voice.twig" with {placeholder:true} %}
+				</div>
+			{% endfor %}
+
+			<template x-for="voice in resources" :key="voice.id">
+				{% include "/snippets/cards/voice.twig" %}
+			</template>
+		</div>
+	</div>
+
+	<modal-element name="voice-edit-modal">
+		<template x-if="currentResource">
+			<div x-data="voice(currentResource)">
+				<x-form>
+					<form class="flex flex-col gap-8 modal" @submit.prevent="edit">
+						<div class="flex justify-between items-center">
+							<h2 class="text-xl">{{ p__('heading', 'Edit voice') }}</h2>
+
+							<button class="flex justify-center items-center w-8 h-8 rounded-full border border-transparent bg-line-dimmed hover:border-line" @click="modal.close()" type="button">
+								<i class="text-xl ti ti-x"></i>
+							</button>
+						</div>
+
+						<template x-if="currentResource.user?.id == $store.user.id">
+							<div class="flex flex-col gap-4">
+								<div>
+									<label for="voice-name">{{ p__('label', 'Voice name') }}</label>
+									<input type="text" class="mt-2 input" id="voice-name" required x-model="voice.name">
+								</div>
+
+								<div class="flex flex-col gap-1">
+									<div class="mb-1 label">{{ p__('label', 'Audience') }}</div>
+
+									<button type="button" class="flex gap-4 items-center text-start box" @click="voice.visibility = 0">
+										<x-avatar icon="lock"></x-avatar>
+
+										<div>
+											<div class="font-bold">{{ p__('audience', 'Only me') }}</div>
+											<div class="text-xs text-content-dimmed">
+												{{ __('Item is only accessible by you.') }}</div>
+										</div>
+
+										<template x-if="voice.visibility === 0">
+											<i class="text-2xl ms-auto ti ti-circle-dot-filled"></i>
+										</template>
+
+										<template x-if="voice.visibility !== 0">
+											<i class="text-2xl ms-auto ti ti-circle text-content-dimmed"></i>
+										</template>
+									</button>
+
+									<button type="button" class="flex gap-4 items-center text-start box" @click="voice.visibility = 1">
+										<x-avatar icon="building"></x-avatar>
+
+										<div>
+											<div class="font-bold">{{ p__('audience', 'Workspace') }}</div>
+											<div class="text-xs text-content-dimmed">
+												{{ __('Accesible by team members.') }}
+											</div>
+										</div>
+
+										<template x-if="voice.visibility === 1">
+											<i class="text-2xl ms-auto ti ti-circle-dot-filled"></i>
+										</template>
+
+										<template x-if="voice.visibility !== 1">
+											<i class="text-2xl ms-auto ti ti-circle text-content-dimmed"></i>
+										</template>
+									</button>
+								</div>
+							</div>
+						</template>
+
+						<div class="flex gap-4 justify-end">
+							<button type="button" class="button button-outline" @click="modal.close(); currentResource = null" type="button">
+								{{ p__('button', 'Cancel') }}
+							</button>
+
+							<button type="submit" class="button" :processing="isProcessing">
+								{% include "/snippets/spinner.twig" %}
+
+								<span>{{ p__('button', 'Save') }}</span>
+							</button>
+						</div>
+					</form>
+				</x-form>
+			</div>
+		</template>
+	</modal-element>
+
+	<modal-element name="voice-details-modal">
+		<template x-if="currentResource">
+			<div class="flex flex-col gap-8 modal">
+				<div class="flex justify-between items-center">
+					<h2 class="text-xl" x-text="currentResource?.name"></h2>
+
+					<button class="flex justify-center items-center w-8 h-8 rounded-full border border-transparent bg-line-dimmed hover:border-line" @click="modal.close()" type="button">
+						<i class="text-xl ti ti-x"></i>
+					</button>
+				</div>
+
+				<template x-if="currentResource?.supported_languages?.length > 0">
+					<div>
+						<div class="flex gap-1 items-center text-sm font-bold">
+							<i class="text-lg ti ti-language"></i>
+							{{ __('Supported languages') }}
+						</div>
+
+						<ul class="flex overflow-y-auto flex-wrap gap-1 items-center mt-4">
+							<template x-for="locale in currentResource?.supported_languages">
+								<li class="flex gap-1 items-center px-2 py-1 rounded-md border border-line-dimmed">
+									<x-avatar class="avatar-xs" :title="locale.country_code" :src="`https://flagcdn.com/${locale.country_code.toLowerCase()}.svg`"></x-avatar>
+
+									<span x-text="locale.name || locale.code" class="text-sm"></span>
+								</li>
+							</template>
+						</ul>
+					</div>
+				</template>
+			</div>
+		</template>
+	</modal-element>
+
+	{% if features.voice_cloning %}
+		<modal-element name="voice-clone-modal" x-data="clone">
+			<x-form>
+				<form class="flex flex-col gap-8 modal" @submit.prevent="clone">
+					<div class="flex gap-4 justify-between items-center">
+						<h2 class="text-xl">{{ p__('heading', 'Instant voice cloning') }}</h2>
+
+						<button class="flex justify-center items-center w-8 h-8 rounded-full border border-transparent bg-line-dimmed hover:border-line" @click="modal.close()" type="button">
+							<i class="text-xl ti ti-x"></i>
+						</button>
+					</div>
+
+					<div class="flex flex-col gap-4">
+						<div>
+							<label for="voice-name">{{ p__('label', 'Voice name') }}</label>
+							<input type="text" class="mt-2 input" id="voice-name" required x-model="name">
+						</div>
+
+						<template x-if="!file && !isRecording">
+							<label class="flex relative flex-col gap-6 items-center p-6 group" for="file">
+								<svg class="absolute top-0 left-0 w-full h-full rounded-lg pointer-events-none stroke-current stroke-2 text-line group-hover:text-content/50" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<rect cx="56" width="100%" height="100%" stroke-dasharray="4 4" rx="8" ry="8"/>
+								</svg>
+
+								<div class="flex relative z-10 flex-col gap-2 items-center w-full text-center">
+									<div>{{ p__('label', 'Click to upload a file or drag and drop') }}</div>
+
+									<div class="text-xs font-normal text-content-dimmed">
+										{{ p__('info', 'Audio or video file, up to 5MB and 1 minute long') }}
+									</div>
+								</div>
+
+								<div class="flex gap-2 items-center w-3/5">
+									<div class="h-px grow bg-line-dimmed"></div>
+									<span class="text-xs uppercase text-content-super-dimmed">{{ p__('separator', 'OR') }}</span>
+									<div class="h-px grow bg-line-dimmed"></div>
+								</div>
+
+								<button type="button" class="button button-dimmed button-sm" @click="startRecording()">
+									<i class="ti ti-microphone"></i>
+									{{ p__('button', 'Record audio') }}
+								</button>
+
+								<x-dropzone class="absolute z-20">
+									<svg class="absolute top-0 left-0 w-full h-full rounded-lg pointer-events-none stroke-current stroke-2 text-content/50" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+										<rect cx="56" width="100%" height="100%" stroke-dasharray="4 4" rx="8" ry="8"/>
+									</svg>
+
+									<div class="flex flex-col items-center">
+										<div class="flex flex-col gap-2 text-center">
+											<div>{{ p__('heading', 'Drop the file here') }}</div>
+											<p class="text-xs font-normal text-content-dimmed">
+												{{ p__('info', 'Audio or video file, up to 5MB and 1 minute long') }}
+											</p>
+										</div>
+									</div>
+
+									<input type="file" id="file" @change="selectFile($refs.file.files[0])" required accept=".flac,.mp3,.mp4,.mpeg,.mpga,.m4a,.ogg,.wav,.webm" name="bank_transfer[domestic][requisites]" class="hidden" x-ref="file">
+								</x-dropzone>
+							</label>
+						</template>
+
+						<template x-if="!file && isRecording">
+							<div class="flex relative flex-col gap-6 items-center p-6 text-center">
+								<svg class="absolute top-0 left-0 w-full h-full rounded-lg pointer-events-none stroke-current stroke-2 text-line group-hover:text-content/50" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<rect cx="56" width="100%" height="100%" stroke-dasharray="4 4" rx="8" ry="8"/>
+								</svg>
+
+								<div class="flex relative z-10 flex-col gap-2 items-center">
+									<div class="flex gap-1 items-center h-8">
+										<template x-for="bar in visualizerBars" :key="bar.id">
+											<div :style="`height: ${bar.height}px`" class="w-1.5 rounded-full transition-all duration-100 ease-out" :class="bar.active ? 'bg-content' : 'bg-line-dimmed'"></div>
+										</template>
+									</div>
+									<div class="mt-2 text-xs text-content-dimmed">
+										<span x-text="recordingTime"></span>
+										/ 01:00
+									</div>
+								</div>
+
+								<button type="button" class="relative z-10 button button-sm" @click="stopRecording()">
+									<i class="ti ti-player-stop-filled"></i>
+									{{ p__('button', 'Stop Recording') }}
+								</button>
+							</div>
+						</template>
+
+						<template x-if="file">
+							<div class="box">
+								<x-wave class="flex relative z-20 gap-2 items-center group" :src="URL.createObjectURL(file)">
+									<button type="button" play-pause>
+										<i class="text-2xl ti ti-player-play-filled text-content-dimmed hover:text-content group-[[state=loading]]:hidden group-[[state=loaded]]:hidden group-[[state=playing]]:hidden"></i>
+										<i class="text-2xl ti ti-player-pause-filled hidden group-[[state=playing]]:block"></i>
+									</button>
+
+									<div class="hidden group-[[state=loading]]:block">
+										{% include "/snippets/spinner.twig" %}
+									</div>
+
+									<div class="h-8 grow" wave></div>
+
+									<button type="button" class="text-content-dimmed hover:text-content" @click="file=null;" x-tooltip.raw="{{ __('Remove file') }}">
+										<i class="ti ti-x text-2xl"></i>
+									</button>
+								</x-wave>
+							</div>
+						</template>
+
+						<template x-if="error">
+							<ul class="info">
+								<template x-if="error == 'file_size'">
+									<li>{{ __('File is too large. Maximum size is 5MB.') }}</li>
+								</template>
+
+								<template x-if="error == 'file_type'">
+									<li>{{ __('Invalid file type. Please upload an audio or video file.') }}</li>
+								</template>
+
+								<template x-if="error == 'microphone_error'">
+									<li>{{ __('Could not access microphone. Please check your browser permissions.') }}</li>
+								</template>
+
+								<template x-if="!['file_size', 'file_type', 'microphone_error'].includes(error)">
+									<li x-text="error"></li>
+								</template>
+							</ul>
+						</template>
+					</div>
+
+					<div class="flex flex-col gap-2">
+						<label class="inline-flex gap-1 items-center">
+							<input type="checkbox" name="consent" class="hidden peer" required x-model="consent">
+
+							<i class="text-2xl ti ti-square-rounded text-content-dimmed peer-checked:hidden"></i>
+							<i class="hidden text-2xl ti ti-square-rounded-check-filled text-success peer-checked:block"></i>
+
+							<span class="select-none">{{ __('I hereby confirm the following:') }}</span>
+						</label>
+
+						<div class="box">
+							<ul class="info text-content marker:text-content-dimmed/50">
+								<li>
+									{{ __('This is my voice, and I consent to it being cloned, or I am an intermediary or representative for the person to whom this voice belongs, and I have received explicit written consent to clone it for their use.') }}
+								</li>
+
+								<li>
+									{{ __("The voice does not infringe on any third party's intellectual property, privacy, and/or other rights or violate any applicable law.") }}
+								</li>
+
+								<li>
+									{{ __("The voice belongs to someone above the age of 18.") }}
+								</li>
+
+								<li>
+									{{ __("The voice does not belong to a current or former reasonably well-known political figure.") }}
+								</li>
+
+								<li>
+									{{ __("I will include or embed commercially reasonable disclosures clearly indicating that the Synthetic Output is AI-generated and not a human voice.") }}
+								</li>
+
+								<li>
+									{{ __("I will not use the platform generated content for illegal for any illegal or unauthorized purpose.") }}
+								</li>
+
+								{% set tos %}
+								<a href="policies/terms" class="font-bold hover:text-content hover:underline" target="_blank">
+									{{ p__('button', 'Terms of services') }}
+								</a>
+								{% endset %}
+
+								{% set privacy %}
+								<a href="policies/privacy" class="font-bold hover:text-content hover:underline" target="_blank">
+									{{ p__('button', 'Privacy policy') }}
+								</a>
+								{% endset %}
+
+								{% if option.policies.tos|default(null) and option.policies.privacy|default(null) %}
+									<li>
+										{{ __("I will follow the :tos and :privacy.")|replace({ ':tos': tos, ':privacy': privacy })|raw }}
+									</li>
+								{% elseif option.policies.tos|default(null) %}
+									<li>
+										{{ __("I will follow the :tos.")|replace({ ':tos': tos })|raw }}
+									</li>
+								{% elseif option.policies.privacy|default(null) %}
+									<li>
+										{{ __("I will follow the :privacy.")|replace({ ':privacy': privacy })|raw }}
+									</li>
+								{% endif %}
+							</ul>
+						</div>
+					</div>
+
+					<div class="flex gap-4 justify-end">
+						<button type="button" class="button button-outline" @click="modal.close()" type="button">
+							{{ p__('button', 'Cancel') }}
+						</button>
+
+						<button type="submit" class="button" :processing="isProcessing">
+							{% include "/snippets/spinner.twig" %}
+
+							<span>{{ p__('button', 'Clone voice') }}</span>
+						</button>
+					</div>
+				</form>
+			</x-form>
+		</modal-element>
+	{% endif %}
+
+	{% include "sections/delete-modal.twig" with { 
+    message: __('Do you really want to delete the voice?'),
+    title: '`${currentResource.name}`',
+    details: __('All associated content and files will be permanently removed. This action cannot be reverted once confirmed.')
+  } %}
+{% endblock %}

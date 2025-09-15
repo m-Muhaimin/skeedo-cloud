@@ -1,0 +1,28 @@
+<template x-if="orders.length > 0">
+	<section class="flex flex-col gap-6 box" data-density="comfortable">
+		<div class="flex gap-2 items-center">
+			<h2>{{ p__('heading', 'Latest orders') }}</h2>
+
+			<a class="badge" :href="`admin/orders?sort=created_at:desc`">
+				{{ p__('button', 'View all') }}
+			</a>
+		</div>
+
+		<div>
+			<div class="hidden md:grid grid-cols-12 gap-3 items-center px-3 py-2 text-content-dimmed text-xs group-data-[state=empty]/list:hidden">
+				<div class="col-span-3">{{ p__('label', 'Order') }}</div>
+				<div class="col-span-2">{{ p__('label', 'Status') }}</div>
+				<div class="col-span-2">{{ p__('label', 'Credits') }}</div>
+				<div class="col-span-2">{{ p__('label', 'Total') }}</div>
+				<div class="col-span-2">{{ p__('label', 'Created') }}</div>
+				<div class="col-span-1"></div>
+			</div>
+
+			<div class="text-sm flex flex-col gap-1 group-data-[state=empty]:hidden">
+				<template x-for="order in orders" :key="order.id">
+					{% include "snippets/cards/order.twig" with {ref: 'order', type: 'admin'} %}
+				</template>
+			</div>
+		</div>
+	</section>
+</template>

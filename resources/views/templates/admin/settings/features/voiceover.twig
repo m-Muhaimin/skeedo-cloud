@@ -1,0 +1,111 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% set xdata = 'settings' %}
+{% block title p__('title', 'Voiceover configuration')|title %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {link: 'admin/settings/features', label: 'Features'} %}
+
+		<h1 class="mt-4">{{ p__('heading', 'Voiceover') }}</h1>
+	</div>
+
+	<x-form>
+		<form class="flex flex-col gap-8" @submit.prevent="submit" x-ref="form">
+			<div class="flex flex-col gap-2">
+				<section class="flex flex-col gap-6 box" data-density="comfortable">
+					<h2 class="col-span-2">{{ p__('heading', 'Configuration') }}</h2>
+
+					<div class="flex justify-between items-center p-3 rounded-lg bg-intermediate">
+						{{ p__('label', 'Status') }}
+
+						<label class="inline-flex gap-2 items-center cursor-pointer">
+							<input type="checkbox" name="features[voiceover][is_enabled]" class="hidden peer" {{ option.features.voiceover.is_enabled is defined and option.features.voiceover.is_enabled ? 'checked' : '' }}>
+
+							<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+							<span class="text-content-dimmed peer-checked:hidden">
+								{{ p__('input-value', 'Disabled') }}
+							</span>
+
+							<span class="hidden text-success peer-checked:inline">
+								{{ p__('input-value', 'Enabled') }}
+							</span>
+						</label>
+					</div>
+				</section>
+
+				<section class="flex flex-col gap-6 box" data-density="comfortable" x-data="{ service: `{{ option.features.voiceover.cloning_model|default('speechify') }}`, is_enabled: {{ option.features.voiceover.is_voice_cloning_enabled|default(false) ? 'true' : 'false' }} }">
+					<h2 class="col-span-2">{{ p__('heading', 'Voice cloning') }}</h2>
+
+					<div class="flex justify-between items-center p-3 rounded-lg bg-intermediate">
+						{{ p__('label', 'Status') }}
+
+						<label class="inline-flex gap-2 items-center cursor-pointer">
+							<input type="checkbox" name="features[voiceover][is_voice_cloning_enabled]" class="hidden peer" {{ option.features.voiceover.is_voice_cloning_enabled|default(false) ? 'checked' : '' }} x-model="is_enabled">
+
+							<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+							<span class="text-content-dimmed peer-checked:hidden">
+								{{ p__('input-value', 'Disabled') }}
+							</span>
+
+							<span class="hidden text-success peer-checked:inline">
+								{{ p__('input-value', 'Enabled') }}
+							</span>
+						</label>
+					</div>
+
+					<template x-if="is_enabled">
+						<div>
+							<label>{{ p__('label', 'Service') }}</label>
+
+							{% set services = {
+                "speechify": "Speechify",
+              } %}
+
+							<select name="features[voiceover][cloning_model]" class="mt-2 input" x-model="service">
+								{% for key, name in services %}
+									<option value="{{ key }}" {{ option.features.voiceover.cloning_model|default('speechify') == key ? 'selected' : '' }}>
+										{{ name }}
+									</option>
+								{% endfor %}
+							</select>
+
+							{% if option.speechify.api_key is not defined or option.speechify.api_key is empty %}
+								<template x-if="service == 'speechify'">
+									<ul class="info mt-2">
+										<li class="flex gap-1 items-center">
+											<i class="text-base ti ti-alert-square-rounded-filled text-failure"></i>
+
+											{{ __('Speechify API key is not set.') }}
+
+											<a href="/admin/settings/speechify" target="_blank" class="inline-flex gap-1 items-center text-content hover:underline">
+												{{ __('Go to settings') }}
+
+												<i class="text-xs ti ti-external-link"></i>
+											</a>
+										</li>
+									</ul>
+								</template>
+							{% endif %}
+						</div>
+					</template>
+				</section>
+			</div>
+
+			<div class="flex gap-4 justify-end">
+				<a href="admin/settings" class="button button-outline">
+					{{ p__('button', 'Cancel') }}
+				</a>
+
+				<button class="button button-accent" type="submit" :processing="isProcessing">
+					{% include "/snippets/spinner.twig" %}
+
+					{{ p__('button', 'Save changes') }}
+				</button>
+			</div>
+		</form>
+	</x-form>
+{% endblock %}

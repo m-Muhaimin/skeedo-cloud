@@ -1,0 +1,281 @@
+{% extends "/layouts/main.twig" %}
+{% set mobile_head_button = {
+  link: 'app/coder'
+} %}
+
+{% set active_menu = '/app/coder' %}
+{% set xdata %}
+coder({{ (code_document ?? null )|json_encode() }})
+{% endset %}
+{% block title p__('title', 'Coding Assistant')|title %}
+
+{% block template %}
+
+	<div class="flex flex-col gap-4">
+		{% include "snippets/back.twig" with {link: 'app', label: p__('button', 'Dashboard')} %}
+
+		<div>
+			<h1>{{ p__('heading', 'Coding Assistant') }}</h1>
+
+			<p class="text-content-dimmed">
+				{{ __('Generate high quality code in seconds.') }}
+			</p>
+		</div>
+	</div>
+
+	<div class="flex flex-col gap-4">
+		<section class="box" data-density="comfortable" x-show="showForm">
+			<h2>{{ p__('heading', 'Prompts') }}</h2>
+
+			<x-form>
+				<form class="grid grid-cols-1 gap-6 mt-4" x-ref="form" @submit.prevent="{{ workspace.subscription.plan.config.coder.is_enabled is defined and workspace.subscription.plan.config.coder.is_enabled ? 'submit(null)' : '' }}">
+
+					<div>
+						<label for="prompt">
+							{{ p__('label', 'Description') }}
+
+							<i class="ti ti-help-square-rounded-filled help" x-tooltip.raw="{{ __('The more details you provide, the better the result will be.') }}" data-tooltip></i>
+						</label>
+
+						<textarea cols="8" id="prompt" name="prompt" placeholder="{{ __('Describe request') }}" class="mt-2 input" rows="3" autocomplete="off" required></textarea>
+					</div>
+
+
+					<div>
+						<label for="language">
+							{{ p__('label', 'Programming language') }}
+						</label>
+
+						<input type="text" name="language" id="language" class="mt-2 input" placeholder="PHP, JavaScript etc." required>
+					</div>
+
+					<div>
+						{% if workspace.subscription.plan.config.coder.is_enabled is defined and workspace.subscription.plan.config.coder.is_enabled %}
+							<button type="submit" class="w-full button button-accent" :processing="isProcessing">
+
+								<svg width="24" height="24" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="spinner">
+									<style>
+										.spinner_S1WN {
+											animation: spinner_MGfb 0.8s linear infinite;
+											animation-delay: -0.8s
+										}
+
+										.spinner_Km9P {
+											animation-delay: -0.65s
+										}
+
+										.spinner_JApP {
+											animation-delay: -0.5s
+										}
+
+										@keyframes spinner_MGfb {
+
+											93.75%,
+											100% {
+												opacity: .2
+											}
+										}
+									</style>
+									<circle class="spinner_S1WN" cx="4" cy="12" r="3"/>
+									<circle class="spinner_S1WN spinner_Km9P" cx="12" cy="12" r="3"/>
+									<circle class="spinner_S1WN spinner_JApP" cx="20" cy="12" r="3"/>
+								</svg>
+
+								<span class="inline-flex gap-1 items-center" x-show="!isProcessing">
+									<i class="ti ti-sparkles"></i>
+									{{ p__('button', 'Generate Result') }}
+								</span>
+							</button>
+						{% else %}
+							<a href="app/billing" class="w-full button button-dimmed">
+								<i class="ti ti-lock-up"></i>
+
+								{{ p__('button', 'Upgrade plan') }}
+							</a>
+						{% endif %}
+					</div>
+				</form>
+			</x-form>
+		</section>
+
+		<template x-if="docs.length > 0 && docs[index]">
+			<div class="relative">
+				<div class="py-0 rounded-b-none border-b-0 opacity-0 transition-all duration-500 scale-90 box" :class="docs.length > 2 ? 'h-4 opacity-100' : 'h-0 opacity-0'"></div>
+
+				<div class="py-0 rounded-b-none border-b-0 opacity-0 transition-all duration-500 scale-95 box" :class="docs.length > 1 ? 'h-4 opacity-100' : 'h-0 opacity-0'"></div>
+
+				<div class="flex flex-col gap-4 box" data-density="comfortable">
+					<template x-if="docs.length > 1">
+						<div class="flex gap-1 items-center text-xs text-content-dimmed">
+							<button type="button" :disabled="index==0" @click="index--" ; class="hover:text-content">
+								<i class="text-xs ti ti-chevron-left"></i>
+							</button>
+
+							<span>
+								<span x-text="index+1"></span>
+								<span>/</span>
+								<span x-text="docs.length"></span>
+							</span>
+
+							<button type="button" :disabled="index+1 >= docs.length" @click="index++" ; class="hover:text-content">
+								<i class="text-xs ti ti-chevron-right"></i>
+							</button>
+						</div>
+					</template>
+
+					<div class="flex gap-4 justify-between items-start">
+						<template x-if="docs[index].id">
+							<div class="grow">
+								<div class="text-xl autogrow-textarea font-editor-heading" :data-replicated-value="docs[index].title">
+									<textarea placeholder="{{ __('Untitled resource') }}" autocomplete="off" x-model="docs[index].title" rows="1" @input.debounce.750ms="saveDocument(docs[index])" class="block px-0 py-0 w-full bg-transparent border-0 ring-0 transition-colors appearance-none outline-none resize-none placeholder:text-content-dimmed placeholder:opacity-50 read-only:text-content-dimmed"></textarea>
+								</div>
+
+								<div class="mt-1">
+									<x-uuid x-text="docs[index].id"></x-uuid>
+								</div>
+							</div>
+						</template>
+
+						<template x-if="!docs[index].id">
+							<div class="flex flex-col gap-3 grow">
+								<div class="w-2/3 h-6 loading"></div>
+
+								<div class="mb-1">
+									<div class="w-full h-4 max-w-64 loading"></div>
+								</div>
+							</div>
+						</template>
+
+						<div class="flex gap-2 items-center shrink-0">
+							<button type="button" @click="showForm = !showForm" :class="{'text-content-dimmed': showForm}" x-tooltip.raw="{{ __("Toggle form") }}">
+								<i class="text-2xl ti ti-section"></i>
+							</button>
+
+							{% if workspace.subscription.plan.config.writer.is_enabled is defined and workspace.subscription.plan.config.writer.is_enabled %}
+								<button type="button" @click="submit(docs[index].params)" x-tooltip.raw="{{ __("Regenerate") }}" :disabled="isProcessing">
+									<i class="text-2xl ti ti-rotate"></i>
+								</button>
+							{% endif %}
+						</div>
+					</div>
+
+					<hr>
+
+					<template x-if="docs[index].content">
+						<x-markdown class="block editor" x-effect="$el.setContent(docs[index].content)" :animate="isProcessing"></x-markdown>
+					</template>
+
+					<template x-if="!docs[index].content">
+						<div class="flex flex-col gap-2 my-1">
+							<div class="h-4 loading"></div>
+							<div class="h-4 loading"></div>
+							<div class="w-2/3 h-4 loading"></div>
+						</div>
+					</template>
+
+					<template x-if="docs[index] && docs[index].id">
+						<div class="flex flex-col gap-4 mt-4 md:flex-row md:items-center">
+							<div class="flex gap-4 items-center me-auto">
+								{% include "snippets/audience.twig" with {ref: 'docs[index]'} %}
+
+								<span class="flex gap-1 items-center text-sm text-content-dimmed">
+									<i class="text-base ti ti-coins"></i>
+									<x-credit :data-value="docs[index].cost" format="{{ __(":count credits") }}"></x-credit>
+								</span>
+							</div>
+
+							<div class="flex gap-4 items-center">
+								<button @click="copyDocumentContents(docs[index])" class="transition-all text-content-dimmed hover:text-content">
+									<i class="text-xl ti ti-copy"></i>
+								</button>
+
+								<div class="relative" @click.outside="$refs.downloadOptions.removeAttribute('data-open')">
+
+									<button @click="$refs.downloadOptions.toggleAttribute('data-open')" class="transition-all text-content-dimmed hover:text-content">
+										<i class="text-xl ti ti-download"></i>
+									</button>
+
+									<div class="menu menu-tr" x-ref="downloadOptions" @click="$el.removeAttribute('data-open')">
+
+										<ul class="text-sm">
+											<li>
+												<button class="flex gap-2 items-center px-4 py-2 w-full text-start hover:bg-intermediate" @click="download(docs[index], 'word')">
+													<i class="text-lg text-content-dimmed ti ti-letter-w"></i>
+
+													{{ p__('button', 'Word document') }}
+												</button>
+											</li>
+
+											<li>
+												<button class="flex gap-2 items-center px-4 py-2 w-full text-start hover:bg-intermediate" @click="download(docs[index], 'html')">
+													<i class="text-lg text-content-dimmed ti ti-brand-html5"></i>
+													{{ p__('button', 'HTML file') }}
+												</button>
+											</li>
+
+											<li>
+												<button class="flex gap-2 items-center px-4 py-2 w-full text-start hover:bg-intermediate" @click="download(docs[index], 'markdown')">
+													<i class="text-lg text-content-dimmed ti ti-markdown"></i>
+													{{ p__('button', 'Markdown') }}
+												</button>
+											</li>
+
+											<li>
+												<button class="flex gap-2 items-center px-4 py-2 w-full text-start hover:bg-intermediate" @click="download(docs[index], 'text')">
+													<i class="text-lg text-content-dimmed ti ti-txt"></i>
+													{{ p__('button', 'Text') }}
+												</button>
+											</li>
+										</ul>
+									</div>
+								</div>
+
+								<button @click="modal.open('delete-modal')" class="transition-all text-content-dimmed hover:text-content">
+									<i class="text-xl ti ti-trash group-hover:text-failure"></i>
+								</button>
+							</div>
+						</div>
+					</template>
+				</div>
+			</div>
+		</template>
+	</div>
+
+	<modal-element name="delete-modal">
+		<template x-if="docs[index]">
+			<form class="flex flex-col gap-6 items-center modal" @submit.prevent="deleteDocument(docs[index])">
+				<div class="flex relative justify-center items-center mx-auto w-24 h-24 rounded-full text-failure/25">
+					<svg class="absolute top-0 left-0 w-full h-full" width="112" height="112" viewbox="0 0 112 112" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<circle cx="56" cy="56" r="55.5" stroke="currentColor" stroke-dasharray="8 8"/>
+					</svg>
+
+					<div class="flex justify-center items-center w-20 h-20 text-4xl rounded-full transition-all bg-failure/25 text-failure">
+						<i class="text-4xl ti ti-trash"></i>
+					</div>
+				</div>
+
+				<div class="flex flex-col gap-2 items-center text-center">
+					<div class="text-lg text-center">
+						{{ __('Do you really want to delete the document?') }}
+					</div>
+
+					<p class="text-sm text-content-dimmed">
+						{{ __('All associated content and files will be permanently removed. This action cannot be reverted once confirmed.') }}
+					</p>
+				</div>
+
+				<div class="flex gap-4 justify-center items-center">
+					<button class="button button-outline" @click="modal.close()" type="button">
+						{{ p__('button', 'No, cancel') }}
+					</button>
+
+					<button class="button button-failure" type="submit" :processing="isDeleting">
+						{% include "/snippets/spinner.twig" %}
+
+						{{ p__('button', 'Yes, delete') }}
+					</button>
+				</div>
+			</form>
+		</template>
+	</modal-element>
+{% endblock %}

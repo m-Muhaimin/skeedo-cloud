@@ -1,0 +1,9 @@
+<section class="flex flex-col gap-6 box" data-density="comfortable">
+  <h2>{{ p__('heading', 'Orders') }}</h2>
+
+  <div class="h-64">
+    <x-chart :set="JSON.stringify(datasets.orders)" class="block" type="area">
+      <div chart class="h-64"></div>
+    </x-chart>
+  </div>
+</section>

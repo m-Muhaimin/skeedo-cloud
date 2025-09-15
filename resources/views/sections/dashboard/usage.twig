@@ -1,0 +1,27 @@
+<section class="flex flex-col gap-6 box" data-density="comfortable">
+	<div class="flex gap-2 justify-between items-center">
+		<h2 class="me-auto">
+			{{ p__('heading', 'Credit usage') }}
+		</h2>
+
+		<span class="badge">
+			{{ p__('button', 'Last 30 days') }}
+		</span>
+
+		<div class="relative" @click.outside="$refs.context.removeAttribute('data-open')">
+			<button class="relative z-10" @click="$refs.context.toggleAttribute('data-open')">
+				<i class="text-2xl ti ti-dots-vertical text-content-dimmed hover:text-intermediate-content"></i>
+			</button>
+
+			<div class="menu" x-ref="context">
+				<ul>
+					<li><a href="app/logs/usage" class="flex gap-2 items-center px-4 py-2 hover:no-underline hover:bg-intermediate"><i class="ti ti-mist"></i>{{ p__('button', 'Usage log') }}</a></li>
+				</ul>
+			</div>
+		</div>
+	</div>
+
+	<x-chart :set="JSON.stringify(usageDataset)" class="block">
+		<div chart class="h-64"></div>
+	</x-chart>
+</section>

@@ -1,0 +1,62 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% set xdata = 'settings' %}
+{% block title p__('title', 'Google Tag Manager')|title %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {link: 'admin/settings/script-tags', label: 'Script tags'} %}
+
+		<h1 class="mt-4">
+			{{ p__('heading', 'Google Tag Manager') }}
+		</h1>
+	</div>
+
+	<x-form>
+		<form class="flex flex-col gap-8" @submit.prevent="submit" x-ref="form">
+			<section class="grid grid-cols-1 gap-6 box" data-density="comfortable">
+
+				<h2>{{ p__('heading', 'Config') }}</h2>
+
+				<div class="flex items-center justify-between p-3 rounded-lg bg-intermediate">
+					{{ p__('label', 'Status') }}
+
+					<label class="inline-flex items-center gap-2 cursor-pointer">
+						<input type="checkbox" name="script_tags[gtm][is_enabled]" class="hidden peer" {{ option.script_tags.gtm.is_enabled is defined and option.script_tags.gtm.is_enabled ? 'checked' : '' }}>
+
+						<span class="h-6 w-10 rounded-3xl bg-line relative block peer-checked:bg-success transition-all after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+						<span class="text-content-dimmed peer-checked:hidden">
+							{{ __("Disabled") }}
+						</span>
+
+						<span class="hidden text-success peer-checked:inline">
+							{{ __("Enabled") }}
+						</span>
+					</label>
+				</div>
+
+				<div>
+					<label for="script_tags[gtm][container_id]">
+						{{ p__('label', 'GTM Container ID') }}
+					</label>
+
+					<input type="text" id="script_tags[gtm][container_id]" name="script_tags[gtm][container_id]" class="mt-2 input" autocomplete="off" required placeholder="{{ option.script_tags.gtm.container_id ?? 'GTM-XXXXXXXX' }}" value="{{ option.script_tags.gtm.container_id ?? '' }}"/>
+				</div>
+			</section>
+
+			<div class="flex justify-end gap-4">
+				<a href="admin/settings/script-tags" class="button button-outline">
+					{{ p__('button', 'Cancel') }}
+				</a>
+
+				<button type="submit" class="button button-accent" :processing="isProcessing">
+					{% include "/snippets/spinner.twig" %}
+
+					{{ p__('button', 'Save changes') }}
+				</button>
+			</div>
+		</form>
+	</x-form>
+{% endblock %}

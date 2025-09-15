@@ -1,0 +1,149 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% set xdata = 'settings' %}
+{% block title p__('title', 'PWA settings')|title %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {link: 'admin/settings/', label: p__('button', 'Settings')} %}
+
+		<h1 class="mt-4">{{ p__('heading', 'PWA settings') }}</h1>
+	</div>
+
+	<x-form>
+		<form class="flex flex-col gap-8" @submit.prevent="submit" x-ref="form" x-data="{
+			      status: {{ option.pwa.is_enabled is defined and option.pwa.is_enabled ? 'true' : 'false' }},
+			      file: null,
+			      icon: {{ pwa.icons[0].src is defined ? " '"~pwa.icons[0].src~"' " : 'null' }}
+			    }" data-path="/pwa">
+			<div class="flex flex-col gap-2">
+				<section class="flex flex-col gap-6 box" data-density="comfortable">
+					<h2 class="col-span-2">{{ p__('heading', 'Configuration') }}</h2>
+
+					<div class="flex justify-between items-center p-3 rounded-lg bg-intermediate">
+						{{ p__('label', 'Status') }}
+
+						<label class="inline-flex gap-2 items-center cursor-pointer">
+							<input type="checkbox" name="pwa[is_enabled]" class="hidden peer" {{ option.pwa.is_enabled is defined and option.pwa.is_enabled ? 'checked' : '' }} x-model="status">
+
+							<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+							<span class="text-content-dimmed peer-checked:hidden">
+								{{ p__('input-value', 'Disabled') }}
+							</span>
+
+							<span class="hidden text-success peer-checked:inline">
+								{{ p__('input-value', 'Enabled') }}
+							</span>
+						</label>
+					</div>
+
+					<div>
+						<label for="pwa[name]">{{ p__('label', 'Name') }}</label>
+
+						<input type="text" id="pwa[name]" name="pwa[name]" class="mt-2 input" autocomplete="off" :required="status" value="{{ pwa.name ?? '' }}"/>
+					</div>
+
+					<div class="grid grid-cols-2 gap-6">
+						<div>
+							<label for="pwa[short_name]">{{ p__('label', 'Short name') }}</label>
+
+							<input type="text" id="pwa[short_name]" name="pwa[short_name]" class="mt-2 input" autocomplete="off" maxlength="12" value="{{ pwa.short_name ?? '' }}"/>
+						</div>
+
+						<div>
+							<label>{{ p__('label', 'Display') }}</label>
+
+							<select name="pwa[display]" class="mt-2 input">
+								<option value="fullscreen" {{ pwa.display is defined and pwa.display == "fullscreen" ? "selected" : '' }}>
+									{{ p__('pwa-display', 'Fullscreen') }}
+								</option>
+
+								<option value="standalone" {{ pwa.display is defined and pwa.display == "standalone" ? "selected" : '' }}>
+									{{ p__('pwa-display', 'Standalone') }}
+								</option>
+
+								<option value="minimal-ui" {{ pwa.display is defined and pwa.display == "minimal-ui" ? "selected" : '' }}>
+									{{ p__('pwa-display', 'Minimal') }}
+								</option>
+							</select>
+						</div>
+
+						<div>
+							<label for="pwa[theme_color]">{{ p__('label', 'Theme color') }}</label>
+
+							<input type="text" id="pwa[theme_color]" name="pwa[theme_color]" pattern="^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$" class="mt-2 input" autocomplete="off" placeholder="#000000" maxlength="7" x-mask="#******" value="{{ pwa.theme_color ?? '' }}"/>
+						</div>
+
+						<div>
+							<label for="pwa[background_color]">{{ p__('label', 'Background color') }}</label>
+
+							<input type="text" id="pwa[background_color]" name="pwa[background_color]" class="mt-2 input" autocomplete="off" pattern="^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$" placeholder="#000000" maxlength="7" x-mask="#******" value="{{ pwa.background_color ?? '' }}"/>
+						</div>
+					</div>
+
+					<div>
+						<label for="pwa[description]">{{ p__('label', 'Description') }}</label>
+
+						<textarea name="pwa[description]" id="pwa[description]" class="mt-2 input" rows="3" maxlength="300">{{ pwa.description ?? '' }}</textarea>
+					</div>
+
+					<div class="relative col-span-2 p-6 mt-2 box">
+						<div class="flex relative z-10 flex-col gap-6 justify-between items-start sm:flex-row">
+							<div class="flex gap-2 items-center">
+								<x-avatar :icon="(file || icon) ? '-' : 'box'" :src="file ? URL.createObjectURL(file) : icon"></x-avatar>
+
+								<div>
+									<div class="font-bold">
+										{{ p__('label', 'App icon') }}
+									</div>
+
+									<div class="text-xs text-content-dimmed">
+										{{ p__('label', 'Recommended size: 512x512. Supported types: PNG, SVG, WEBP') }}
+									</div>
+								</div>
+							</div>
+
+							<button type="button" class="w-full button button-sm button-dimmed sm:w-auto" @click="$refs.file.click()">{{ p__('button', 'Browse files') }}</button>
+						</div>
+
+						<input type="file" @change="file = $el.files[0];" class="hidden" accept=".png, .webp, .svg" x-ref="file" name="pwa[icon]">
+					</div>
+
+					<template x-if="file || icon">
+						<div class="flex justify-between items-center p-3 rounded-lg bg-intermediate">
+							{{ p__('label', 'Maskable icon') }}
+
+							<label class="inline-flex gap-2 items-center cursor-pointer">
+								<input type="checkbox" name="pwa[maskable_icon]" class="hidden peer" value="1" {{ pwa.icons[0].purpose is defined and "maskable" in pwa.icons[0].purpose ? 'checked' : '' }}>
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+								<span class="text-content-dimmed peer-checked:hidden">
+									{{ p__('input-value', 'Disabled') }}
+								</span>
+
+								<span class="hidden text-success peer-checked:inline">
+									{{ p__('input-value', 'Enabled') }}
+								</span>
+							</label>
+						</div>
+					</template>
+				</section>
+			</div>
+
+			<div class="flex gap-4 justify-end">
+				<a href="admin/settings" class="button button-outline">
+					{{ p__('button', 'Cancel') }}
+				</a>
+
+				<button class="button button-accent" type="submit" :processing="isProcessing">
+					{% include "/snippets/spinner.twig" %}
+
+					{{ p__('button', 'Save changes') }}
+				</button>
+			</div>
+		</form>
+	</x-form>
+{% endblock %}

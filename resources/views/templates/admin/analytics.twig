@@ -1,0 +1,70 @@
+{% extends "/layouts/main.twig" %}
+
+{% set ranges = [
+  {
+    "range": "today",
+    "label": __("Today"),
+  },
+  {
+    "range": "last_7_days",
+    "label": __("Last 7 days"),
+  },
+  {
+    "range": "last_30_days",
+    "label": __("Last 30 days"),
+  },
+  {
+    "range": "month_to_date",
+    "label": __("Month to date"),
+  },
+  {
+    "range": "last_month",
+    "label": __("Last month"),
+  },
+  {
+    "range": "last_3_months",
+    "label": __("Last 3 months"),
+  },
+] %}
+
+{% set active_menu = '/admin/analytics' %}
+{% set xdata %}
+analytics({{ ranges|json_encode }}, "last_30_days")
+{% endset %}
+{% block title p__('title', 'Analytics')|title %}
+
+
+{% block template %}
+	<div class="flex gap-4 justify-between">
+		<h1>{{ p__('heading', 'Analytics') }}</h1>
+
+		<div class="relative" @click.outside=" $refs.context.removeAttribute('data-open')" x-data>
+
+			<button type="button" class="button button-sm button-dimmed" @click="$refs.context.toggleAttribute('data-open')">
+				<span x-text="range.label"></span>
+				<i class="ti ti-chevron-down"></i>
+			</button>
+
+			<div class="menu" x-ref="context">
+				<ul>
+					<template x-for="r in ranges">
+						<li>
+							<button type="button" class="px-4 py-2 w-full text-start blockl hover:bg-intermediate hover:text-intermediate-content" @click="range = r; $refs.context.removeAttribute('data-open');">
+
+								<span x-text="r.label"></span>
+							</button>
+						</li>
+					</template>
+				</ul>
+			</div>
+		</div>
+	</div>
+
+	<div class="flex flex-col gap-2">
+		{% include "sections/admin/analytics/usage.twig" %}
+		{% include "sections/admin/analytics/workspace-usage.twig" %}
+		{% include "sections/admin/analytics/users.twig" %}
+		{% include "sections/admin/analytics/orders.twig" %}
+		{% include "sections/admin/analytics/countries.twig" %}
+	</div>
+{% endblock %}

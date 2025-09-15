@@ -1,0 +1,321 @@
+{% extends "/layouts/main.twig" %}
+
+{% set active_menu = '/admin/subscriptions' %}
+
+{% set xdata %}
+subscription({{ subscription|json_encode }})
+{% endset %}
+
+{% block title p__('title', 'Subscription details')|title %}
+
+{% block template %}
+	<div class="flex flex-col gap-8">
+		<div>
+			{% include "snippets/back.twig" with {link: 'admin/subscriptions', label: 'Subscriptions'} %}
+
+			<h1 class="mt-4">
+				{{ p__('heading', 'Subscription') }}:
+
+				<span class="font-normal text-intermediate-content">
+					<span x-text="subscription.workspace.name"></span>
+					<i class="text-2xl ti ti-direction-horizontal text-content-dimmed"></i>
+					<span x-text="subscription.plan.title"></span>
+				</span>
+			</h1>
+
+			<div class="mt-2">
+				<x-uuid x-text="subscription.id"></x-uuid>
+			</div>
+		</div>
+
+		<div class="flex flex-col gap-2">
+			<section class="flex flex-col gap-6 box" data-density="comfortable">
+				<div>
+					<div class="flex gap-2 items-center">
+						<h2>{{ p__('heading', 'Subscription') }}</h2>
+
+						<template x-if="subscription.status == 'active'">
+							<span class="badge badge-success">{{ p__('subscription-status', 'Active') }}</span>
+						</template>
+
+						<template x-if="subscription.status == 'trialing'">
+							<span class="badge badge-info">{{ p__('subscription-status', 'Trialing') }}</span>
+						</template>
+
+						<template x-if="subscription.status == 'canceled'">
+							<span class="badge">{{ p__('subscription-status', 'Canceled') }}</span>
+						</template>
+
+						<template x-if="subscription.status == 'ended'">
+							<span class="badge badge-failure">{{ p__('subscription-status', 'Ended') }}</span>
+						</template>
+					</div>
+
+					<p class="text-sm text-content-dimmed">
+						{{ __('Subscription created on %s', '<x-time :datetime="subscription.created_at"></x-time>')|raw }}
+					</p>
+				</div>
+
+				<div class="flex flex-col gap-6">
+					<div class="flex flex-wrap gap-y-6 gap-x-10 items-center">
+						<div class="min-w-min">
+							<div class="label">{{ p__('label', 'Plan') }}</div>
+							<div>
+								<a :href="`admin/plan-snapshots/${subscription.plan.id}`" class="inline-flex gap-1 items-center group">
+									<span class="group-hover:underline" x-text="subscription.plan.title"></span>
+									<i class="text-base ti ti-corner-right-up text-content-dimmed"></i>
+								</a>
+							</div>
+						</div>
+
+						<div class="min-w-min">
+							<div class="label">
+								{{ p__('label', 'Monthly credits') }}
+							</div>
+
+							<div>
+								<x-credit :data-value="subscription.plan.credit_count"></x-credit>
+							</div>
+						</div>
+
+						<div class="min-w-min">
+							<div class="label">
+								{{ p__('label', 'Credits left') }}
+							</div>
+
+							<div>
+								<x-credit :data-value="subscription.credit_count"></x-credit>
+							</div>
+						</div>
+
+						<div class="min-w-min">
+							<template x-if="subscription.plan.billing_cycle == 'monthly'">
+								<div class="label">{{ __('Monthly') }}</div>
+							</template>
+
+							<template x-if="subscription.plan.billing_cycle == 'yearly'">
+								<div class="label">{{ __('Yearly') }}</div>
+							</template>
+
+							<template x-if="subscription.plan.billing_cycle == 'lifetime'">
+								<div class="label">{{ __('Lifetime') }}</div>
+							</template>
+
+							<div class="flex gap-2 items-center">
+								<x-money :data-value="subscription.order ? subscription.plan.price : 0" :currency="subscription.order ? subscription.order.currency.code : `{{ currency.code }}`" :minor-units="subscription.order ? subscription.order.currency.fraction_digits : `{{ currency.fraction_digits }}`"></x-money>
+
+								<template x-if="!subscription.order">
+									<i class="text-lg ti ti-info-square-rounded" x-tooltip.raw="{{ __('Subscription created with no charge') }}"></i>
+								</template>
+							</div>
+						</div>
+					</div>
+
+					<template x-if="['active', 'trialing'].includes(subscription.status) && subscription.renew_at">
+						<p class="text-xs text-content-dimmed">
+							{{ __("Usage renews on %s", '<x-time :datetime="subscription.renew_at"></x-time>')|raw }}
+						</p>
+					</template>
+
+					<template x-if="subscription.status == 'canceled' && subscription.cancel_at">
+						<p class="text-xs text-content-dimmed">
+							{{ __("Subscription will be cancelled on %s", '<x-time :datetime="subscription.cancel_at"></x-time>')|raw }}
+						</p>
+					</template>
+
+					<template x-if="subscription.status == 'ended' && subscription.ended_at">
+						<p class="text-xs text-content-dimmed">
+							{{ __("Subscription ended on %s", '<x-time :datetime="subscription.ended_at"></x-time>')|raw }}
+						</p>
+					</template>
+
+
+					<template x-if="['active', 'trialing'].includes(subscription.status) && subscription.renew_at">
+						<div>
+							<button type="button" class="button button-sm" @click="modal.open('cancel-subscription')">
+								{{ p__('button', 'Cancel subscription') }}
+							</button>
+						</div>
+					</template>
+				</div>
+			</section>
+
+			<section class="flex flex-col gap-6 box" data-density="comfortable">
+				<h2>{{ p__('heading', 'Customer') }}</h2>
+
+				<div class="flex flex-col gap-1">
+					<div class="flex gap-3 items-center p-4 rounded-2xl bg-intermediate text-intermediate-content">
+						<x-avatar class="bg-main text-content" :title="subscription.workspace.name"></x-avatar>
+
+						<div>
+							<div class="label">{{ p__('label', 'Workspace') }}</div>
+							<div x-text="subscription.workspace.name"></div>
+						</div>
+
+						<a :href="`admin/workspaces/${subscription.workspace.id}`" class="flex justify-center items-center ms-auto w-8 h-8 rounded-full bg-main outline-1 outline-line hover:outline outline-offset-0">
+							<i class="text-base ti ti-chevron-right"></i>
+						</a>
+					</div>
+
+					<div class="flex gap-3 items-center p-4 rounded-2xl bg-intermediate text-intermediate-content">
+						<x-avatar class="bg-main text-content" :title="`${subscription.workspace.owner.first_name} ${subscription.workspace.owner.last_name}`" :src="subscription.workspace.owner.avatar"></x-avatar>
+
+						<div>
+							<div class="label" x-text="`${subscription.workspace.owner.first_name} ${subscription.workspace.owner.last_name}`"></div>
+							<div class="text-sm text-content-dimmed">{{ p__('role', 'Owner') }}
+							</div>
+						</div>
+
+						<a :href="`admin/users/${subscription.workspace.owner.id}`" class="flex justify-center items-center ms-auto w-8 h-8 rounded-full bg-main outline-1 outline-line hover:outline outline-offset-0">
+							<i class="text-base ti ti-chevron-right"></i>
+						</a>
+					</div>
+				</div>
+			</section>
+
+			<template x-if="subscription.order">
+				<section class="flex flex-col gap-6 box" data-density="comfortable">
+					<div>
+						<div class="flex gap-2 items-center">
+							<h2>{{ p__('heading', 'Order') }}</h2>
+
+							<template x-if="subscription.order.status == 'completed'">
+								<span class="badge badge-success">{{ p__('order-status', 'Completed') }}</span>
+							</template>
+
+							<template x-if="subscription.order.status == 'pending'">
+								<span class="badge badge-alert">{{ p__('order-status', 'Pending') }}</span>
+							</template>
+
+							<template x-if="subscription.order.status == 'failed'">
+								<span class="badge badge-failure">{{ p__('order-status', 'Failed') }}</span>
+							</template>
+						</div>
+
+						<p class="text-sm text-content-dimmed">
+							{{ __('Subscription is created based on order') }}
+						</p>
+					</div>
+
+					<div class="flex flex-col gap-6">
+						<div class="flex flex-wrap gap-y-6 gap-x-10 items-center">
+							<div class="min-w-min">
+								<div class="label">{{ p__('label', 'Plan') }}</div>
+								<div>
+									<a :href="`admin/plan-snapshots/${subscription.order.plan.id}`" class="inline-flex gap-1 items-center group">
+										<span class="group-hover:underline" x-text="subscription.order.plan.title"></span>
+										<i class="text-base ti ti-corner-right-up text-content-dimmed"></i>
+									</a>
+								</div>
+							</div>
+
+							<div class="min-w-min">
+								<div class="label" x-text="subscription.order.plan.billing_cycle == 'one-time' ? `Add-on credits` : `{{ p__('label', 'Monthly credits') }}`"></div>
+
+								<div>
+									<x-credit :data-value="subscription.order.plan.credit_count"></x-credit>
+								</div>
+							</div>
+
+							<div class="min-w-min">
+								<template x-if="subscription.order.plan.billing_cycle == 'monthly'">
+									<div class="label">{{ __('Monthly') }}</div>
+								</template>
+
+								<template x-if="subscription.order.plan.billing_cycle == 'yearly'">
+									<div class="label">{{ __('Yearly') }}</div>
+								</template>
+
+								<template x-if="subscription.order.plan.billing_cycle == 'lifetime'">
+									<div class="label">{{ __('Lifetime') }}</div>
+								</template>
+
+								<template x-if="subscription.order.plan.billing_cycle == 'one-time'">
+									<div class="label">{{ __('Add-on credits') }}</div>
+								</template>
+
+								<div class="flex gap-2 items-center">
+									<x-money :data-value="subscription.order.total" :currency="subscription.order.currency.code" :minor-units="subscription.order.currency.fraction_digits"></x-money>
+								</div>
+							</div>
+
+							<div class="min-w-min">
+								<div class="label">{{ p__('label', 'Date') }}</div>
+								<div>
+									<x-time :datetime="subscription.order.created_at"></x-time>
+								</div>
+							</div>
+						</div>
+
+						<template x-if="subscription.order.payment_id || subscription.order.payment_gateway">
+							<hr>
+						</template>
+
+						<template x-if="subscription.order.payment_id || subscription.order.payment_gateway">
+							<div>
+								<div class="label">{{ p__('label', 'Payment') }}</div>
+								<div class="flex mt-1">
+									<div>
+										<x-copy class="flex items-center badge" :data-copy="subscription.order.payment_id">
+
+											<span class="font-bold capitalize" x-text="subscription.order.payment_gateway"></span>
+
+											<span x-text="subscription.order.external_id"></span>
+										</x-copy>
+									</div>
+								</div>
+							</div>
+						</template>
+
+						<div class="flex gap-1 items-center">
+							<a :href="`admin/orders/${subscription.order.id}`" class="button button-outline button-sm">
+								{{ p__('button', 'View order')}}
+							</a>
+						</div>
+					</div>
+				</section>
+			</template>
+		</div>
+	</div>
+
+	<template x-if="['active', 'trialing'].includes(subscription.status) && subscription.renew_at">
+		<modal-element name="cancel-subscription">
+			<form class="modal" @submit.prevent="cancelSubscription()">
+				<div class="flex relative justify-center items-center mx-auto w-24 h-24 rounded-full text-failure/25">
+
+					<svg class="absolute top-0 left-0 w-full h-full" width="112" height="112" viewbox="0 0 112 112" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<circle cx="56" cy="56" r="55.5" stroke="currentColor" stroke-dasharray="8 8"/>
+					</svg>
+
+					<div class="flex justify-center items-center w-20 h-20 text-4xl rounded-full transition-all bg-failure/25 text-failure">
+						<i class="text-4xl ti ti-trash"></i>
+					</div>
+				</div>
+
+				<div class="mt-4 text-lg text-center">
+					{% set plan %}
+					<strong x-text="subscription.plan.title"></strong>
+					{% endset %}
+
+					{% set ws %}
+					<strong x-text="subscription.workspace.name"></strong>
+					{% endset %}
+
+					{{ __('Do you really want to cancel the subscription to :plan for :workspace workspace?')|replace({':plan': plan, ':workspace': ws})|raw }}
+				</div>
+
+				<div class="flex gap-4 justify-center items-center mt-10">
+					<button class="button button-outline" @click="modal.close()" type="button">
+						{{ p__('button', 'No') }}
+					</button>
+
+					<button class="button button-failure" type="submit" :processing="isProcessing" :disabled="isProcessing">
+						{% include "/snippets/spinner.twig" %}
+
+						{{ p__('button', 'Cancel subscription') }}
+					</button>
+				</div>
+			</form>
+		</modal-element>
+	</template>
+{% endblock %}

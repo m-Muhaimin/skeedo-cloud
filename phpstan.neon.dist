@@ -1,0 +1,9 @@
+parameters:
+    level: 5
+    # bootstrapFiles:
+    #     - bootstrap/app.php
+    paths:
+        - src
+    excludePaths:
+        analyse:
+            - src/Presentation

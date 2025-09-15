@@ -1,0 +1,33 @@
+{% set content = null %}
+
+{% if view_namespace == 'app' and environment == 'demo' and user.role == 'admin'  %}
+	{% set content %}
+	<p>
+		Sign up with your email to receive 100 free credits for testing app features.
+
+		<i class="ti ti-info-square-rounded-filled ms-2" x-tooltip.raw="This demo account has no credits to use within the app."></i>
+	</p>
+	{% endset %}
+{% elseif view_namespace == 'app' and user.is_email_verified != true and option.site.email_verification_policy|default(null) in ['relaxed', 'strict'] %}
+	{% set content %}
+	<a href="app/account/verification" class="font-medium group">
+		<i class="ti ti-click text-lg me-2 transition-all group-hover:scale-125 duration-100 inline-block"></i>
+		{{ __('Your email address is not verified. Click here to verify your email address.') }}
+	</a>
+	{% endset %}
+{% elseif view_namespace == 'app' and workspace.total_credit_count is not null and workspace.total_credit_count <= 0 %}
+	{% set content %}
+	<a href="app/billing" class="font-medium group">
+		<i class="ti ti-click text-lg me-2 transition-all group-hover:scale-125 duration-100 inline-block"></i>
+		{{ __('You have run out of credits. Purchase more credits to continue using the app.') }}
+	</a>
+	{% endset %}
+{% endif %}
+
+{% if content is not null %}
+	<div class="py-3 bg-rose-600 text-white text-sm text-center relative group/bar">
+		<div class="container">
+			{{ content }}
+		</div>
+	</div>
+{% endif %}

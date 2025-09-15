@@ -1,0 +1,448 @@
+{% extends "/layouts/main.twig" %}
+{% set mobile_head_button = { link: 'app/composer' } %}
+
+{% set adapters = [] %}
+{% for service in config.model.registry.directory %}
+	{% set models = [] %}
+
+	{% for model in service.models %}
+		{% if model.type == 'composition' %}
+			{% set models = models|merge([{
+        model: model.key,
+        name: service.name ~ ' ' ~ model.name,
+        short_name: model.name,
+        prompt_length: model.config.prompt_length,
+				style: model.config.style,
+        is_available: model.enabled|default(false),
+        is_enabled: workspace.subscription.plan.config.models[model.key] ?? false,
+      }]) %}
+		{% endif %}
+	{% endfor %}
+
+	{% if models|length > 0 %}
+		{% set adapters = adapters|merge([{
+      is_available: option[service.key]|default(null) is not empty,
+      models: models,
+    }]) %}
+	{% endif %}
+{% endfor %}
+
+{% set active_menu = '/app/composer' %}
+{% set xdata %}composer(
+`{{ option.features.composer.default_model ?? 'aimlapi/chirp-v3.5'}}`,
+{{ adapters|json_encode }},
+{{ (composition ?? null )|json_encode() }}
+){% endset %}
+{% block title p__('title', 'Composer')|title %}
+
+{% block sidebar %}
+	<div class="hidden group-data-[key=history]/sidebar:block">
+		<div class="flex items-center justify-between p-4 border-b border-line sticky top-0 bg-main z-10">
+			<h2>{{ p__('heading', 'History') }}</h2>
+
+			<button type="button" class="text-content-dimmed hover:text-content" @click="sidebar.close()" x-tooltip.raw.placement.left="{{ __('Close') }}">
+				<i class="text-2xl ti ti-x"></i>
+			</button>
+		</div>
+
+		<div>
+			<template x-for="i in history" :key="i.id">
+				<a :href="`app/composition/${i.id}`" class="flex gap-2 items-center p-4 border-b border-line-dimmed hover:bg-line-dimmed/50" :class="preview?.id == i.id ? 'bg-line-dimmed/50' : ''" @click.prevent="select(i)">
+					<x-avatar :title="i.title || `{{ __('Untitled composition') }}`" :src="i.cover_image?.url" :hash="i.cover_image?.blur_hash" class="shrink-0"></x-avatar>
+
+					<div class="overflow-hidden">
+						<div x-text="i.title || `{{ __('Untitled resource') }}`" class="overflow-hidden text-sm text-ellipsis text-nowrap max-w-full" :class="i.title ? '' : 'text-content-dimmed'"></div>
+
+						<div class="flex">
+							<x-time :datetime="i.created_at" data-type="date" class="text-xs text-content-dimmed"></x-time>
+						</div>
+					</div>
+				</a>
+			</template>
+
+			<template x-if="!historyLoaded">
+				<div class="my-8 flex justify-center">
+					<button type="button" @click="fetchHistory()" class="font-semibold hover:underline text-sm">
+						{{ __('Load more') }}
+					</button>
+				</div>
+			</template>
+
+			<template x-if="historyLoaded && history.length === 0">
+				<div class="p-4 text-content-dimmed">
+					{{ __('No compositions yet') }}
+				</div>
+			</template>
+		</div>
+	</div>
+{% endblock %}
+
+{% block toolbar %}
+	<div class="absolute z-10 top-4 end-10 hidden md:flex gap-2 transition-all ease-in">
+		<a href="app/composer" class="text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('New composition') }}">
+			<i class="text-2xl ti ti-square-rounded-plus"></i>
+		</a>
+
+		<a href="app/library/composition" class="text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('History') }}" @click.prevent="sidebar.open('history')">
+			<i class="text-2xl ti ti-file-stack"></i>
+		</a>
+	</div>
+{% endblock %}
+
+{% block template %}
+	<div class="flex flex-col gap-4 grow">
+		<div class="relative" :class="preview || isProcessing ? '' : 'flex justify-center my-auto'">
+			<template x-if="!preview && !isProcessing">
+				<div class="my-10 text-center md:my-0">
+					<div class="mx-auto w-16 h-16 bg-linear-to-br from-[#600989] to-[#CF83F3] tool-icon">
+						<div class="bg-linear-to-br from-[#600989] to-[#CF83F3]"></div>
+
+						{% include "snippets/icons/composer.twig" %}
+					</div>
+
+					<h1 class="mt-6">{{ p__('heading', 'Composer') }}</h1>
+					<p class="mt-1 text-lg font-light text-content-dimmed">
+						{{ __('Create music and sounds.') }}</p>
+				</div>
+			</template>
+
+			<template x-if="isProcessing">
+				<div class="flex flex-col gap-4">
+					<div class="flex flex-col gap-3 grow">
+						<div class="w-2/3 h-6 loading"></div>
+
+						<div class="mb-1">
+							<div class="w-64 h-4 loading"></div>
+						</div>
+					</div>
+
+					<div class="flex gap-4 items-center p-2 box">
+						<span class="flex justify-center items-center w-10 h-10 rounded-lg bg-intermediate text-intermediate-content"></span>
+
+						<div class="grow">
+							<div class="flex gap-2 items-center group">
+								<div type="button" class="w-6 h-6 loading"></div>
+
+								<span process class="w-9 h-3 text-xs text-content-dimmed loading"></span>
+
+								<div class="h-6 grow loading" wave></div>
+
+								<span duration class="w-9 h-3 text-xs text-content-dimmed loading"></span>
+							</div>
+						</div>
+					</div>
+
+					<div class="flex gap-4 items-center">
+						<div class="flex gap-1 items-center me-auto">
+							<span class="my-1 w-16 h-3 loading"></span>
+							<span class="text-xs animate-pulse ti ti-point-filled text-content-dimmed"></span>
+							<span class="my-1 w-24 h-3 loading"></span>
+						</div>
+
+						<div class="my-1 size-5 loading"></div>
+						<div class="my-1 size-5 loading"></div>
+						<div class="my-1 size-5 loading"></div>
+					</div>
+
+					<p class="flex gap-2 items-center text-sm text-content-dimmed">
+						<i class="text-base animate-spin ti ti-loader-2"></i>
+						{{ __('It might take several minutes to generate the composition. Please wait.') }}
+					</p>
+				</div>
+			</template>
+
+			<template x-if="preview && !isProcessing">
+				<div class="flex flex-col gap-10">
+					<div class="flex flex-col gap-4">
+						<div class="grow">
+							<div class="text-xl autogrow-textarea font-editor-heading" :data-replicated-value="preview.title">
+								<textarea placeholder="{{ __('Untitled resource') }}" autocomplete="off" x-model="preview.title" rows="1" @input.debounce.750ms="save(preview)" class="block px-0 py-0 w-full bg-transparent border-0 ring-0 transition-colors appearance-none outline-none resize-none placeholder:text-content-dimmed placeholder:opacity-50 read-only:text-content-dimmed"></textarea>
+							</div>
+
+							<div class="mt-1">
+								<x-uuid x-text="preview.id"></x-uuid>
+							</div>
+						</div>
+
+						<div class="flex relative z-10 gap-4 items-center p-2 box bg-main">
+							<span class="rounded-lg avatar">
+								<template x-if="preview.cover_image?.blur_hash">
+									<canvas is="x-blurhash" class="absolute top-0 left-0 w-full h-full" width="40" height="40" :hash="preview.output_file.blur_hash" type="color"></canvas>
+								</template>
+
+								<template x-if="preview.cover_image">
+									<img :src="preview.cover_image.url" :alt="preview.title">
+								</template>
+
+								<template x-if="!preview.cover_image">
+									<i class="ti ti-music"></i>
+								</template>
+							</span>
+
+							<div class="grow">
+								<x-wave :src="preview.output_file.url" class="flex gap-2 items-center group">
+									<button type="button" play-pause class="text-content-dimmed">
+										<i class="text-2xl ti ti-player-play-filled group-[[state=loading]]:hidden group-[[state=loaded]]:hidden group-[[state=playing]]:hidden"></i>
+										<i class="text-2xl ti ti-player-pause-filled hidden group-[[state=playing]]:block"></i>
+
+										<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="20px" height="20px" viewbox="0 0 50 50" style="enable-background:new 0 0 50 50;" class="hidden group-[[state=loading]]:block group-[[state=loaded]]:block" xml:space="preserve">
+											<path fill="currentColor" d="M25.251,6.461c-10.318,0-18.683,8.365-18.683,18.683h4.068c0-8.071,6.543-14.615,14.615-14.615V6.461z">
+												<animateTransform attributetype="xml" attributename="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.6s" repeatcount="indefinite"></animateTransform>
+											</path>
+										</svg>
+									</button>
+
+									<span process class="text-xs text-content-dimmed w-9 group-[[state=loading]]:hidden">
+										00:00
+									</span>
+
+									<div class="h-10 grow" wave></div>
+
+									<span duration class="text-xs text-content-dimmed w-9 group-[[state=loading]]:hidden">
+										00:00
+									</span>
+								</x-wave>
+							</div>
+						</div>
+
+						<div class="flex gap-4 items-center">
+							<div class="flex gap-4 items-center me-auto">
+								{% include "snippets/audience.twig" %}
+
+								<template x-if="preview.cost > 0">
+									<span class="flex gap-1 items-center text-sm text-content-dimmed">
+										<i class="text-base ti ti-coins"></i>
+										<x-credit :data-value="preview && preview.cost" format="{{ __(":count credits") }}"></x-credit>
+									</span>
+								</template>
+
+								<span class="hidden gap-1 items-center text-sm md:flex text-content-dimmed">
+									<i class="text-base ti ti-file-music"></i>
+
+									<x-filesize :data-value="preview.output_file.size"></x-filesize>
+								</span>
+							</div>
+
+							<div>
+								<div class="relative" @click.outside="$refs.downloadOptions.removeAttribute('data-open')">
+
+									<button @click="$refs.downloadOptions.toggleAttribute('data-open')" class="flex gap-1 items-center text-sm transition-all text-content-dimmed hover:text-content">
+										<i class="text-xl ti ti-download"></i>
+									</button>
+
+									<div class="menu" x-ref="downloadOptions" @click="$el.removeAttribute('data-open')">
+
+										<ul class="text-sm">
+											<li>
+												<a :href="preview.output_file.url" target="_blank" download class="block px-4 py-2 text-start hover:bg-intermediate">
+													{{ p__('button', 'Download audio') }}
+												</a>
+											</li>
+
+											<template x-if="preview.cover_image">
+												<li>
+													<a :href="preview.cover_image.url" target="_blank" download class="block px-4 py-2 text-start hover:bg-intermediate">
+														{{ p__('button', 'Download cover image') }}
+													</a>
+												</li>
+											</template>
+										</ul>
+									</div>
+								</div>
+							</div>
+
+							<button @click="modal.open('delete-modal');" class="flex gap-1 items-center text-sm transition-all text-content-dimmed hover:text-content group">
+								<i class="text-xl ti ti-trash group-hover:text-failure"></i>
+							</button>
+						</div>
+					</div>
+
+					<template x-if="preview.lyrics">
+						<div class="flex flex-col gap-4 mt-4 box" data-density="comfortable">
+							<div class="message">
+								<x-markdown x-effect="$el.setContent(preview.lyrics)"></x-markdown>
+							</div>
+
+							<div class="flex">
+								<x-copy :data-copy="preview.lyrics" class="flex gap-1 items-center text-sm transition-all text-content-dimmed hover:text-content">
+									<i class="text-xl ti ti-copy"></i>
+
+									<span class="hidden md:inline">{{ p__('button', 'Copy') }}</span>
+								</x-copy>
+							</div>
+						</div>
+					</template>
+				</div>
+			</template>
+		</div>
+	</div>
+
+	<modal-element name="delete-modal">
+		<template x-if="preview">
+			<form class="flex flex-col gap-6 items-center modal" @submit.prevent="remove(preview);">
+				<div class="flex relative justify-center items-center mx-auto w-24 h-24 rounded-full text-failure/25">
+					<svg class="absolute top-0 left-0 w-full h-full" width="112" height="112" viewbox="0 0 112 112" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<circle cx="56" cy="56" r="55.5" stroke="currentColor" stroke-dasharray="8 8"/>
+					</svg>
+
+					<div class="flex justify-center items-center w-20 h-20 text-4xl rounded-full transition-all bg-failure/25 text-failure">
+						<i class="text-4xl ti ti-trash"></i>
+					</div>
+				</div>
+
+				<div class="flex flex-col gap-2 items-center text-center">
+					<div class="text-lg text-center">
+						{{ __('Do you really want to delete the composition?') }}
+					</div>
+
+					<p class="text-sm text-content-dimmed">{{ __('All associated content and files will be permanently removed. This action cannot be reverted once confirmed.') }}
+					</p>
+				</div>
+
+				<div class="flex gap-4 justify-center items-center">
+					<button class="button button-outline" @click="modal.close()" type="button">
+						{{ p__('button', 'No, cancel') }}
+					</button>
+
+					<button class="button button-failure" type="submit" :processing="isDeleting">
+						{% include "/snippets/spinner.twig" %}
+
+						{{ p__('button', 'Yes, delete') }}
+					</button>
+				</div>
+			</form>
+		</template>
+	</modal-element>
+
+	<modal-element name="options">
+		<form @submit.prevent="modal.close()" class="flex flex-col gap-6 modal">
+			<div class="flex justify-between items-center">
+				<h2 class="text-xl">{{ p__('heading', 'Options') }}</h2>
+
+				<button class="flex justify-center items-center w-8 h-8 rounded-full border border-transparent bg-line-dimmed hover:border-line" @click="modal.close()" type="button">
+					<i class="text-xl ti ti-x"></i>
+				</button>
+			</div>
+
+			<div class="flex flex-col gap-4">
+				<div>
+					<label>{{ p__('label', 'Model') }}</label>
+					<select class="mt-2 input border-line-dimmed hover:border-line" x-model="model">
+						<template x-for="a in adapters">
+							<option :value="a.model" x-text="a.name"></option>
+						</template>
+					</select>
+				</div>
+
+				<div>
+					<label>{{ p__('label', 'Composition type') }}</label>
+					<select class="mt-2 input border-line-dimmed hover:border-line" @change="instrumental = $el.value == 'instrumental'">
+						<option value="intrumental" :selected="instrumental">
+							{{ p__('label', 'Instrumental') }}
+						</option>
+
+						<option value="vocal" :selected="!instrumental">
+							{{ p__('label', 'Vocal') }}
+						</option>
+					</select>
+				</div>
+
+				<div>
+					<label class="flex gap-1 items-center" for="tags">
+						{{ p__('label', 'Style of Music') }}
+
+						<i class="ti ti-help-square-rounded-filled help" x-tooltip.raw="{{ __("Describe the style of music you want (e.g. acoustic pop). Artists' names are not recognized, but genres and vibes are.") }}"></i>
+					</label>
+
+					<input type="text" id="tags" class="mt-2 input" autocomplete="off" x-model="tags" placeholder="{{ __('Enter style of music') }}" maxlength="120"/>
+				</div>
+			</div>
+
+
+			<div>
+				<button type="submit" class="w-full button">
+					{{ p__('button', 'Confirm') }}
+				</button>
+			</div>
+		</form>
+	</modal-element>
+{% endblock %}
+
+{% block footer %}
+	<div class="sticky bottom-0 z-40 mt-auto">
+		<div class="h-8 to-transparent bg-linear-to-t from-main"></div>
+
+		<div class="bg-main">
+			<form @submit.prevent="{{ workspace.subscription.plan.config.composer.is_enabled is defined and workspace.subscription.plan.config.composer.is_enabled ? 'submit($el)' : '' }}">
+				<div class="flex items-center gap-2 py-3">
+					<div class="avatar avatar-sm bg-linear-to-br from-[#600989] to-[#CF83F3] text-main">
+						{% include "snippets/icons/imagine.twig" %}
+					</div>
+
+					<template x-if="adapter">
+						<button type="button" class="capitalize button button-xs button-dimmed" @click="window.modal.open('options')">
+							<span x-text="adapter.short_name"></span>
+							<i class="ti ti-caret-up-down-filled text-xs"></i>
+						</button>
+					</template>
+
+					<div class="flex gap-2 items-center">
+						<button type="button" class="relative hover:text-content text-base" x-tooltip.raw="{{ p__('button', 'Show model related options') }}" @click.stop="window.modal.open('options')" :class="tags ? 'text-content' : 'text-content-dimmed'">
+							<i class="ti ti-settings"></i>
+
+							<template x-if="tags">
+								<i class="absolute bottom-3 start-2 text-base ti ti-point-filled text-failure"></i>
+							</template>
+						</button>
+
+						<template x-if="instrumental">
+							<button type="button" @click="instrumental = false" class="text-base text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Instrumental') }}">
+								<i class="ti ti-music"></i>
+							</button>
+						</template>
+
+						<template x-if="!instrumental">
+							<button type="button" @click="instrumental = true" class="text-base text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Vocal') }}">
+								<i class="ti ti-microphone-2"></i>
+							</button>
+						</template>
+					</div>
+				</div>
+
+				<div class="relative p-0.5 rounded-3xl bg-line-dimmed has-[textarea:focus]:bg-linear-to-br has-[textarea:focus]:from-gradient-from has-[textarea:focus]:to-gradient-to">
+					<div class="flex gap-2 items-end p-2 ps-4 rounded-[1.375rem] bg-main">
+						<div class="overflow-y-auto mb-2 max-h-36 autogrow-textarea text-content grow" :data-replicated-value="prompt">
+							<textarea :placeholder="instrumental ? `{{ __('Type a prompt for instrumental music here...') }}` : `{{ __('Include lyrics for vocal music here...') }}`" autocomplete="off" rows="1" x-model="prompt" x-ref="prompt" :maxlength="adapter?.prompt_length" class="block p-0 text-base bg-transparent border-none focus:ring-0 placeholder:text-content-dimmed" required></textarea>
+						</div>
+
+						<div class="flex gap-2 items-center ms-auto">
+							{% if workspace.subscription.plan.config.composer.is_enabled is defined and workspace.subscription.plan.config.composer.is_enabled %}
+								<template x-if="adapter?.is_enabled">
+									<button type="submit" class="p-0 w-10 h-10 button button-accent rounded-[0.875rem]" :disabled="!prompt || isProcessing" :processing="isProcessing">
+										{% include "/snippets/spinner.twig" %}
+
+										<template x-if="!isProcessing">
+											<i class="ti ti-arrow-up"></i>
+										</template>
+									</button>
+								</template>
+
+								<template x-if="!adapter || !adapter.is_enabled">
+									<a href="app/billing" class="p-0 w-10 h-10 button button-dimmed rounded-[0.875rem]" x-tooltip.raw="{{ __('Selected model is not available in your plan. Either upgrade your plan or select another model.') }}">
+										<i class="ti ti-lock-up"></i>
+									</a>
+								</template>
+							{% else %}
+								<a href="app/billing" class="p-0 w-10 h-10 button button-dimmed rounded-[0.875rem]" x-tooltip.raw="{{ __('Upgrade your plan') }}">
+									<i class="ti ti-lock-up"></i>
+								</a>
+							{% endif %}
+						</div>
+					</div>
+				</div>
+			</form>
+
+			{% include "/sections/footer.twig" %}
+		</div>
+	</div>
+{% endblock %}

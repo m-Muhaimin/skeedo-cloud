@@ -1,0 +1,89 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% set xdata = 'settings' %}
+{% block title p__('title', 'Custom tags')|title %}
+
+{% block template %}
+<div>
+  {% include "snippets/back.twig" with {link: 'admin/settings/script-tags', label: 'Script tags'} %}
+
+  <h1 class="mt-4">
+    {{ p__('heading', 'Custom tags') }}
+  </h1>
+</div>
+
+<x-form>
+  <form class="flex flex-col gap-8" @submit.prevent="submit" x-ref="form">
+    <section class="grid grid-cols-1 gap-6 box" data-density="comfortable">
+
+      <h2>{{ p__('heading', 'Config') }}</h2>
+
+      <div>
+        <label for="script_tags[custom][head]">
+          {{ p__('label', 'Head content') }}
+        </label>
+
+        <textarea id="script_tags[custom][head]"
+          name="script_tags[custom][head]" rows="5" class="mt-2 input"
+          autocomplete="off">{{ option.script_tags.custom.head ?? '' }}</textarea>
+
+        <ul
+          class="flex flex-col gap-1 m-3 mb-0 text-xs list-disc list-inside text-content-dimmed">
+          <li>
+            {{ __('These content will be injected right after <head> tag') }}
+          </li>
+        </ul>
+      </div>
+
+      <div>
+        <label for="script_tags[custom][body]">
+          {{ p__('label', 'Body content') }}
+        </label>
+
+        <textarea id="script_tags[custom][body]"
+          name="script_tags[custom][body]" rows="5" class="mt-2 input"
+          autocomplete="off">{{ option.script_tags.custom.body ?? '' }}</textarea>
+
+        <ul
+          class="flex flex-col gap-1 m-3 mb-0 text-xs list-disc list-inside text-content-dimmed">
+          <li>
+            {{ __('These content will be injected right after <body> tag') }}
+          </li>
+        </ul>
+      </div>
+
+      <div>
+        <label for="script_tags[custom][end]">
+          {{ p__('label', 'Footer content') }}
+        </label>
+
+        <textarea id="script_tags[custom][end]" name="script_tags[custom][end]"
+          rows="5" class="mt-2 input"
+          autocomplete="off">{{ option.script_tags.custom.end ?? '' }}</textarea>
+
+        <ul
+          class="flex flex-col gap-1 m-3 mb-0 text-xs list-disc list-inside text-content-dimmed">
+
+          <li>
+            {{ __('These content will be injected right before </body> tag') }}
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <div class="flex justify-end gap-4">
+      <a href="admin/settings/script-tags" class="button button-outline">
+        {{ p__('button', 'Cancel') }}
+      </a>
+
+      <button type="submit" class="button button-accent"
+        :processing="isProcessing">
+        {% include "/snippets/spinner.twig" %}
+
+        {{ p__('button', 'Save changes') }}
+      </button>
+    </div>
+  </form>
+</x-form>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% block title p__('title', 'Cloud storages')|title %}
+
+{% block template %}
+<div>
+  {% include "snippets/back.twig" with {link: 'admin/settings', label: 'Settings'} %}
+
+  <h1 class="mt-4">{{ p__('title', 'Cloud storages') }}</h1>
+</div>
+
+<div>
+  {% if cdn_adapters|length > 1 %}
+  <div class="grid gap-2 sm:grid-cols-2">
+    {% for key, adapter in cdn_adapters %}
+    {% if key != "local" %}
+    <a href="admin/settings/cdn/{{ key }}"
+      class="flex items-center justify-between box hover:border-line">
+      <div>
+        <div class="flex items-center gap-2">
+          <h3>{{ adapter.name }}</h3>
+
+          {% if adapter is not builtin %}
+          <i class="text-lg cursor-auto ti ti-puzzle text-content-dimmed hover:text-content"
+            x-tooltip.raw="{{ __('Plugin addition') }}"></i>
+          {% endif %}
+        </div>
+
+        <p class="mt-1 text-sm text-content-dimmed">
+          {{ adapter.enabled ? __('Storage is enabled') : 'Storage is disabled' }}
+        </p>
+      </div>
+
+      <span
+        class="relative w-6 h-6 rounded-full {{ adapter.enabled ? 'text-success' : 'text-content-dimmed' }}">
+        <span
+          class="absolute top-0 left-0 w-full h-full bg-current rounded-full opacity-20"></span>
+
+        <span
+          class="absolute w-3 h-3 -translate-x-1/2 -translate-y-1/2 bg-current rounded-full top-1/2 left-1/2"></span>
+      </span>
+    </a>
+    {% endif %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <section class="box" data-density="comfortable">
+    <h2>{{ p__('heading', 'Not available') }}</h2>
+
+    <div class="mt-4">
+      <p>
+        {{ __('No additional cloud storage is available.') }}
+      </p>
+
+      <p class="mt-1 text-sm text-content-dimmed">
+        {{ __('Please install additional cloud storage adapters to enable this feature.') }}
+      </p>
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

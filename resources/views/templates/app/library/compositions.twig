@@ -1,0 +1,96 @@
+{% extends "/layouts/main.twig" %}
+
+{% set active_menu = '/app/library' %}
+
+{% set strings = {
+  delete_success: __("Composition has been deleted successfully.")
+} %}
+
+{% set xdata %}
+list("library/compositions",
+{{ strings|json_encode }})
+{% endset %}
+
+{% block title p__('title', 'Compositions library')|title %}
+
+{% block template %}
+	{# Header #}
+	<div>
+		{% include "snippets/back.twig" with {link: 'app/library', label: p__('button', 'Library')} %}
+		<h1>{{ __('Compositions library') }}</h1>
+
+		<template x-if="total !== null">
+			<div class="mt-2 text-sm text-content-dimmed">
+				{{ __('Total :count compositions')|replace({':count': '<span x-text="total"></span>'})|raw }}
+			</div>
+		</template>
+	</div>
+
+	{# List #}
+	<div class="group/list" data-state="initial" :data-state="state">
+		<div class="hidden group-data-[state=empty]/list:block">
+			{% include "sections/empty.twig" with { title: p__('heading', 'Empty result set'), message: __('There are no compositions yet.'), reset: __('There are no compositions matching your search.') } %}
+		</div>
+
+		<ul class="text-sm group-data-[state=empty]/list:hidden grid gap-1 grid-cols-2 md:grid-cols-4">
+			{% for i in range(1,12) %}
+				<li class="hidden group-data-[state=initial]/list:block">
+					<div class="relative pt-[150%] group loading"></div>
+				</li>
+			{% endfor %}
+
+			<template x-for="r in resources" :key="r.id">
+				<li x-data>
+					<div class="relative pt-[150%] group">
+						<a :href="`app/composer/${r.id}`" class="">
+							<template x-if="r.cover_image">
+								<canvas is="x-blurhash" class="absolute top-0 left-0 w-full h-full rounded-xl" width="56" height="56" :hash="r.cover_image.blur_hash" type="color"></canvas>
+							</template>
+
+							<template x-if="r.cover_image">
+								<img :src="r.cover_image.url" :alt="r.title" class="object-cover absolute top-0 left-0 w-full h-full rounded-xl">
+							</template>
+
+							<div class="absolute top-0 left-0 w-full h-full z-10 bg-linear-to-bl from-[rgba(63,66,70,1)] to-[rgba(63,66,70,0)] invisible group-hover:visible rounded-xl"></div>
+						</a>
+
+						<div class="hidden absolute top-2 end-2 z-10 group-hover:block" @click.outside="$refs.context.removeAttribute('data-open')">
+
+							<button @click="$refs.context.toggleAttribute('data-open')">
+								<i class="text-2xl text-white ti ti-dots-vertical"></i>
+							</button>
+
+							<div class="z-10 menu" x-ref="context">
+								<ul>
+									<li>
+										<button class="flex gap-2 items-center px-4 py-2 w-full hover:no-underline hover:bg-intermediate" @click.prevent="currentResource = r; modal.open('delete-modal')">
+											<i class="ti ti-trash"></i>
+											{{ __('Delete') }}
+										</button>
+									</li>
+								</ul>
+							</div>
+						</div>
+					</div>
+				</li>
+			</template>
+
+			<template x-if="hasMore">
+				<li class="group-data-[state=initial]/list:hidden" :class="isLoading ? 'animate-pulse' : null">
+					<div class="relative pt-[150%]">
+						<button type="button" @click="retrieveResources()" class="flex absolute top-0 left-0 flex-col gap-2 justify-center items-center w-full h-full text-content-dimmed hover:text-content disabled:pointer-events-none disabled:opacity-50" :disabled="isLoading">
+							<i class="text-4xl ti ti-rotate-clockwise"></i>
+							{{ p__('button', 'Load more') }}
+						</button>
+					</div>
+				</li>
+			</template>
+		</ul>
+	</div>
+
+	{% include "sections/delete-modal.twig" with { 
+		message: __('Do you really want to delete the composition?'),
+		title: '',
+		details: __('All associated content and files will be permanently removed. This action cannot be reverted once confirmed.')
+	} %}
+{% endblock %}

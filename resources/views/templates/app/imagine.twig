@@ -1,0 +1,735 @@
+{% extends "/layouts/main.twig" %}
+{% set mobile_head_button = { link: 'app/imagine' } %}
+
+{% set samples = [
+  'With a surreal mix of elegance and eeriness, a kitsune with a glistening golden fur coat stands amidst a dusky forest in a high fashion photograph. The image captures the mystical creature\'s piercing amber eyes and sleek, shimmering tails, as it exudes an aura of ancient power and enigmatic allure. Every detail, from the intricate patterns on its fur to the hauntingly beautiful surroundings, is rendered with impeccable precision and depth, creating a mesmerizing and unforgettable visual experience.',
+  'A magnificently garish sorcerer, their ostentatious costume adorned with gaudy jewels and shimmering fabrics, exudes an air of opulent tackiness mixed with undeniable power. Picture a surreal photograph capturing the sorcerer in a dramatic pose, bathed in ethereal lighting that highlights every intricate detail of their over-the-top ensemble. The image radiates with a vividness that practically leaps off the page, showcasing the intricate craftsmanship and extravagance of the subject with dazzling clarity.',
+  'In the misty embrace of a moonlit forest, a bewildering bizarre centaur emerges: half man, half equine, adorned in vibrant bohemian attire. This enigmatic being is captured in a hauntingly beautiful photograph, where every detail is sharp and mesmerizing. The centaur\'s human-like torso is covered in intricate tattoos that seem to come alive in the dim light, while its equine half boasts a luxurious mane and tail that shimmer with otherworldly colors. The background is a dreamlike blur of ancient trees and ethereal wisps of fog, adding to the mystical atmosphere of the scene. Its eyes hold a spark of wild magic, inviting viewers into a world of enchantment and wonder.',
+  'A mystifying and ethereal mauve-tinted dimensional drifter, appearing as a translucent entity traversing multiple planes of existence. This mesmerizing figure is captured in a stunningly detailed digital painting, showcasing intricate patterns and swirls of energy that seem to dance around the enigmatic being. The artist\'s masterful use of light and shadow creates a sense of depth and movement, making the drifter appear both otherworldly and strangely familiar. The overall composition is a breathtaking display of imagination and skill, drawing the viewer into a realm of wonder and possibility.',
+  'Ethereally gliding through a celestial realm, the elysian timeless void voyager floats serenely amidst swirling nebulae and shimmering star clusters. This concept art painting captures the awe-inspiring beauty of an otherworldly being in a state of graceful motion. The colors are vivid and luminescent, creating a sense of transcendence and wonder. The intricate details of the voyager\'s celestial robes and radiant aura are rendered with exquisite precision, making the viewer feel as though they are witnessing a truly divine being. The overall atmosphere is one of pure, celestial tranquility, inviting the viewer to contemplate the mysteries of the universe.',
+
+  'A watercolor illustration of a magical forest with glowing fireflies',
+  'A sketch of a wizard riding a unicorn through a rainbow',
+  'A surrealistic oil painting of a flying fish with butterfly wings',
+  'A collage of vintage photographs forming the shape of a heart',
+  'A charcoal drawing of a haunted house on a foggy hill',
+  'A digital illustration of a cybernetic mermaid swimming among neon jellyfish',
+  'A sculpture of a tree made entirely of recycled plastic bottles',
+  'A graffiti mural of a phoenix rising from the ashes on a city wall',
+  'A mosaic portrait of Albert Einstein made from computer keys',
+  'A cartoon drawing of a superhero squirrel saving the day in a city park',
+  'A pop art style painting of Marilyn Monroe using Rubik\'s cubes as pixels',
+  'A steampunk-inspired illustration of a mechanical octopus guarding a sunken treasure chest',
+  'A minimalist ink sketch of a teacup floating in mid-air',
+  'A clay sculpture of a family of penguins sledding down an icy hill',
+  'An abstract digital artwork of swirling galaxies merging together',
+  'A mixed media piece featuring origami cranes flying over a city skyline at dusk',
+  'A caricature drawing of famous historical figures playing poker',
+  'A mural of a cosmic elephant spraying galaxies from its trunk onto a starry sky',
+  'A digital painting of a futuristic cityscape with flying cars and holographic billboards',
+  'A stained glass window depicting scenes from classic fairy tales',
+  'A paper-cut silhouette of a jungle scene with wild animals and lush foliage',
+  'A chalk drawing of a smiling sun wearing sunglasses on a chalkboard',
+  'A mixed media collage of vintage postage stamps forming a map of the world',
+  'A sculpture of a phoenix made entirely of melted candle wax',
+  'A surrealistic painting of a clock melting over a desert landscape',
+  'A watercolor portrait of a cat wearing a crown and holding a scepter',
+  'An abstract sculpture representing the concept of time using clock parts',
+  'A digital illustration of a cyberpunk city with towering skyscrapers and flying drones',
+  'A mosaic of colorful tiles depicting a scene from under the sea',
+  'A painting of a dreamy landscape with floating islands and waterfalls made of clouds',
+  'A cartoon drawing of a group of animals having a picnic in the park',
+  'A sculpture of a dragon made entirely of recycled metal scraps',
+  'A digital artwork of a magical library where books come to life at night',
+  'A graffiti mural of a giant robot battling a sea monster in the streets',
+  'A surrealistic oil painting of a forest where the trees have eyes and the flowers have mouths',
+  'A mosaic portrait of a famous musician made entirely of broken vinyl records',
+  'A sketch of a futuristic city on Mars with domed habitats and space elevators',
+  'A clay sculpture of a whimsical creature with the body of a cat and the wings of a butterfly',
+  'An abstract digital artwork of geometric shapes dancing in a kaleidoscope of colors',
+  'A paper-cut silhouette of a carnival scene with carousel horses and ferris wheels',
+  'A chalk drawing of a magical doorway leading to a secret garden',
+  'A mixed media collage of vintage comic book panels forming a city skyline',
+  'A sculpture of a phoenix rising from the ashes made entirely of glass shards',
+  'A surrealistic painting of a giant teapot floating in a stormy sea',
+  'A watercolor portrait of a panda wearing a top hat and monocle',
+  'An abstract sculpture representing the chaos of the universe using tangled wires'
+] %}
+
+{% set active_menu = '/app/imagine' %}
+{% set xdata %}imagine(
+  `{{ option.features.imagine.default_model|default(null) }}`,
+  {{ services|json_encode }},
+  {{ samples|json_encode }},
+  {{ (image ?? null )|json_encode() }}
+)
+{% endset %}
+{% block title p__('title', 'Imagine')|title %}
+
+{% block sidebar %}
+	<div class="hidden group-data-[key=history]/sidebar:block">
+		<div class="flex items-center justify-between p-4 border-b border-line sticky top-0 bg-main z-10">
+			<h2>{{ p__('heading', 'History') }}</h2>
+
+			<button type="button" class="text-content-dimmed hover:text-content" @click="sidebar.close()" x-tooltip.raw.placement.left="{{ __('Close') }}">
+				<i class="text-2xl ti ti-x"></i>
+			</button>
+		</div>
+
+		<div>
+      <template x-for="i in history" :key="i.id">
+        <a :href="`app/imagine/${i.id}`" class="flex gap-2 items-center p-4 border-b border-line-dimmed hover:bg-line-dimmed/50" :class="preview?.id == i.id ? 'bg-line-dimmed/50' : ''" @click.prevent="select(i)">
+					<x-avatar :title="i.title" class="shrink-0" :src="i.output_file?.url" :hash="i.output_file?.blur_hash"></x-avatar>
+
+					<div class="overflow-hidden">
+						<div x-text="i.title || `{{ __('Untitled resource') }}`" class="overflow-hidden text-sm text-ellipsis text-nowrap max-w-full" :class="i.params.prompt ? '' : 'text-content-dimmed'"></div>
+
+						<div class="flex">
+							<x-time :datetime="i.created_at" data-type="date" class="text-xs text-content-dimmed"></x-time>
+						</div>
+					</div>
+				</a>
+      </template>
+
+			<template x-if="!historyLoaded">
+				<div class="my-8 flex justify-center">
+					<button type="button" @click="fetchHistory()" class="font-semibold hover:underline text-sm">
+						{{ __('Load more') }}
+					</button>
+				</div>
+			</template>
+
+			<template x-if="historyLoaded && history.length === 0">
+				<div class="p-4 text-content-dimmed">
+					{{ __('No images yet') }}
+				</div>
+			</template>
+		</div>
+	</div>
+{% endblock %}
+
+{% block toolbar %}
+<div class="absolute z-10 top-4 end-10 hidden md:flex gap-2 transition-all ease-in">
+  <a href="app/imagine" class="text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('New image') }}">
+    <i class="text-2xl ti ti-square-rounded-plus"></i>
+  </a>
+
+  <a href="app/library/images" class="text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('History') }}" @click.prevent="sidebar.open('history')">
+    <i class="text-2xl ti ti-file-stack"></i>
+  </a>
+</div>
+{% endblock %}
+
+{% block template %}
+<div class="flex flex-col gap-4 grow">
+  <div :class="preview && [3, 4].includes(preview.state) ? '' : 'flex justify-center my-auto'">
+    <template x-if="!preview && !isProcessing">
+      <div class="my-10 text-center md:my-0">
+        <div
+          class="mx-auto w-16 h-16 bg-linear-to-br from-[#E6C0FE] to-[#984CF8] tool-icon">
+          <div class="bg-linear-to-br from-[#E6C0FE] to-[#984CF8]"></div>
+
+          {% include "snippets/icons/imagine.twig" %}
+        </div>
+
+        <h1 class="mt-6">{{ p__('heading', 'Imagine') }}</h1>
+        <p class="mt-1 text-lg font-light text-content-dimmed">
+          {{ __('Use your imagination to create awesome images.') }}</p>
+      </div>
+    </template>
+
+    <template x-if="isProcessing">
+      <div class="my-10 text-center md:my-0">
+        <div class="flex justify-center text-content-dimmed">
+          {% include "snippets/spinner.twig" with {size: '4rem'} %}
+        </div>
+
+        <h1 class="mt-6">{{ p__('heading', 'Generating image...') }}</h1>
+        <p class="mt-1 text-lg font-light text-content-dimmed">
+          {{ __('This may take a while. Please wait.') }}</p>
+      </div>
+    </template>
+
+    <template x-if="preview && !isProcessing && preview.state < 3">
+				<div class="my-10 text-center md:my-0 flex flex-col gap-6">
+					<div class="flex justify-center text-content-dimmed">
+						{% include "snippets/spinner.twig" with {size: '4rem'} %}
+					</div>
+
+					<div class="flex flex-col gap-1">
+						<h1>{{ p__('heading', 'Generating image...') }}</h1>
+
+						<template x-if="!preview.progress">
+							<p class="text-lg font-light text-content-dimmed">
+								{{ __('This may take a while. You can leave this page.') }}</p>
+						</template>
+
+						<template x-if="preview.progress">
+							{% set progress %}
+							<span x-text="`${preview.progress}%`"></span>
+							{% endset %}
+
+							<p class="text-lg font-light text-content-dimmed">
+								{{ __('Lights, camera, :progress there! Your image is on its way', {':progress': progress})|raw }}
+							</p>
+						</template>
+
+						<template x-if="preview.progress">
+							<div class="mt-4 flex justify-center">
+								<div class="w-full max-w-2xs h-2 bg-line-dimmed rounded-sm">
+									<div :style="`width: ${preview.progress}%`" class="h-full bg-content rounded-sm transition-all"></div>
+								</div>
+							</div>
+						</template>
+					</div>
+
+					<hr class="border-none h-px bg-line-dimmed bg-linear-to-r from-main via-line-dimmed to-main">
+
+          <div class="flex flex-col items-center gap-2 group">
+            <span class="text-xs font-medium text-content-super-dimmed">{{ __('What would you like to do?') }}</span>
+
+            <div class="flex items-center gap-2 text-xl px-2 py-1.5 rounded-lg border border-line-dimmed group-hover:border-line">
+              <button type="button" class="flex items-center font-bold text-content-dimmed hover:text-content transition-all" x-tooltip.raw.html="{{ __('Generate a new image from scratch') }}" @click="actionNew">
+                <i class="ti ti-square-rounded-plus"></i>
+                <span class="block text-xs max-w-0 overflow-hidden transition-all group-hover:ms-1 group-hover:max-w-md group-hover:opacity-100 opacity-0 whitespace-nowrap">{{ __('New') }}</span>
+              </button>
+
+              <button type="button" class="flex items-center font-bold text-content-dimmed hover:text-content transition-all" x-tooltip.raw.html="{{ __('Revise parameters and generate a new image') }}" @click="actionEdit">
+                <i class="ti ti-versions"></i>
+                <span class="block text-xs max-w-0 overflow-hidden transition-all group-hover:ms-1 group-hover:max-w-md group-hover:opacity-100 opacity-0 whitespace-nowrap">{{ __('Edit') }}</span>
+              </button>
+            </div>
+          </div>
+				</div>
+			</template>
+
+    <template x-if="preview && !isProcessing && [3, 4].includes(preview.state)">
+      <div class="flex flex-col gap-10">
+        <div class="flex flex-col gap-4">
+          <div>
+            <div class="text-xl autogrow-textarea font-editor-heading" :data-replicated-value="preview.title">
+              <textarea placeholder="{{ __('Untitled resource') }}" autocomplete="off" x-model="preview.title" rows="1" @input.debounce.750ms="save(preview)" class="block px-0 py-0 w-full bg-transparent border-0 ring-0 transition-colors appearance-none outline-none resize-none placeholder:text-content-dimmed placeholder:opacity-50 read-only:text-content-dimmed"></textarea>
+            </div>
+
+            <div class="mt-1">
+              <x-uuid x-text="preview.id"></x-uuid>
+            </div>
+          </div>
+
+          <div class="flex gap-4 items-center">
+            {% include "snippets/audience.twig" with {ref: 'preview'} %}
+
+            <span
+              class="hidden gap-1 items-center text-sm whitespace-nowrap text-content-dimmed md:flex">
+              <i class="text-base ti ti-cpu-2"></i>
+              <span x-text="preview.model" class="uppercase"></span>
+            </span>
+
+            <span
+              class="hidden gap-1 items-center text-sm whitespace-nowrap md:flex text-content-dimmed">
+              <i class="text-base ti ti-maximize"></i>
+
+              <span>
+                <span x-text="preview.output_file.width"></span>
+                x
+                <span x-text="preview.output_file.height"></span>
+              </span>
+            </span>
+
+            <span
+              class="flex gap-1 items-center text-sm whitespace-nowrap text-content-dimmed">
+              <i class="text-base ti ti-coins"></i>
+              <x-credit :data-value="preview.cost"
+                format="{{ __(":count credits") }}"></x-credit>
+            </span>
+
+            <a :href="preview.output_file.url" type="button"
+              download="image.png" target="_blank"
+              class="ms-auto transition-all text-content-dimmed hover:text-content">
+              <i class="text-xl ti ti-download"></i>
+            </a>
+
+            <button type="button" @click="copyImgToClipboard(preview)"
+              class="transition-all text-content-dimmed hover:text-content">
+              <i class="text-xl ti ti-copy"></i>
+            </button>
+
+            <button type="button" @click="modal.open('delete-modal');"
+              class="transition-all text-content-dimmed hover:text-failure">
+              <i class="text-xl ti ti-trash"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-4">
+          <template x-if="preview.state === 4">
+            <div class="flex flex-col gap-4 rounded-lg bg-line-super-dimmed text-center box items-center" data-density="comfortable">
+              <div class="flex flex-col gap-1">
+                <h1>{{ p__('heading', 'Image generation failed') }}</h1>
+                <p class="text-lg font-light text-content-dimmed">
+                  {{ __('Failed to generate image.') }}
+                </p>
+              </div>
+
+              <template x-if="preview.meta.failure_reason">
+                <p class="text-sm text-failure font-medium">
+                  <span x-text="preview.meta.failure_reason"></span>
+                </p>
+              </template>
+            </div>
+          </template>
+
+          <template x-if="preview.output_file">
+            <div class="p-1 rounded-3xl border group border-line">
+              <div class="relative rounded-[20px] bg-line-dimmed">
+                <template x-if="preview.output_file.blur_hash">
+                  <canvas is="x-blurhash"
+                    class="absolute top-0 left-0 w-full h-full rounded-[20px] loading"
+                    :width="16" :height="9"
+                    :hash="preview.output_file.blur_hash"></canvas>
+                </template>
+
+                <img :src="preview.output_file.url"
+                  :alt="preview.params.prompt || ''"
+                  class="object-cover relative rounded-[20px] w-full"
+                  :width="preview.output_file.width"
+                  :height="preview.output_file.height">
+
+                <div
+                  class="absolute top-0 left-0 w-full h-full via-transparent to-transparent opacity-0 transition-all bg-linear-to-bl from-main group-hover:opacity-50">
+                </div>
+
+                <a :href="preview.output_file.url" target="_blank"
+                  x-tooltip.raw="{{ __('Open in full size') }}"
+                  class="absolute top-0 right-0 opacity-0 transition-all scale-90 text-content group-hover:opacity-100 group-hover:scale-100 group-hover:top-2 group-hover:right-2">
+                  <i class="text-4xl ti ti-arrow-up-right"></i>
+                </a>
+              </div>
+            </div>
+          </template>
+
+          <template x-if="preview.params.prompt">
+            <div class="text-xs text-center">
+              <x-copy class="text-content-dimmed hover:text-content" data-msg="{{ __('Prompt copied to clipboard') }}" x-text="preview.params.prompt" :data-copy="preview.params.prompt">
+              </x-copy>
+            </div>
+          </template>
+          
+          <template x-if="preview.params.prompt">
+            <hr class="border-none h-px bg-line-dimmed bg-linear-to-r from-main via-line-dimmed to-main">
+          </template>
+
+          <div class="flex flex-col items-center gap-2 group">
+            <span class="text-xs font-medium text-content-super-dimmed">{{ __('What would you like to do?') }}</span>
+
+            <div class="flex items-center gap-2 text-xl px-2 py-1.5 rounded-lg border border-line-dimmed group-hover:border-line">
+              <button type="button" class="flex items-center font-bold text-content-dimmed hover:text-content transition-all" x-tooltip.raw.html="{{ __('Generate a new image from scratch') }}" @click="actionNew">
+                <i class="ti ti-square-rounded-plus"></i>
+                <span class="block text-xs max-w-0 overflow-hidden transition-all group-hover:ms-1 group-hover:max-w-md group-hover:opacity-100 opacity-0 whitespace-nowrap">{{ __('New') }}</span>
+              </button>
+
+              <button type="button" class="flex items-center font-bold text-content-dimmed hover:text-content transition-all" x-tooltip.raw.html="{{ __('Revise parameters and generate a new image') }}" @click="actionEdit">
+                <i class="ti ti-versions"></i>
+                <span class="block text-xs max-w-0 overflow-hidden transition-all group-hover:ms-1 group-hover:max-w-md group-hover:opacity-100 opacity-0 whitespace-nowrap">{{ __('Edit') }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+</div>
+
+<modal-element name="models">
+  <form @submit.prevent="modal.close()" class="flex flex-col gap-6 modal">
+    <div class="flex justify-between items-center">
+      <h2 class="text-xl">{{ p__('heading', 'Models') }}</h2>
+
+      <button class="flex justify-center items-center w-8 h-8 rounded-full border border-transparent bg-line-dimmed hover:border-line" @click="modal.close()" type="button">
+        <i class="text-xl ti ti-x"></i>
+      </button>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <input type="text" class="mt-2 input" placeholder="{{ __('Search models') }}" x-model="query">
+
+      <div class="scroll-area">
+        <div class="grid grid-cols-2 gap-1">
+          <template x-for="m in adapters" :key="m.key + '-' + m.model.key">
+            <template x-if="search(query, m, 'adapter')">
+              <div class="relative flex group" :class="m.model.granted ? null : 'opacity-50 hover:opacity-100'">
+                <button type="button" @click="chooseAdapter(m)" class="box w-full flex flex-col text-start gap-4">
+                  <div class="flex items-center gap-2">
+                    <x-avatar :mask="m.model.icon || m.model.provider?.icon || m.icon" :icon="!m.model.icon && !m.model.provider?.icon && !m.icon ? 'cpu' : null" class="contain avatar-outline"></x-avatar>
+
+                    <div class="flex flex-col">
+                      <h3 class="text-sm line-clamp-1" x-text="m.model.name" :title="m.model.name"></h3>
+                      <div class="text-xs text-content-dimmed line-clamp-1" x-text="m.model.provider?.name || m.name"></div>
+                    </div>
+                  </div>
+
+                  <template x-if="m.model.description">
+                    <p x-text="m.model.description" class="text-xs text-content-dimmed line-clamp-3"></p>
+                  </template>
+
+                  <div class="flex items-center gap-1 mt-auto">
+                    <template x-if="m.model.attributes?.preview">
+                      <i class="ti ti-test-pipe text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Experimental') }}"></i>
+                    </template>
+
+                    <template x-if="m.model.attributes?.turbo">
+                      <i class="ti ti-progress-bolt text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('Optimized for speed') }}"></i>
+                    </template>
+                  </div>
+
+                  <template x-if="!m.model.granted">
+                    <span class="flex items-center w-full gap-1">
+                      <i class="ti ti-diamond"></i>
+                      <span class="text-xs">{{ __('Upgrade plan') }}</span>
+                    </span>
+                  </template>
+                </button>
+
+                <template x-if="m.model.granted && !m.pinned">
+                  <button type="button" class="ti ti-pin text-base opacity-0 group-hover:opacity-100 text-content-dimmed hover:text-content absolute top-7 right-4" x-tooltip.raw="{{ __('Pin') }}" @click="togglePin(m, 'model')"></button>
+                </template>
+
+                <template x-if="m.model.granted && m.pinned">
+                  <button type="button" class="ti ti-pinned-filled text-base text-content-dimmed hover:text-content absolute top-7 right-4" x-tooltip.raw="{{ __('Unpin') }}" @click="togglePin(m, 'model')"></button>
+                </template>
+
+                <template x-if="!m.model.granted">
+                  <a href="app/billing" class="full"></a>
+                </template>
+
+                <a :href="`app/models/?model=${m.model.key}`" target="_blank" class="ti ti-arrow-up-right absolute bottom-4 text-content-dimmed hover:text-content right-4 transition-all invisible group-hover:visible translate-y-2 -translate-x-2 group-hover:translate-y-0 group-hover:translate-x-0 group-hover:delay-1000" x-tooltip.raw="{{ __('View model details') }}"></a>
+              </div>
+            </template>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <button type="submit" class="w-full button">
+        {{ p__('button', 'Confirm') }}
+      </button>
+    </div>
+  </form>
+</modal-element>
+
+<modal-element name="options">
+  <template x-if="adapter">
+    <form @submit.prevent="modal.close()" class="flex flex-col gap-6 modal">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center gap-2">
+          <h2 class="text-xl">{{ p__('heading', 'Options') }}</h2>
+  
+          <template x-if="JSON.stringify(original) != JSON.stringify(params)">
+            <button type="button" class="button button-xs button-dimmed" @click="reset">
+              {{ p__('button', 'Reset') }}
+            </button>
+          </template>
+        </div>
+  
+        <button class="flex justify-center items-center w-8 h-8 rounded-full border border-transparent bg-line-dimmed hover:border-line" @click="modal.close()" type="button">
+          <i class="text-xl ti ti-x"></i>
+        </button>
+      </div>
+  
+      <button type="button" class="box w-full flex items-center gap-2 text-start" @click="modal.open('models')">
+        <x-avatar :mask="adapter.model.icon || adapter.model.provider?.icon || adapter.icon" :icon="!adapter.model.icon && !adapter.model.provider?.icon && !adapter.icon ? 'cpu' : null" class="contain avatar-outline"></x-avatar>
+  
+        <div>
+          <div class="font-bold" x-text="adapter.model.name"></div>
+          <div class="text-xs text-content-dimmed" x-text="adapter.model.provider?.name || adapter.model.name"></div>
+        </div>
+  
+        <i class="ti ti-caret-up-down-filled text-base ms-auto"></i>
+      </button>
+  
+      <template x-for="f in adapter.model.config.params">
+        <div class="flex flex-col gap-2">
+          <template x-if="f.key === 'quality'">
+            <label>
+              <i class="text-xl ti ti-grid-dots"></i>
+              <span>{{ p__('label', 'Quality') }}</span>
+            </label>
+          </template>
+  
+          <template x-if="f.key === 'aspect_ratio'">
+            <label>
+              <i class="text-xl ti ti-crop-portrait"></i>
+              <span>{{ p__('label', 'Aspect ratio') }}</span>
+            </label>
+          </template>
+  
+          <template x-if="f.key === 'size'">
+            <label>
+              <i class="text-xl ti ti-maximize"></i>
+              <span>{{ p__('label', 'Size') }}</span>
+            </label>
+          </template>
+  
+          <template x-if="f.key === 'background'">
+            <label>
+              <i class="text-xl ti ti-background"></i>
+              <span>{{ p__('label', 'Background') }}</span>
+            </label>
+          </template>
+  
+          <template x-if="f.key === 'style'">
+            <label>
+              <i class="text-xl ti ti-palette"></i>
+              <span>{{ p__('label', 'Style') }}</span>
+            </label>
+          </template>
+  
+          <template x-if="!['quality', 'aspect_ratio', 'size', 'background', 'style'].includes(f.key)">
+            <label x-text="f.label"></label>
+          </template>
+  
+          <div class="flex items-center flex-wrap gap-1">
+            <template x-for="option in f.options">
+              <button type="button" class="text-base flex items-center gap-2 px-3 py-1 rounded-lg" @click="params[f.key]==option.value ? delete params[f.key] : params[f.key]=option.value;" :class="params[f.key] !== undefined && params[f.key] == option.value ? 'bg-button text-button-content' : 'bg-transparent hover:bg-intermediate border border-line'">
+                <span x-text="option.label"></span>
+              </button>
+            </template>
+          </div>
+        </div>
+      </template>
+  
+      <template x-if="adapter.model.config.negative_prompt">
+        <div>
+          <label for="negative_prompt">
+            {{ p__('label', 'Negative prompt') }}
+          </label>
+  
+          <input type="text" id="negative_prompt" class="mt-2 input" autocomplete="off" placeholder="{{ __('Type negative prompt here') }}" x-model="negativePrompt"/>
+        </div>
+      </template>
+  
+      <template x-if="adapter.model.config.images">
+        <div class="flex flex-col gap-2">
+          <label>
+            <i class="text-xl ti ti-photo"></i>
+            <span>{{ p__('label', 'Image') }}</span>
+          </label>
+  
+          <input type="file" @change="addImage($event)" name="file" :accept="(adapter.model.config.images.mime || []).join(',')" class="hidden" :multiple="adapter.model.config.images.limit > 1" x-ref="file">
+  
+          <div class="flex flex-wrap gap-1">
+            <template x-for="image in images">
+              <div class="w-28 h-36 border border-line bg-line-dimmed rounded-lg relative overflow-hidden group">
+                <img :src="URL.createObjectURL(image)" class="w-full h-full object-cover rounded-lg transition-all group-hover:scale-105 duration-1000">
+  
+                <button type="button" class="hidden group-hover:flex absolute top-2 end-2 size-6 items-center justify-center rounded-full bg-button text-button-content" @click="removeImage(image)">
+                  <i class="ti ti-x"></i>
+                </button>
+              </div>
+            </template>
+  
+            <template x-if="images.length < adapter.model.config.images.limit">
+              <button type="button" class="w-28 h-36 flex flex-col justify-between text-start border-dashed items-start gap-2 border border-line hover:bg-intermediate hover:text-intermediate-content rounded-lg p-4" @click="$refs.file.click()">
+                <i class="ti ti-plus"></i>
+                  <span>
+                    {{ p__('label', 'Add image') }}
+                  </span>
+                </span>
+              </button>
+            </template>
+          </div>
+        </div>
+      </template>
+  
+      <div>
+        <button type="submit" class="w-full button">
+          {{ p__('button', 'Confirm') }}
+        </button>
+      </div>
+    </form>
+  </template>
+</modal-element>
+
+<modal-element name="delete-modal">
+  <template x-if="preview">
+    <form class="modal flex flex-col items-center gap-6" @submit.prevent="remove(preview);">
+      <div class="flex relative justify-center items-center mx-auto w-24 h-24 rounded-full text-failure/25">
+        <svg class="absolute top-0 left-0 w-full h-full" width="112"
+          height="112" viewBox="0 0 112 112" fill="none"
+          xmlns="http://www.w3.org/2000/svg">
+          <circle cx="56" cy="56" r="55.5" stroke="currentColor"
+            stroke-dasharray="8 8" />
+        </svg>
+
+        <div
+          class="flex justify-center items-center w-20 h-20 text-4xl rounded-full transition-all bg-failure/25 text-failure">
+          <i class="text-4xl ti ti-trash"></i>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2 items-center text-center">
+        <div class="text-lg text-center">
+          {{ __('Do you really want to delete the image?') }}
+        </div>
+
+        <p class="text-sm text-content-dimmed">
+          {{ __('All associated content and files will be permanently removed. This action cannot be reverted once confirmed.') }}
+        </p>
+      </div>
+
+      <div class="flex gap-4 justify-center items-center">
+        <button class="button button-outline" @click="modal.close()"
+          type="button">
+          {{ p__('button', 'No, cancel') }}
+        </button>
+
+        <button class="button button-failure" type="submit"
+          :processing="isDeleting">
+          {% include "/snippets/spinner.twig" %}
+
+          {{ p__('button', 'Yes, delete') }}
+        </button>
+      </div>
+    </form>
+  </template>
+</modal-element>
+{% endblock %}
+
+{% block footer %}
+<div class="sticky bottom-0 z-40 mt-auto">
+  <div class="h-8 to-transparent bg-linear-to-t from-main"></div>
+
+  <div class="bg-main">
+    <template x-if="form">
+      <form @submit.prevent="{{ workspace.subscription.plan.config.imagine.is_enabled is defined and workspace.subscription.plan.config.imagine.is_enabled ? 'submit($el)' : ''   }}">
+        <div class="flex items-center gap-2 py-2 px-3 text-xs">
+          <button type="button" class="button button-xs button-outline" @click="modal.open('models');">
+            <x-avatar :mask="adapter.model.icon || adapter.model.provider?.icon || adapter.model.icon" :icon="!adapter.model.icon && !adapter.model.provider?.icon && !adapter.model.icon ? 'cpu' : null" class="contain avatar-sm bg-transparent -mx-1"></x-avatar>
+
+            <span x-text="adapter.model.name"></span>
+            <i class="ti ti-caret-up-down-filled text-xs"></i>
+          </button>
+
+          <template x-if="images.length > 0 || Object.keys(params).filter(p => ['quality', 'aspect_ratio', 'size', 'background', 'style'].includes(p)).length > 0">
+            <button type="button" class="flex items-center gap-2 border-s border-line ps-4 ms-2 text-content-dimmed font-semibold" @click.stop="modal.open('options')">
+              <template x-if="params.quality && (f = adapter.model.config.params.find(p => p.key == 'quality'))">
+                <span class="flex items-center gap-1 hover:text-content" x-tooltip.raw="{{ p__('label', 'Quality') }}">
+                  <i class="text-base ti ti-grid-dots"></i>
+                  <span x-text="f.options.find(o => o.value == params.quality)?.label"></span>
+                </span>
+              </template>
+
+              <template x-if="params.aspect_ratio && (f = adapter.model.config.params.find(p => p.key == 'aspect_ratio'))">
+                <span class="flex items-center gap-1 hover:text-content" x-tooltip.raw="{{ p__('label', 'Aspect ratio') }}">
+                  <i class="text-base ti ti-crop-portrait"></i>
+                  <span x-text="f.options.find(o => o.value == params.aspect_ratio)?.label"></span>
+                </span>
+              </template>
+
+              <template x-if="params.size && (f = adapter.model.config.params.find(p => p.key == 'size'))">
+                <span class="flex items-center gap-1 hover:text-content" x-tooltip.raw="{{ p__('label', 'Size') }}">
+                  <i class="text-base ti ti-maximize"></i>
+                  <span x-text="f.options.find(o => o.value == params.size)?.label"></span>
+                </span>
+              </template>
+
+              <template x-if="params.background && (f = adapter.model.config.params.find(p => p.key == 'background'))">
+                <span class="flex items-center gap-1 hover:text-content" x-tooltip.raw="{{ p__('label', 'Background') }}">
+                  <i class="text-base ti ti-background"></i>
+                  <span x-text="f.options.find(o => o.value == params.background)?.label"></span>
+                </span>
+              </template>
+
+              <template x-if="params.style && (f = adapter.model.config.params.find(p => p.key == 'style'))">
+                <span class="flex items-center gap-1 hover:text-content" x-tooltip.raw="{{ p__('label', 'Style') }}">
+                  <i class="text-base ti ti-palette"></i>
+                  <span x-text="f.options.find(o => o.value == params.style)?.label"></span>
+                </span>
+              </template>
+
+              <template x-if="images.length > 0">
+                <span class="flex items-center gap-1 hover:text-content" x-tooltip.raw="{{ __('Images') }}">
+                  <i class="text-base ti ti-photo"></i>
+                  <span x-text="images.length"></span>
+                </span>
+              </template>
+            </button>
+          </template>
+
+          <template x-if="images.length == 0 && Object.keys(params).filter(p => ['quality', 'aspect_ratio', 'size', 'background', 'style'].includes(p)).length == 0">
+            <button type="button" class="relative text-base hover:text-content" x-tooltip.raw="{{ p__('button', 'Show model related options') }}" @click.stop="modal.open('options')" :class="JSON.stringify(original) !== JSON.stringify(params) ? 'text-content' : 'text-content-dimmed'">
+              <i class="ti ti-settings"></i>
+
+              <template x-if="JSON.stringify(original) != JSON.stringify(params)">
+                <i class="absolute bottom-3 start-2 ti ti-point-filled text-failure"></i>
+              </template>
+            </button>
+          </template>
+
+          <button type="button" class="text-content-dimmed hover:text-content text-base" x-tooltip.raw="{{ p__('button', 'Surprise me') }}" @click="surprise">
+            <i class="ti ti-wand"></i>
+          </button>
+
+          <template x-if="adapter.model.estimation && adapter.model.estimation > 0">
+            <span class="flex gap-1 items-center text-content-dimmed font-semibold ms-auto" x-tooltip.raw="{{ __('Minimum credits required to use this model') }}">
+              <i class="ti ti-coins text-base"></i>
+              <x-credit :data-value="adapter.model.estimation" format="{{ __(":count credits") }}"></x-credit>
+            </span>
+          </template>
+        </div>
+
+        <div class="relative p-0.5 rounded-3xl bg-line-dimmed has-[textarea:focus]:bg-linear-to-br has-[textarea:focus]:from-gradient-from has-[textarea:focus]:to-gradient-to">
+          <div class="flex gap-2 items-end p-2 rounded-[1.375rem] bg-main" :class="{'ps-4': !adapter.model.config.images }">
+            <template x-if="adapter.model.config.images">
+              <button type="button" class="flex justify-center items-center w-10 h-10 text-content-dimmed hover:text-content" @click="images.length == (adapter.model.config.images.limit || 1) ? modal.open('options') : $refs.file.click()" x-tooltip.raw="{{ __('Add images') }}">
+                <i class="text-2xl ti ti-plus"></i>
+              </button>
+            </template>
+
+            <div class="overflow-y-auto mb-2 max-h-36 autogrow-textarea text-content grow" :data-replicated-value="prompt">
+              <textarea
+                :placeholder="placeholder || `{{ __('Type a prompt here...') }}`"
+                autocomplete="off" rows="1" x-model="prompt" x-ref="prompt"
+                :maxlength="adapter.model.config.prompt_length" @blur="blur"
+                @focus="placeholderSurprise"
+                class="block p-0 text-base bg-transparent border-none focus:ring-0 placeholder:text-content-dimmed"
+                @keydown.enter.prevent @keydown.tab="tab($event)"
+                required x-ref="prompt"></textarea>
+            </div>
+
+            <div class="flex gap-2 items-center ms-auto">
+              {% if workspace.subscription.plan.config.imagine.is_enabled is defined and workspace.subscription.plan.config.imagine.is_enabled %}
+              <template x-if="adapter.model.granted">
+                <button type="submit" class="p-0 w-10 h-10 rounded-[0.875rem] button button-accent"
+                  :disabled="!prompt || isProcessing" :processing="isProcessing">
+                  {% include "/snippets/spinner.twig" %}
+
+                  <template x-if="!isProcessing">
+                    <i class="ti ti-arrow-up"></i>
+                  </template>
+                </button>
+              </template>
+
+              <template x-if="!adapter.model.granted">
+                <a href="app/billing" class="p-0 w-10 h-10 rounded-[0.875rem] button button-dimmed"
+                  x-tooltip.raw="{{ __('Selected model is not available in your plan. Either upgrade your plan or select another model.') }}">
+                  <i class="ti ti-lock-up"></i>
+                </a>
+              </template>
+              {% else %}
+              <a href="app/billing" class="p-0 w-10 h-10 rounded-[0.875rem] button button-dimmed"
+                x-tooltip.raw="{{ __('Upgrade your plan') }}">
+                <i class="ti ti-lock-up"></i>
+              </a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </form>
+    </template>
+
+    {% include "/sections/footer.twig" %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,427 @@
+{% extends "/layouts/main.twig" %}
+
+{% block title p__('title', 'Order')|title %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {
+    link: 'app/billing', 
+    label: p__('button', 'Billing overview')
+  } %}
+		<h1 class="mt-4">{{ p__('heading', 'Order') }}</h1>
+
+		<p class="mt-2 text-content-dimmed">
+			<x-uuid>{{ order.id }}</x-uuid>
+		</p>
+	</div>
+
+	<div class="flex flex-col gap-1">
+		<div class="flex flex-col gap-1 md:flex-row">
+			<div class="flex flex-col gap-4 p-8 md:w-96 shrink-0 box">
+				<h2>
+					{{ order.plan.billing_cycle == 'one-time' ? p__('text', 'Add-on credits') : p__('text', 'Subscription') }}
+				</h2>
+
+				<div class="flex justify-between mt-2">
+					<div>
+						<h3 class="text-xl">{{ order.plan.billing_cycle == 'one-time' ? p__('text', 'Credit purchase') : order.plan.title }}</h3>
+
+						<div class="text-sm text-content-dimmed">
+							<x-credit data-value="{{ order.plan.credit_count }}" format="{{ order.plan.credit_count is same as null ? __('Unlimited credits') : n__(":count credit", ":count credits", order.plan.credit_count, order.plan.credit_count) }}"></x-credit>
+						</div>
+					</div>
+
+					<div class="text-end">
+						<div class="text-xl font-bold">
+							<x-money data-value="{{ order.plan.price }}" currency="{{ order.currency.code }}" minor-units="{{ order.currency.fraction_digits }}" fraction="auto"></x-money>
+						</div>
+
+						<div class="text-sm text-content-dimmed">
+							{% if order.plan.billing_cycle == 'monthly' %}
+								{{ p__('billing-cycle', 'Per month') }}
+							{% elseif order.plan.billing_cycle == 'yearly' %}
+								{{ p__('billing-cycle', 'Per year') }}
+							{% else %}
+								{{ p__('billing-cycle', 'One time') }}
+							{% endif %}
+						</div>
+					</div>
+				</div>
+
+				<hr>
+
+				<div>
+					<div class="flex justify-between">
+						<div>{{ __('Subtotal') }}</div>
+						<div>
+							<x-money data-value="{{ order.subtotal }}" currency="{{ order.currency.code }}" minor-units="{{ order.currency.fraction_digits }}" fraction="auto"></x-money>
+						</div>
+					</div>
+
+					<div class="flex justify-between">
+						<div>
+							{{ __('Discount') }}
+
+							{% if order.plan.billing_cycle in ['monthly', 'yearly'] and order.coupon.cycle_count is defined and order.coupon.cycle_count != null %}
+								<span class="text-xs text-content-dimmed">
+									{% if order.coupon.cycle_count == 1 %}
+										({{ __('For first payment only') }})
+									{% else %}
+										({{ __('For first :count payments only')|replace({':count': order.coupon.cycle_count}) }})
+									{% endif %}
+								</span>
+							{% endif %}
+						</div>
+						<div>
+							{% if order.coupon %}
+								{% if order.coupon.discount_type == 'fixed' %}
+									<x-money data-value="{{ order.coupon.amount }}" currency="{{ order.currency.code }}" minor-units="{{ order.currency.fraction_digits }}" fraction="auto"></x-money>
+								{% else %}
+									<span>{{ order.coupon.amount / 100 }}%</span>
+								{% endif %}
+							{% else %}
+								<x-money data-value="0" currency="{{ order.currency.code }}" minor-units="{{ order.currency.fraction_digits }}" fraction="auto"></x-money>
+							{% endif %}
+						</div>
+					</div>
+				</div>
+
+				<hr>
+
+				<div class="flex justify-between text-xl">
+					<div>{{ __('Total') }}</div>
+					<div class="font-bold">
+						<x-money data-value="{{ order.total }}" currency="{{ order.currency.code }}" minor-units="{{ order.currency.fraction_digits }}" fraction="auto"></x-money>
+					</div>
+				</div>
+			</div>
+
+			<div class="flex justify-center items-center p-8 text-center grow box">
+				<div class="flex flex-col gap-6">
+					{% if order.status == 'completed' %}
+						<i class="text-5xl text-success ti ti-square-rounded-check-filled"></i>
+					{% elseif order.status == 'processing' %}
+						<i class="text-5xl text-alert ti ti-alert-square-rounded-filled"></i>
+					{% elseif order.status == 'pending' %}
+						<i class="text-5xl text-content-dimmed ti ti-clock-filled"></i>
+					{% else %}
+						<i class="text-5xl text-failure ti ti-square-rounded-x-filled"></i>
+					{% endif %}
+
+					<div class="flex flex-col gap-4">
+						{% if order.status == 'completed' %}
+							<div class="flex flex-col gap-1">
+								<h2>{{ p__('heading', 'Completed') }}</h2>
+
+								<p class="text-sm">
+									{{ __('Order paid and completed successfully!') }}
+								</p>
+							</div>
+						{% elseif order.status == 'processing' %}
+							<div class="flex flex-col gap-1">
+								<h2>{{ p__('heading', 'Processing') }}</h2>
+
+								<p class="text-sm">
+									{{ __('Order paid successfully but not completed.') }}
+								</p>
+							</div>
+
+							<p class="text-sm text-content-dimmed">
+								{{ __('Please contact support with your order id for assistance.') }}
+							</p>
+						{% elseif order.status == 'cancelled' %}
+							<div class="flex flex-col gap-1">
+								<h2>{{ p__('heading', 'Cancelled') }}</h2>
+
+								<p class="text-sm">
+									{{ __('Order has been cancelled.') }}
+								</p>
+							</div>
+						{% elseif order.status == 'pending' %}
+							<div class="flex flex-col gap-1">
+								<h2>{{ p__('heading', 'Pending') }}</h2>
+
+								<p class="text-sm">
+									{{ __('Waiting for payment.') }}
+								</p>
+							</div>
+
+							<p class="text-sm text-content-dimmed">
+								{{ __('Please make the payment to complete the order.') }}
+							</p>
+						{% else %}
+							<div class="flex flex-col gap-1">
+								<h2>{{ p__('heading', 'Failed') }}</h2>
+
+								<p class="mt-1 text-sm">
+									{{ __('Failed to complete the order!') }}
+								</p>
+							</div>
+
+							<p class="mt-4 text-sm text-content-dimmed">
+								{{ __('Please try again or contact support with your order id for assistance.') }}
+							</p>
+						{% endif %}
+					</div>
+
+					<div>
+						<a href="app/billing" class="button button-outline button-sm">
+							{{ p__('button', 'Billing overview') }}
+						</a>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		{% if order.status == 'pending' %}
+			{% if order.payment_gateway == 'bank-transfer' %}
+				<div class="p-8 box">
+					<h2>{{ __('Bank transfer') }}</h2>
+					<p class="mb-6">
+						{{ __('Please transfer the amount to the following bank account. Enter the order id in the reference field.') }}
+					</p>
+
+					<div x-data="{ activeTab: `{{ option.bank_transfer.international.is_enabled|default(false) ? 'international' : 'domestic' }}` }" class="flex flex-col gap-2">
+						{% if option.bank_transfer.domestic.is_enabled|default(false) or option.bank_transfer.international.is_enabled|default(false) %}
+							<div class="flex gap-4 text-sm font-bold border-b border-line">
+								{% if option.bank_transfer.international.is_enabled|default(false) %}
+									<button @click="activeTab = 'international'" class="relative py-2">
+										{{ __('International transfer') }}
+
+										<template x-if="activeTab === 'international'">
+											<span class="absolute left-0 top-full w-full border-t border-content"></span>
+										</template>
+									</button>
+								{% endif %}
+
+								{% if option.bank_transfer.domestic.is_enabled|default(false) %}
+									<button @click="activeTab = 'domestic'" class="relative py-2">
+										{{ __('Domestic transfer') }}
+
+										<template x-if="activeTab === 'domestic'">
+											<span class="absolute left-0 top-full w-full border-t border-content"></span>
+										</template>
+									</button>
+								{% endif %}
+							</div>
+
+							{% if option.bank_transfer.domestic.is_enabled|default(false) %}
+								<template x-if="activeTab === 'domestic'">
+									<div class="flex flex-col gap-4">
+										<div class="flex flex-col divide-y divide-line-dimmed">
+											<div class="flex flex-col gap-1 items-start py-4">
+												<div class="label">{{ __('Order ID') }}</div>
+												<x-copy>{{ order.id }}</x-copy>
+											</div>
+
+											{% if option.bank_transfer.domestic.beneficiary_name|default(null) %}
+												<div class="flex flex-col gap-1 items-start py-4">
+													<div class="label">{{ __('Beneficiary name') }}</div>
+													<x-copy>{{ option.bank_transfer.domestic.beneficiary_name }}</x-copy>
+												</div>
+											{% endif %}
+
+											{% if option.bank_transfer.domestic.account_number|default(null) %}
+												<div class="flex flex-col gap-1 items-start py-4">
+													<div class="label">{{ __('Account number') }}</div>
+													<x-copy>{{ option.bank_transfer.domestic.account_number }}</x-copy>
+												</div>
+											{% endif %}
+
+											{% if option.bank_transfer.domestic.beneficiary_address|default(null) %}
+												<div class="flex flex-col gap-1 items-start py-4">
+													<div class="label">{{ __('Address') }}</div>
+													<x-copy>{{ option.bank_transfer.domestic.beneficiary_address }}</x-copy>
+												</div>
+											{% endif %}
+
+											{% if option.bank_transfer.domestic.bank_name|default(null) %}
+												<div class="flex flex-col gap-1 items-start py-4">
+													<div class="label">{{ __('Bank name') }}</div>
+													<x-copy>{{ option.bank_transfer.domestic.bank_name }}</x-copy>
+												</div>
+											{% endif %}
+
+											{% if option.bank_transfer.domestic.routing_number|default(null) %}
+												<div class="flex flex-col gap-1 items-start py-4">
+													<div class="label">{{ __('Routing number') }}</div>
+													<x-copy>{{ option.bank_transfer.domestic.routing_number }}</x-copy>
+												</div>
+											{% endif %}
+
+											{% if option.bank_transfer.domestic.bank_address|default(null) %}
+												<div class="flex flex-col gap-1 items-start py-4">
+													<div class="label">{{ __('Bank address') }}</div>
+													<x-copy>{{ option.bank_transfer.domestic.bank_address }}</x-copy>
+												</div>
+											{% endif %}
+
+											{% if option.bank_transfer.domestic.bank_tin|default(null) %}
+												<div class="flex flex-col gap-1 items-start py-4">
+													<div class="label">{{ __('Tax ID') }}</div>
+													<x-copy>{{ option.bank_transfer.domestic.bank_tin }}</x-copy>
+												</div>
+											{% endif %}
+
+											{% if option.bank_transfer.domestic.memo|default(null) %}
+												<div class="flex flex-col gap-1 items-start py-4">
+													<div class="label">{{ __('Reference / Memo') }}</div>
+													<x-copy>{{ option.bank_transfer.domestic.memo }}</x-copy>
+												</div>
+											{% endif %}
+										</div>
+
+										{% if option.bank_transfer.domestic.requisites|default(null) %}
+											<div>
+												<a href="{{ option.bank_transfer.domestic.requisites }}" target="_blank" class="button button-sm">
+													<i class="text-xs ti ti-download"></i>
+													{{ p__('button', 'Download requisites') }}
+												</a>
+											</div>
+										{% endif %}
+									</div>
+								</template>
+							{% endif %}
+
+							{% if option.bank_transfer.international.is_enabled|default(false) %}
+								<template x-if="activeTab === 'international'">
+									<div class="flex flex-col gap-4">
+										<div class="flex flex-col divide-y divide-line-dimmed">
+											<div class="flex flex-col divide-y divide-line-dimmed">
+												<div class="flex flex-col gap-1 items-start py-4">
+													<div class="label">{{ __('Order ID') }}</div>
+													<x-copy>{{ order.id }}</x-copy>
+												</div>
+											</div>
+
+											{% if option.bank_transfer.international.beneficiary_name|default(null) %}
+												<div class="flex flex-col gap-1 items-start py-4">
+													<div class="label">{{ __('Beneficiary name') }}</div>
+													<x-copy>{{ option.bank_transfer.international.beneficiary_name }}</x-copy>
+												</div>
+											{% endif %}
+
+											{% if option.bank_transfer.international.iban|default(null) %}
+												<div class="flex flex-col gap-1 items-start py-4">
+													<div class="label">{{ __('IBAN') }}</div>
+													<x-copy>{{ option.bank_transfer.international.iban }}</x-copy>
+												</div>
+											{% endif %}
+
+											{% if option.bank_transfer.international.beneficiary_address|default(null) %}
+												<div class="flex flex-col gap-1 items-start py-4">
+													<div class="label">{{ __('Address') }}</div>
+													<x-copy>{{ option.bank_transfer.international.beneficiary_address }}</x-copy>
+												</div>
+											{% endif %}
+
+											{% if option.bank_transfer.international.bank_name|default(null) %}
+												<div class="flex flex-col gap-1 items-start py-4">
+													<div class="label">{{ __('Bank name') }}</div>
+													<x-copy>{{ option.bank_transfer.international.bank_name }}</x-copy>
+												</div>
+											{% endif %}
+
+											{% if option.bank_transfer.international.swift_code|default(null) %}
+												<div class="flex flex-col gap-1 items-start py-4">
+													<div class="label">{{ __('SWIFT/BIC') }}</div>
+													<x-copy>{{ option.bank_transfer.international.swift_code }}</x-copy>
+												</div>
+											{% endif %}
+
+											{% if option.bank_transfer.international.bank_address|default(null) %}
+												<div class="flex flex-col gap-1 items-start py-4">
+													<div class="label">{{ __('Bank address') }}</div>
+													<x-copy>{{ option.bank_transfer.international.bank_address }}</x-copy>
+												</div>
+											{% endif %}
+
+											{% if option.bank_transfer.international.bank_tin|default(null) %}
+												<div class="flex flex-col gap-1 items-start py-4">
+													<div class="label">{{ __('Tax ID') }}</div>
+													<x-copy>{{ option.bank_transfer.international.bank_tin }}</x-copy>
+												</div>
+											{% endif %}
+
+											{% if option.bank_transfer.international.memo|default(null) %}
+												<div class="flex flex-col gap-1 items-start py-4">
+													<div class="label">{{ __('Reference / Memo') }}</div>
+													<x-copy>{{ option.bank_transfer.international.memo }}</x-copy>
+												</div>
+											{% endif %}
+
+											{% if option.bank_transfer.correspondent.bank_name|default(null) %}
+												<div class="flex flex-col gap-1 items-start py-4">
+													<div class="label">{{ __('Correspondent bank name') }}</div>
+													<x-copy>{{ option.bank_transfer.correspondent.bank_name }}</x-copy>
+												</div>
+											{% endif %}
+
+											{% if option.bank_transfer.correspondent.swift_code|default(null) %}
+												<div class="flex flex-col gap-1 items-start py-4">
+													<div class="label">{{ __('Correspondent SWIFT/BIC') }}</div>
+													<x-copy>{{ option.bank_transfer.correspondent.swift_code }}</x-copy>
+												</div>
+											{% endif %}
+
+											{% if option.bank_transfer.correspondent.account_number|default(null) %}
+												<div class="flex flex-col gap-1 items-start py-4">
+													<div class="label">{{ __('Correspondent account number') }}</div>
+													<x-copy>{{ option.bank_transfer.correspondent.account_number }}</x-copy>
+												</div>
+											{% endif %}
+
+											{% if option.bank_transfer.correspondent.bank_address|default(null) %}
+												<div class="flex flex-col gap-1 items-start py-4">
+													<div class="label">{{ __('Correspondent bank address') }}</div>
+													<x-copy>{{ option.bank_transfer.correspondent.bank_address }}</x-copy>
+												</div>
+											{% endif %}
+										</div>
+
+										{% if option.bank_transfer.international.requisites|default(null) %}
+											<div>
+												<a href="{{ option.bank_transfer.international.requisites }}" target="_blank" class="button button-sm">
+													<i class="text-xs ti ti-download"></i>
+													{{ p__('button', 'Download requisites') }}
+												</a>
+											</div>
+										{% endif %}
+									</div>
+								</template>
+							{% endif %}
+						{% endif %}
+					</div>
+				</div>
+			{% elseif order.payment_gateway == 'manual-payment' %}
+				<div class="flex flex-col gap-6 p-8 box">
+					<div>
+						<h2>{{ option.manual_payment.name }}</h2>
+						<p>
+							{{ __('Please transfer the amount as per the instruction provided below.') }}
+						</p>
+					</div>
+
+					<div>
+						{{ option.manual_payment.instructions|nl2br }}
+					</div>
+
+					<div class="flex flex-col gap-1 items-start">
+						<div class="label">{{ __('Order ID') }}</div>
+						<x-copy>{{ order.id }}</x-copy>
+					</div>
+
+					{% if option.manual_payment.file|default(null) %}
+						<div>
+							<a href="{{ option.manual_payment.file }}" target="_blank" class="button button-sm">
+								<i class="text-xs ti ti-download"></i>
+								{{ p__('button', 'Download instructions') }}
+							</a>
+						</div>
+					{% endif %}
+				</div>
+			{% endif %}
+		{% endif %}
+	</div>
+
+{% endblock %}

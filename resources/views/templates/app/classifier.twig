@@ -1,0 +1,330 @@
+{% extends "/layouts/main.twig" %}
+{% set mobile_head_button = {
+  link: 'app/classifier'
+} %}
+
+{% set active_menu = '/app/classifier' %}
+{% set xdata %}
+classifier({{ (classification ?? null )|json_encode }})
+{% endset %}
+{% block title p__('title', 'Classifier')|title %}
+
+{% block sidebar %}
+	<div class="hidden group-data-[key=history]/sidebar:block">
+		<div class="flex items-center justify-between p-4 border-b border-line sticky top-0 bg-main z-10">
+			<h2>{{ p__('heading', 'History') }}</h2>
+
+			<button type="button" class="text-content-dimmed hover:text-content" @click="sidebar.close()" x-tooltip.raw.placement.left="{{ __('Close') }}">
+				<i class="text-2xl ti ti-x"></i>
+			</button>
+		</div>
+
+		<div>
+			<template x-for="i in history" :key="i.id">
+				<a :href="`app/classifier/${i.id}`" class="flex gap-2 items-center p-4 border-b border-line-dimmed hover:bg-line-dimmed/50" :class="conversation?.id == i.id ? 'bg-line-dimmed/50' : ''" @click.prevent="select(i)">
+					<x-avatar :title="i.title" class="shrink-0"></x-avatar>
+
+					<div class="overflow-hidden">
+						<div x-text="i.title || `{{ __('Untitled resource') }}`" class="overflow-hidden text-sm text-ellipsis text-nowrap max-w-full" :class="i.title ? '' : 'text-content-dimmed'"></div>
+
+						<div class="flex">
+							<x-time :datetime="i.created_at" data-type="date" class="text-xs text-content-dimmed"></x-time>
+						</div>
+					</div>
+				</a>
+			</template>
+
+			<template x-if="!historyLoaded">
+				<div class="my-8 flex justify-center">
+					<button type="button" @click="fetchHistory()" class="font-semibold hover:underline text-sm">
+						{{ __('Load more') }}
+					</button>
+				</div>
+			</template>
+
+			<template x-if="historyLoaded && history.length === 0">
+				<div class="p-4 text-content-dimmed">
+					{{ __('No classifications yet') }}
+				</div>
+			</template>
+		</div>
+	</div>
+{% endblock %}
+
+{% block toolbar %}
+	<div class="absolute z-10 top-4 end-10 hidden md:flex gap-2 transition-all ease-in">
+		<a href="app/classifier" class="text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('New classification') }}">
+			<i class="text-2xl ti ti-square-rounded-plus"></i>
+		</a>
+
+		<a href="app/library/classifications" class="text-content-dimmed hover:text-content" x-tooltip.raw="{{ __('History') }}" @click.prevent="sidebar.open('history')">
+			<i class="text-2xl ti ti-file-stack"></i>
+		</a>
+	</div>
+{% endblock %}
+
+{% block template %}
+	<div class="flex flex-col gap-4 grow">
+		<div :class="preview || isProcessing ? '' : 'flex justify-center my-auto'">
+			<template x-if="!preview && !isProcessing">
+				<div class="my-10 text-center md:my-0">
+					<div class="mx-auto w-16 h-16 bg-linear-to-br from-[#E562FB] to-[#F8C06D] tool-icon">
+						<div class="bg-linear-to-br from-[#E562FB] to-[#F8C06D]"></div>
+
+						{% include "snippets/icons/classifier.twig" %}
+					</div>
+
+					<h1 class="mt-6">{{ p__('heading', 'Classifier') }}</h1>
+					<p class="mt-1 text-lg font-light text-content-dimmed">
+						{{ p__('classifier-tool-description', 'Classify content as potentially harmful across several categories.')  }}
+					</p>
+				</div>
+			</template>
+
+			<template x-if="isProcessing">
+				<div class="flex flex-col gap-4">
+					<div class="flex flex-col gap-3 grow">
+						<div class="w-2/3 h-6 loading"></div>
+
+						<div class="mb-1">
+							<div class="w-64 h-4 loading"></div>
+						</div>
+					</div>
+
+					<div class="flex gap-4 items-center">
+						<div class="flex gap-1 items-center me-auto">
+							<span class="my-1 w-16 h-3 loading"></span>
+							<span class="text-xs animate-pulse ti ti-point-filled text-content-dimmed"></span>
+							<span class="my-1 w-24 h-3 loading"></span>
+						</div>
+
+						<div class="my-1 size-5 loading"></div>
+						<div class="my-1 size-5 loading"></div>
+						<div class="my-1 size-5 loading"></div>
+					</div>
+
+					<div class="flex flex-col gap-4 mt-4 box" data-density="comfortable">
+						<div>
+							<div class="flex gap-2 items-center">
+								<span class="w-6 h-6 loading"></span>
+
+								<div class="w-2/3 h-4 loading"></div>
+							</div>
+						</div>
+
+						<hr class="my-4">
+
+						<div>
+							<div class="mt-1 h-4 loading"></div>
+							<div class="mt-2 h-4 loading"></div>
+							<div class="mt-2 h-4 loading"></div>
+							<div class="mt-2 mb-1 w-2/3 h-4 loading"></div>
+						</div>
+					</div>
+				</div>
+			</template>
+
+			<template x-if="preview && !isProcessing">
+				<div class="flex flex-col gap-4">
+					<div class="grow">
+						<div class="text-xl autogrow-textarea font-editor-heading" :data-replicated-value="preview.title">
+							<textarea placeholder="{{ __('Untitled resource') }}" autocomplete="off" x-model="preview.title" rows="1" @input.debounce.750ms="save(preview)" class="block px-0 py-0 w-full bg-transparent border-0 ring-0 transition-colors appearance-none outline-none resize-none placeholder:text-content-dimmed placeholder:opacity-50 read-only:text-content-dimmed"></textarea>
+						</div>
+
+						<div class="mt-1">
+							<x-uuid x-text="preview.id"></x-uuid>
+						</div>
+					</div>
+
+					<div class="flex gap-4 items-center">
+						<div class="flex gap-4 items-center me-auto">
+							{% include "snippets/audience.twig" %}
+
+							<span class="flex gap-1 items-center text-sm text-content-dimmed">
+								{% set count %}
+								<span x-text="preview.params.input.length"></span>
+								{% endset %}
+
+								<i class="text-base ti ti-square-rounded-letter-t"></i>
+								{{ __(":count characters", {':count': count})|raw }}
+							</span>
+
+							<template x-if="preview.cost > 0">
+								<span class="flex gap-1 items-center text-sm text-content-dimmed">
+									<i class="text-base ti ti-coins"></i>
+									<x-credit :data-value="preview.cost" format="{{ __(":count credits") }}"></x-credit>
+								</span>
+							</template>
+						</div>
+
+						<button @click="modal.open('delete-modal');" class="flex gap-1 items-center text-sm transition-all text-content-dimmed hover:text-content group">
+							<i class="text-xl ti ti-trash group-hover:text-failure"></i>
+						</button>
+					</div>
+
+					<div class="flex flex-col gap-4 mt-4 box" data-density="comfortable">
+						<div>
+							<template x-if="preview.content.flagged">
+								<div class="flex gap-4">
+									<span class="text-failure">
+										<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+											<path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+											<path d="M8 13v-7.5a1.5 1.5 0 0 1 3 0v6.5"/>
+											<path d="M11 5.5v-2a1.5 1.5 0 1 1 3 0v8.5"/>
+											<path d="M14 5.5a1.5 1.5 0 0 1 3 0v6.5"/>
+											<path d="M17 7.5a1.5 1.5 0 0 1 3 0v8.5a6 6 0 0 1 -6 6h-2h.208a6 6 0 0 1 -5.012 -2.7a69.74 69.74 0 0 1 -.196 -.3c-.312 -.479 -1.407 -2.388 -3.286 -5.728a1.5 1.5 0 0 1 .536 -2.022a1.867 1.867 0 0 1 2.28 .28l1.47 1.47"/>
+										</svg>
+									</span>
+
+									<div>
+										<div class="text-sm font-medium">
+											{{ __('Content is flagged as potentially harmful across following categories:') }}
+										</div>
+
+										<div class="mt-1 text-xs text-content-dimmed">
+											{{ __('Please be aware that this is an automated classification and may not be 100% accurate. We recommend verifying the information with other sources if precision is essential.') }}
+										</div>
+
+										<div class="flex gap-2 items-center mt-4">
+											{% set categories = {
+                      "hate": p__('classifier', 'Hate'),
+                      "hate/threatening": p__('classifier', 'Hate / Threatening'),
+                      "harassment": p__('classifier', 'Harassment'),
+                      "harassment/threatening": p__('classifier', 'Harassment / Threatening'),
+                      "self-harm": p__('classifier', 'Self-harm'),
+                      "self-harm/intent": p__('classifier', 'Self-harm / Intent'),
+                      "self-harm/instructions": p__('classifier', 'Self-harm / Instructions'),
+                      "sexual": p__('classifier', 'Sexual'),
+                      "sexual/minors": p__('classifier', 'Sexual / Minors'),
+                      "violence": p__('classifier', 'Violence'),
+                      "violence/graphic": p__('classifier', 'Violence / Graphic'),
+                    } %}
+
+											{% for key,label in categories %}
+												<template x-if="preview.content.categories[`{{ key }}`]">
+													<span class="badge badge-failure">
+														{{  label }}
+													</span>
+												</template>
+											{% endfor %}
+
+										</div>
+									</div>
+								</div>
+							</template>
+
+							<template x-if="!preview.content.flagged">
+								<div class="flex gap-2">
+									<span class="text-success">
+										<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewbox="0 0 24 24" fill="currentColor">
+											<path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+											<path d="M12.01 2.011a3.2 3.2 0 0 1 2.113 .797l.154 .145l.698 .698a1.2 1.2 0 0 0 .71 .341l.135 .008h1a3.2 3.2 0 0 1 3.195 3.018l.005 .182v1c0 .27 .092 .533 .258 .743l.09 .1l.697 .698a3.2 3.2 0 0 1 .147 4.382l-.145 .154l-.698 .698a1.2 1.2 0 0 0 -.341 .71l-.008 .135v1a3.2 3.2 0 0 1 -3.018 3.195l-.182 .005h-1a1.2 1.2 0 0 0 -.743 .258l-.1 .09l-.698 .697a3.2 3.2 0 0 1 -4.382 .147l-.154 -.145l-.698 -.698a1.2 1.2 0 0 0 -.71 -.341l-.135 -.008h-1a3.2 3.2 0 0 1 -3.195 -3.018l-.005 -.182v-1a1.2 1.2 0 0 0 -.258 -.743l-.09 -.1l-.697 -.698a3.2 3.2 0 0 1 -.147 -4.382l.145 -.154l.698 -.698a1.2 1.2 0 0 0 .341 -.71l.008 -.135v-1l.005 -.182a3.2 3.2 0 0 1 3.013 -3.013l.182 -.005h1a1.2 1.2 0 0 0 .743 -.258l.1 -.09l.698 -.697a3.2 3.2 0 0 1 2.269 -.944zm3.697 7.282a1 1 0 0 0 -1.414 0l-3.293 3.292l-1.293 -1.292l-.094 -.083a1 1 0 0 0 -1.32 1.497l2 2l.094 .083a1 1 0 0 0 1.32 -.083l4 -4l.083 -.094a1 1 0 0 0 -.083 -1.32z"/>
+										</svg>
+									</span>
+
+									<div>
+										<div class="text-sm font-medium">
+											{{ __('Content is considered safe and non-harmful.') }}
+										</div>
+
+										<div class="mt-1 text-xs text-content-dimmed">
+											{{ __('Please be aware that this is an automated classification and may not be 100% accurate. We recommend verifying the information with other sources if precision is essential.') }}
+										</div>
+									</div>
+								</div>
+							</template>
+						</div>
+
+						<hr class="my-4">
+
+						<div class="message">
+							<x-markdown x-effect="$el.setContent(preview.params.input)"></x-markdown>
+						</div>
+
+						<div class="flex">
+							<x-copy :data-copy="preview.params.input" class="flex gap-1 items-center text-sm transition-all text-content-dimmed hover:text-content">
+								<i class="text-xl ti ti-copy"></i>
+
+								<span class="hidden md:inline">{{ p__('button', 'Copy') }}</span>
+							</x-copy>
+						</div>
+					</div>
+				</div>
+			</template>
+		</div>
+	</div>
+
+	<modal-element name="delete-modal">
+		<template x-if="preview">
+			<form class="flex flex-col gap-6 items-center modal" @submit.prevent="remove(preview);">
+				<div class="flex relative justify-center items-center mx-auto w-24 h-24 rounded-full text-failure/25">
+					<svg class="absolute top-0 left-0 w-full h-full" width="112" height="112" viewbox="0 0 112 112" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<circle cx="56" cy="56" r="55.5" stroke="currentColor" stroke-dasharray="8 8"/>
+					</svg>
+
+					<div class="flex justify-center items-center w-20 h-20 text-4xl rounded-full transition-all bg-failure/25 text-failure">
+						<i class="text-4xl ti ti-trash"></i>
+					</div>
+				</div>
+
+				<div class="flex flex-col gap-2 items-center text-center">
+					<div class="text-lg text-center">
+						{{ __('Do you really want to delete the classification?') }}
+					</div>
+
+					<p class="text-sm text-content-dimmed">
+						{{ __('All associated content and files will be permanently removed. This action cannot be reverted once confirmed.') }}
+					</p>
+				</div>
+
+				<div class="flex gap-4 justify-center items-center">
+					<button class="button button-outline" @click="modal.close()" type="button">
+						{{ p__('button', 'No, cancel') }}
+					</button>
+
+					<button class="button button-failure" type="submit" :processing="isDeleting">
+						{% include "/snippets/spinner.twig" %}
+
+						{{ p__('button', 'Yes, delete') }}
+					</button>
+				</div>
+			</form>
+		</template>
+	</modal-element>
+{% endblock %}
+
+{% block footer %}
+	<div class="sticky bottom-0 z-40 mt-auto">
+		<div class="h-8 to-transparent bg-linear-to-t from-main"></div>
+
+		<div class="bg-main">
+			<form @submit.prevent="{{ workspace.subscription.plan.config.classifier.is_enabled is defined and workspace.subscription.plan.config.classifier.is_enabled ? 'submit' : '' }}">
+				<div class="relative p-0.5 rounded-3xl bg-line-dimmed has-[textarea:focus]:bg-linear-to-br has-[textarea:focus]:from-gradient-from has-[textarea:focus]:to-gradient-to">
+					<div class="flex gap-2 items-end p-2 ps-4 rounded-[1.375rem] bg-main">
+						<div class="overflow-y-auto mb-2 max-h-36 autogrow-textarea text-content grow" :data-replicated-value="prompt">
+							<textarea placeholder="{{ __('Type a prompt here...') }}" autocomplete="off" rows="1" x-model="prompt" x-ref="prompt" class="block p-0 text-base bg-transparent border-none focus:ring-0 placeholder:text-content-dimmed" required></textarea>
+						</div>
+
+						<div class="flex gap-2 items-center ms-auto">
+							{% if workspace.subscription.plan.config.classifier.is_enabled is defined and workspace.subscription.plan.config.classifier.is_enabled %}
+								<button type="submit" class="p-0 w-10 h-10 rounded-[0.875rem] button button-accent" :processing="isProcessing" :disabled="!prompt">
+									{% include "/snippets/spinner.twig" %}
+
+									<template x-if="!isProcessing">
+										<i class="ti ti-arrow-up"></i>
+									</template>
+								</button>
+							{% else %}
+								<a href="app/billing" class="p-0 w-10 h-10 rounded-[0.875rem] button button-dimmed" x-tooltip.raw="{{ __('Upgrade your plan') }}">
+									<i class="ti ti-lock-up"></i>
+								</a>
+							{% endif %}
+						</div>
+					</div>
+				</div>
+			</form>
+
+			{% include "/sections/footer.twig" %}
+		</div>
+	</div>
+{% endblock %}

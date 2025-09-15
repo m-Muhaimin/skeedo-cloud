@@ -1,0 +1,194 @@
+{% if placeholder is defined %}
+	<div class="flex relative flex-col gap-6 box">
+		<div>
+			<h3 class="w-16 h-6 font-bold loading"></h3>
+			<div class="mt-1 w-24 h-4 loading"></div>
+		</div>
+
+		<div class="flex gap-2 items-center">
+			<div class="w-6 h-6 rounded-full shrink-0 loading"></div>
+
+			<div class="w-full h-8 grow-1 loading"></div>
+		</div>
+
+		<div class="flex flex-col gap-6 mt-auto">
+			<div class="flex gap-2 items-center mt-0.5">
+				<span class="py-1 w-12 h-6 loading"></span>
+				<span class="py-1 w-14 h-6 loading"></span>
+			</div>
+
+			<div class="hidden w-full button button-dimmed md:block"></div>
+		</div>
+	</div>
+{% else %}
+	<div class="flex relative flex-col gap-6 box hover:border-line" x-data>
+		<div class="flex gap-4 justify-between items-center">
+			<div class="flex gap-2 items-center">
+				<x-avatar :title="`${voice.name}`" :src="voice.avatar"></x-avatar>
+
+				<div>
+					<h3 x-text="voice.name" class="line-clamp-1"></h3>
+
+					<div class="flex gap-2 items-center">
+						<div class="text-xs">
+							<template x-if="voice.visibility == 2">
+								<span class="badge" x-tooltip.raw="{{ __('Public voice') }}">
+									<i class="text-sm ti ti-world"></i>
+
+									{{ __('Public') }}
+								</span>
+							</template>
+
+							<template x-if="voice.visibility == 1">
+								<span class="badge" x-tooltip.raw="{{ __('Accessible to all workspace members') }}">
+									<i class="text-sm ti ti-building"></i>
+
+									{{ __('Workspace') }}
+								</span>
+							</template>
+
+							<template x-if="voice.visibility == 0">
+								<span class="badge" x-tooltip="voice.user?.id && voice.user?.id == $store.user?.id ? `{{ __('Accessible to you only') }}` : `{{ __('Accessible only by owner') }}`">
+									<i class="text-sm ti ti-lock"></i>
+
+									{{ __('Private') }}
+								</span>
+							</template>
+						</div>
+
+						<template x-if="voice.user">
+							<div class="flex gap-0.5 items-center" x-tooltip="`{{ __('Owned by :name')|replace({':name': '${voice.user.first_name}'})|raw }}`">
+								<x-avatar :title="`${voice.user.first_name} ${voice.user.last_name}`" :src="voice.user.avatar" class="avatar-xs"></x-avatar>
+							</div>
+						</template>
+					</div>
+
+				</div>
+			</div>
+
+			<template x-if="voice.user && (voice.user.id == $store.user.id || $store.user.id == $store.workspace.owner.id)">
+				<div class="relative z-50" @click.outside="$refs.context.removeAttribute('data-open')">
+
+					<button class="relative z-10" @click="$refs.context.toggleAttribute('data-open')">
+						<i class="text-2xl ti ti-dots-vertical text-content-dimmed hover:text-intermediate-content"></i>
+					</button>
+
+					<div class="menu" x-ref="context">
+						<ul>
+							<template x-if="voice.user.id == $store.user.id">
+								<li>
+									<button type="button" class="flex gap-2 items-center px-4 py-2 w-full hover:no-underline hover:bg-intermediate" @click="currentResource=null; $nextTick(() => { currentResource = voice; modal.open('voice-edit-modal'); })" x-tooltip.raw="{{ __('View all') }}">
+										<i class="text-base ti ti-pencil"></i>
+
+										{{ p__('button', 'Edit') }}
+									</button>
+								</li>
+							</template>
+
+							<li>
+								<button type="button" class="flex gap-2 items-center px-4 py-2 w-full hover:no-underline hover:bg-intermediate" @click.prevent="currentResource = voice; modal.open('delete-modal');">
+									<i class="text-base ti ti-trash"></i>
+
+									{{ p__('button', 'Delete') }}
+								</button>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</template>
+		</div>
+
+		<div class="flex flex-col gap-0.5">
+			<template x-if="voice.age || voice.accent || voice.gender">
+				<div class="text-sm capitalize">
+					<template x-if="voice.age">
+						<span x-text="voice.age"></span>
+					</template>
+
+					<template x-if="voice.accent">
+						<span x-text="voice.accent"></span>
+					</template>
+
+					<template x-if="voice.gender">
+						<span x-text="voice.gender"></span>
+					</template>
+				</div>
+			</template>
+
+			<template x-if="voice.supported_languages.length > 0">
+				<div class="flex gap-2 items-center">
+					<span class="text-xs text-content-dimmed">{{ p__('label', 'Languages') }}:</span>
+					<div class="relative z-20">
+						<div class="flex items-center group">
+							<template x-for="locale, i in voice.supported_languages">
+								<template x-if="i < 3">
+									<x-avatar class="border-2 transition-all cursor-pointer border-main hover:border-line avatar-xs" :class="i > 0 ? '-ms-2 group-hover:ms-0' : null" x-tooltip="locale.name || locale.code" :src="`https://flagcdn.com/${locale.country_code.toLowerCase()}.svg`"></x-avatar>
+								</template>
+							</template>
+
+							<template x-if="voice.supported_languages.length > 3">
+								<button type="button" class="ms-1 text-xs text-content-dimmed hover:text-content" @click="currentResource = voice; modal.open('voice-details-modal')" x-tooltip.raw="{{ __('View all') }}">
+									+<span x-text="voice.supported_languages.length - 3"></span>
+								</button>
+							</template>
+						</div>
+					</div>
+				</div>
+			</template>
+		</div>
+
+		<div class="mt-auto h-8">
+			<template x-if="voice.sample_url">
+				<x-wave class="flex relative z-20 gap-2 items-center group" :src="voice.sample_url">
+					<button type="button" play-pause>
+						<i class="text-2xl ti ti-player-play-filled text-content-dimmed hover:text-content group-[[state=loading]]:hidden group-[[state=loaded]]:hidden group-[[state=playing]]:hidden"></i>
+						<i class="text-2xl ti ti-player-pause-filled hidden group-[[state=playing]]:block"></i>
+					</button>
+
+					<div class="h-8 grow" wave></div>
+				</x-wave>
+			</template>
+
+			<template x-if="!voice.sample_url">
+				<div class="relative">
+					<div class="flex gap-0.5 justify-center items-center" x-init="bars = Array.from({length: 60}, () => Math.random() * 0.8 + 0.2)">
+						<template x-for="height in bars">
+							<div class="w-[3px] bg-line-dimmed rounded-xs" :style="`height: ${height * 24}px`"></div>
+						</template>
+					</div>
+
+					<div class="flex absolute top-0 left-1/2 justify-center items-center px-2 h-full text-xs whitespace-nowrap bg-linear-to-r from-transparent to-transparent -translate-x-1/2 text-content-dimmed via-main">
+						{{ __('No preview available') }}
+					</div>
+				</div>
+			</template>
+		</div>
+
+		<div class="flex flex-col gap-6">
+			<template x-if="!$store.workspace.subscription?.plan.config.models[voice.model]">
+				<div class="flex gap-2 items-center text-xs text-content-dimmed">
+					<i class="text-base ti ti-lock-up"></i>
+
+					{{ __('Not availabe in your plan') }}
+				</div>
+			</template>
+
+			<div class="hidden mt-auto md:block">
+				<template x-if="!$store.workspace.subscription?.plan.config.models[voice.model]">
+					<a href="app/billing" class="w-full button button-outline">
+						<i class="ti ti-lock-up"></i>
+						{{ p__('button', 'Upgrade plan') }}
+					</a>
+				</template>
+
+				<template x-if="$store.workspace.subscription?.plan.config.models[voice.model]">
+					<a :href="`app/voiceover/${voice.id}`" class="w-full button button-dimmed">
+						{{ p__('button', 'Use this voice') }}
+					</a>
+				</template>
+			</div>
+
+			<a :href="$store.workspace.subscription?.plan.config.models[voice.model] ? `app/voiceover/${voice.id}` : `app/billing`" class="absolute top-0 left-0 z-10 w-full h-full md:hidden"></a>
+		</div>
+	</div>
+{% endif %}

@@ -1,0 +1,42 @@
+modal-element {
+  @apply fixed top-0 left-0 h-full w-full z-50 bg-content/10 transition-all opacity-0 invisible overflow-y-auto;
+
+  &.open {
+    @apply visible opacity-100 backdrop-blur-lg;
+  }
+}
+
+.modal {
+  @apply p-8 pt-11 rounded-t-[2rem] md:rounded-xl bg-main shadow-2xl
+    fixed bottom-0 left-0 w-full max-h-[85%] overflow-auto
+
+    before:absolute before:top-4 before:left-1/2 before:-translate-x-1/2 before:w-[40px] before:h-1 before:bg-line before:rounded-full before:transform before:transition-all group-[[clicked]]/modal:before:scale-x-125
+    
+    md:max-h-none
+    md:overflow-visible
+    md:before:hidden
+    md:pt-8
+    md:w-[32.75rem]
+    md:absolute 
+    md:-translate-x-1/2 
+    md:bottom-auto
+    md:top-40
+    md:left-1/2 
+    
+    transition-all 
+    md:group-[[clicked]]/modal:scale-105;
+
+  & .scroll-area {
+    @apply max-h-96 pe-3 -me-3 overflow-y-auto relative before:sticky before:block after:block before:z-10 after:z-10 before:top-0 before:left-0 before:w-full before:h-4 before:bg-linear-to-b before:from-main before:to-transparent after:sticky after:bottom-0 after:left-0 after:w-full after:h-4 after:bg-linear-to-t after:from-main after:to-transparent;
+
+    &::-webkit-scrollbar-thumb {
+      @apply bg-line/0;
+    }
+
+    &:hover {
+      &::-webkit-scrollbar-thumb {
+        @apply bg-line;
+      }
+    }
+  }
+}

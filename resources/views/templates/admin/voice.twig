@@ -1,0 +1,292 @@
+{% extends "/layouts/main.twig" %}
+
+{% set active_menu = '/admin/voices' %}
+
+{% set xdata %}
+voice({{ voice|json_encode }})
+{% endset %}
+
+{% block title p__('title', 'Edit voice')|title %}
+
+{% block template %}
+	<x-form>
+		<form class="flex flex-col gap-8" @submit.prevent="submit($el)">
+			<div>
+				{% include "snippets/back.twig" with {link: 'admin/voices', label: 'Voices'} %}
+
+				<h1 class="mt-4">
+					{{ p__('heading', 'Voice') }}:
+					<span class="font-normal text-intermediate-content" x-text="voice.name"></span>
+				</h1>
+
+				<div class="mt-2">
+					<x-uuid x-text="voice.id"></x-uuid>
+				</div>
+			</div>
+
+			<div class="flex flex-col gap-2">
+				<template x-if="voice.user || voice.workspace">
+					<section class="flex flex-col gap-6 box" data-density="comfortable">
+						<h2>{{ p__('heading', 'Owner') }}</h2>
+
+
+						<div class="flex flex-col gap-1">
+							<template x-if="voice.workspace">
+								<div class="flex gap-3 items-center p-4 rounded-2xl bg-intermediate text-intermediate-content">
+									<x-avatar class="bg-main text-content" :title="voice.workspace.name"></x-avatar>
+
+									<div>
+										<div class="label">{{ p__('label', 'Workspace') }}</div>
+										<div x-text="voice.workspace.name"></div>
+									</div>
+
+									<a :href="`admin/workspaces/${voice.workspace.id}`" class="flex justify-center items-center ms-auto w-8 h-8 rounded-full bg-main outline-1 outline-line hover:outline outline-offset-0">
+										<i class="text-base ti ti-chevron-right"></i>
+									</a>
+								</div>
+							</template>
+
+							<template x-if="voice.user">
+								<div class="flex gap-3 items-center p-4 rounded-2xl bg-intermediate text-intermediate-content">
+									<x-avatar class="bg-main text-content" :title="`${voice.user.first_name} ${voice.user.last_name}`" :src="voice.user.avatar"></x-avatar>
+
+									<div>
+										<div class="label" x-text="`${voice.user.first_name} ${voice.user.last_name}`"></div>
+										<div class="text-sm text-content-dimmed">{{ p__('role', 'Owner') }}
+										</div>
+									</div>
+
+									<a :href="`admin/users/${voice.user.id}`" class="flex justify-center items-center ms-auto w-8 h-8 rounded-full bg-main outline-1 outline-line hover:outline outline-offset-0">
+										<i class="text-base ti ti-chevron-right"></i>
+									</a>
+								</div>
+							</template>
+						</div>
+					</section>
+				</template>
+
+				<section class="grid gap-6 md:grid-cols-2 box" data-density="comfortable">
+					<h2 class="md:col-span-2">{{ p__('heading', 'Details') }}</h2>
+
+					<div class="grid grid-cols-12 col-span-2 gap-6">
+						<div class="col-span-3">
+							<div class="label">{{ p__('label', 'Provider') }}</div>
+							<div class="mt-2 capitalize" x-text="voice.provider"></div>
+						</div>
+
+						<div class="col-span-9">
+							<div class="label">{{ p__('label', 'Supported languages') }}</div>
+
+							<div class="flex flex-wrap gap-1 items-center mt-2">
+								<template x-for="language in voice.supported_languages">
+									<span class="px-2 py-1 text-xs rounded-md border border-line-dimmed" x-text="language.name"></span>
+								</template>
+							</div>
+						</div>
+					</div>
+
+					<div class="col-span-2">
+						<label for="name">{{ p__('label', 'Name') }}</label>
+
+						<input type="text" id="name" name="name" class="mt-2 input" autocomplete="off" :placeholder="voice.name" :value="voice.name" maxlength="64" required/>
+					</div>
+
+					<div>
+						<label for="gender">{{ p__('label', 'Gender') }}</label>
+
+						<select name="gender" id="gender" class="mt-2 input">
+							<option value="">{{ __('None') }}</option>
+
+							<option value="male" :selected="voice.gender=='male'">
+								{{ __('Male') }}
+							</option>
+
+							<option value="female" :selected="voice.gender=='female'">
+								{{ __('Female') }}
+							</option>
+
+							<option value="neutral" :selected="voice.gender=='neutral'">
+								{{ __('Neutral') }}
+							</option>
+						</select>
+					</div>
+
+					<div>
+						<label for="age">{{ p__('label', 'Age') }}</label>
+
+						<select name="age" id="age" class="mt-2 input">
+							<option value="">{{ __('None') }}</option>
+
+							<option value="young" :selected="voice.age=='young'">
+								{{ __('Young') }}
+							</option>
+
+							<option value="middle-aged" :selected="voice.age=='middle-aged'">
+								{{ __('Middle aged') }}
+							</option>
+
+							<option value="old" :selected="voice.age=='old'">
+								{{ __('Old') }}
+							</option>
+						</select>
+					</div>
+
+					<div class="flex col-span-2 justify-between items-center p-3 rounded-lg bg-intermediate">
+						{{ p__('label', 'Status') }}
+
+						<label class="inline-flex gap-2 items-center cursor-pointer">
+							<input type="checkbox" name="status" class="hidden peer" value="1" :checked="voice.status == 1">
+
+							<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+							<span class="text-content-dimmed peer-checked:hidden">
+								{{ p__('input-value', 'Inactive') }}
+							</span>
+
+							<span class="hidden text-success peer-checked:inline">
+								{{ p__('input-value', 'Active') }}
+							</span>
+						</label>
+					</div>
+				</section>
+
+				<section class="grid gap-6 box" data-density="comfortable">
+					<h2>{{ p__('heading', 'Tones') }}</h2>
+
+					<div>
+						{% set tones = {
+            'authoritative': p__('voice-tone', 'Authoritative'),
+            'pleasant': p__('voice-tone', 'Pleasant'),
+            'deep': p__('voice-tone', 'Deep'),
+            'raspy': p__('voice-tone', 'Raspy'),
+            'witchy': p__('voice-tone', 'Witchy'),
+            'foreigner': p__('voice-tone', 'Foreigner'),
+            'childish': p__('voice-tone', 'Childish'),
+            'angry': p__('voice-tone', 'Angry'),
+            'cheerful': p__('voice-tone', 'Cheerful'),
+            'sad': p__('voice-tone', 'Sad'),
+            'excited': p__('voice-tone', 'Excited'),
+            'friendly': p__('voice-tone', 'Friendly'),
+            'terrified': p__('voice-tone', 'Terrified'),
+            'unfriendly': p__('voice-tone', 'Unfriendly'),
+            'whispering': p__('voice-tone', 'Whispering'),
+            'hopeful': p__('voice-tone', 'Hopeful'),
+            'empathetic': p__('voice-tone', 'Empathetic'),
+            'calm': p__('voice-tone', 'Calm'),
+            'disgruntled': p__('voice-tone', 'Disgruntled'),
+            'fearful': p__('voice-tone', 'Fearful'),
+            'gentle': p__('voice-tone', 'Gentle'),
+            'serious': p__('voice-tone', 'Serious'),
+            'sorry': p__('voice-tone', 'Sorry'),
+            'embarrassed': p__('voice-tone', 'Embarrassed'),
+            'depressed': p__('voice-tone', 'Depressed'),
+            'envious': p__('voice-tone', 'Envious'),
+            'lyrical': p__('voice-tone', 'Lyrical'),
+            'casual': p__('voice-tone', 'Casual'),
+
+            'well-rounded': p__('voice-tone', 'Well rounded-xs'),
+            'war-veteran': p__('voice-tone', 'War veteran'),
+            'ground-reporter': p__('voice-tone', 'Ground reporter'),
+            'strong': p__('voice-tone', 'Strong'),
+            'sailor': p__('voice-tone', 'Sailor'),
+            'soft': p__('voice-tone', 'Soft'),
+            'warm': p__('voice-tone', 'Warm'),
+            'emotional': p__('voice-tone', 'Emotional'),
+            'intense': p__('voice-tone', 'Intense'),
+            'shouty': p__('voice-tone', 'Shouty'),
+            'anxious': p__('voice-tone', 'Anxious'),
+            'crisp': p__('voice-tone', 'Crisp'),
+            'seductive': p__('voice-tone', 'Seductive'),
+            'confident': p__('voice-tone', 'Confident'),
+            'orotund': p__('voice-tone', 'Orotund'),
+            'overhyped': p__('voice-tone', 'Overhyped'),
+            'mature': p__('voice-tone', 'Mature'),
+          } %}
+
+
+						<div class="grid grid-cols-3 gap-3 mt-2">
+							{% for key, tone in tones %}
+								<label class="flex gap-4 items-center py-2 cursor-pointer box hover:border-line">
+									<div class="font-normal">{{ tone }}</div>
+
+									<div class="ms-auto">
+										<input type="checkbox" name="tones[]" class="hidden peer" value="{{ key }}" :checked="voice.tones.includes(`{{ key }}`)">
+
+										<i class="text-2xl ti ti-square-rounded text-content-dimmed peer-checked:hidden"></i>
+										<i class="text-2xl hidden ti ti-square-rounded-check-filled text-success peer-checked:block"></i>
+									</div>
+								</label>
+							{% endfor %}
+						</div>
+					</div>
+				</section>
+
+				<section class="grid gap-6 box" data-density="comfortable">
+					<h2>{{ p__('heading', 'Use cases') }}</h2>
+
+					<div>
+						{% set use_cases = {
+            'general': p__('use-case', 'General'),
+            'narration': p__('use-case', 'Narration'),
+            'news': p__('use-case', 'News'),
+            'video-games': p__('use-case', 'Video games'),
+            'meditation': p__('use-case', 'Meditation'),
+            'conversational': p__('use-case', 'Conversational'),
+            'characters': p__('use-case', 'Characters'),
+            'children-stories': p__('use-case', 'Children stories'),
+            'newscast': p__('use-case', 'Newscast'),
+            'chat': p__('use-case', 'Chat'),
+            'customer-service': p__('use-case', 'Customer service'),
+            'narration-professional': p__('use-case', 'Narration professional'),
+            'newscast-casual': p__('use-case', 'Newscast casual'),
+            'newscast-formal': p__('use-case', 'Newscast formal'),
+            'assistant': p__('use-case', 'Assistant'),
+            'poetry-reading': p__('use-case', 'Poetry reading'),
+            'narration-relaxed': p__('use-case', 'Narration relaxed'),
+            'sports-commentary': p__('use-case', 'Sports commentary'),
+            'sports-commentary-excited': p__('use-case', 'Sports commentary excited'),
+            'documentary-narration': p__('use-case', 'Documentary narration'),
+            'live-commercial': p__('use-case', 'Live commercial'),
+            'advertisement-upbeat': p__('use-case', 'Advertisement upbeat'),
+            'chat-casual': p__('use-case', 'Chat casual'),
+            
+            'audiobook': p__('use-case', 'Audiobook'),
+            'asmr': p__('use-case', 'ASMR'),
+            'animation': p__('use-case', 'Animation'),
+            'interactive': p__('use-case', 'Interactive'),
+            'informative-educational': p__('use-case', 'Informative educational'),
+          } %}
+
+						<div class="grid grid-cols-3 gap-3 mt-2">
+							{% for key, uc in use_cases %}
+								<label class="flex gap-4 items-center py-2 cursor-pointer box hover:border-line">
+									<div class="font-normal">{{ uc }}</div>
+
+									<div class="ms-auto">
+										<input type="checkbox" name="use_cases[]" class="hidden peer" value="{{ key }}" :checked="voice.use_cases.includes(`{{ key }}`)">
+
+										<i class="text-2xl ti ti-square-rounded text-content-dimmed peer-checked:hidden"></i>
+										<i class="text-2xl hidden ti ti-square-rounded-check-filled text-success peer-checked:block"></i>
+									</div>
+								</label>
+							{% endfor %}
+						</div>
+					</div>
+				</section>
+			</div>
+
+			<div class="flex gap-4 justify-end">
+				<a href="admin/voices" class="button button-outline">
+					{{ p__('button', 'Cancel') }}
+				</a>
+
+				<button type="submit" class="button button-accent" :processing="isProcessing">
+
+					{% include "/snippets/spinner.twig" %}
+
+					<span>{{ p__('button', 'Update voice') }}</span>
+				</button>
+			</div>
+		</form>
+	</x-form>
+{% endblock %}

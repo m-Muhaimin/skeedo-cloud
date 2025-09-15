@@ -1,0 +1,158 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% set xdata = 'settings' %}
+{% block title p__('title', 'Manual payment settings')|title %}
+
+{% block template %}
+	{% set svgborder %}
+	<svg class="absolute top-0 left-0 w-full h-full rounded-lg text-line group-hover:text-line group-data-[selected]:hidden stroke-2 stroke-current" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+		<rect cx="56" width="100%" height="100%" stroke-dasharray="4 4" rx="8" ry="8"/>
+	</svg>
+	{% endset %}
+
+	<div>
+		{% include "snippets/back.twig" with {link: 'admin/settings/payments', label: 'Payments'} %}
+
+		<h1 class="mt-4">{{ p__('heading', 'Manual payment settings') }}</h1>
+	</div>
+
+	<x-form>
+		<form @submit.prevent="submit" x-ref="form" autocomplete="off">
+			<div class="flex flex-col gap-8" x-data="{file: `{{ option.manual_payment.file ?? '' }}`, }">
+				<div class="flex flex-col gap-2">
+					<section class="flex flex-col gap-6 box" data-density="comfortable">
+						<h2>{{ p__('heading', 'Details') }}</h2>
+
+						<div class="flex justify-between items-center p-3 rounded-lg bg-intermediate">
+							{{ p__('label', 'Status') }}
+
+							<label class="inline-flex gap-2 items-center cursor-pointer">
+								<input type="checkbox" name="manual_payment[is_enabled]" class="hidden peer" {{ option.manual_payment.is_enabled is defined and option.manual_payment.is_enabled ? 'checked' : '' }}>
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+								<span class="text-content-dimmed peer-checked:hidden">
+									{{ __('Disabled') }}
+								</span>
+
+								<span class="hidden text-success peer-checked:inline">
+									{{ __('Enabled') }}
+								</span>
+							</label>
+						</div>
+
+						<div class="flex flex-col gap-2">
+							<label for="manual_payment[enabled_for]">
+								{{ p__('label', 'Enabled for') }}
+							</label>
+
+							<select id="manual_payment[enabled_for]" name="manual_payment[enabled_for]" class="mt-2 input" required>
+								<option value="one-time" {{ option.manual_payment.enabled_for|default('one-time') == 'one-time' ? 'selected' : '' }}>{{ p__('label', 'One time payments') }}
+									({{ p__('label', 'Recommended') }})</option>
+								<option value="annual" {{ option.manual_payment.enabled_for|default('one-time') == 'annual' ? 'selected' : '' }}>{{ p__('label', 'One-time and annual payments') }}</option>
+								<option value="all" {{ option.manual_payment.enabled_for|default('one-time') == 'all' ? 'selected' : '' }}>{{ p__('label', 'All payments') }}</option>
+							</select>
+						</div>
+					</section>
+
+					<section class="flex flex-col gap-6 box" data-density="comfortable">
+						<h2>{{ p__('heading', 'Transfer details') }}</h2>
+
+						<div class="flex flex-col gap-2">
+							<label for="manual_payment[name]">{{ p__('label', 'Method name') }}</label>
+
+							<input type="text" id="manual_payment[name]" name="manual_payment[name]" class="input" required value="{{ option.manual_payment.name ?? '' }}"/>
+
+							<ul class="info">
+								<li>
+									{{ __('This name will be displayed to customer at checkout page.') }}
+								</li>
+							</ul>
+						</div>
+
+						<div class="flex flex-col gap-2">
+							<label for="manual_payment[instructions]">
+								{{ p__('label', 'Payment instructions') }}
+							</label>
+
+							<textarea id="manual_payment[instructions]" name="manual_payment[instructions]" class="input" required rows="5">{{ option.manual_payment.instructions ?? '' }}</textarea>
+
+							<ul class="info">
+								<li>
+									{{ __('Displays to customers after they place an order with this payment method.') }}
+								</li>
+								<li>
+									{{ __('Include instructions for the customer to follow to make payments for their orders.') }}
+								</li>
+							</ul>
+						</div>
+
+						<div class="relative p-6" x-data="{selected: null}">
+							<svg class="absolute top-0 left-0 w-full h-full rounded-lg text-line group-hover:text-line group-data-[selected]:hidden stroke-2 stroke-current" width="100%" height="100%" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<rect cx="56" width="100%" height="100%" stroke-dasharray="4 4" rx="8" ry="8"/>
+							</svg>
+
+							<div class="flex relative z-10 flex-col gap-6 justify-between items-start sm:flex-row">
+								<template x-if="!selected">
+									<div>
+										<div class="font-semibold">{{ p__('label', 'Instructions file') }}</div>
+
+										<div class="mt-1 text-xs text-content-dimmed">
+											{{ p__('info', 'Optional payment instructions file') }}
+										</div>
+									</div>
+								</template>
+
+								<template x-if="selected">
+									<div>
+										<div class="font-semibold truncate" x-text="selected.name"></div>
+
+										<div class="mt-1 text-xs text-intermediate-content" x-text="selected.type"></div>
+									</div>
+								</template>
+
+								<button type="button" class="w-full button button-dimmed sm:w-auto" @click="$refs.file.click()">{{ p__('button', 'Browse files') }}</button>
+							</div>
+
+							<template x-if="file">
+								<div class="flex relative z-10 gap-2 items-center mt-4 text-xs text-content-dimmed">
+									<a href="{{ option.manual_payment.file ?? '' }}" target="_blank" class="flex gap-1 items-center hover:text-content hover:no-underline">
+										{{ p__('button', 'View current') }}
+
+										<i class="text-xs ti ti-external-link"></i>
+									</a>
+
+									<i class="text-xs ti ti-point-filled"></i>
+
+									<button type="button" class="flex gap-1 items-center hover:text-content hover:no-underline" @click="$refs.file.value = null; file = null;">
+										<i class="text-xs ti ti-trash"></i>
+										{{ p__('button', 'Delete') }}
+									</button>
+								</div>
+							</template>
+
+							<template x-if="file === null">
+								<input type="hidden" name="manual_payment[file]" value="">
+							</template>
+
+							<input type="file" @change="selected = $refs.file.files[0];" name="manual_payment[file]" id="file" class="hidden" x-ref="file">
+						</div>
+					</section>
+				</div>
+
+				<div class="flex gap-4 justify-end">
+					<a href="admin/settings" class="button button-outline">
+						{{ p__('button', 'Cancel') }}
+					</a>
+
+					<button type="submit" class="button button-accent" :processing="isProcessing">
+						{% include "/snippets/spinner.twig" %}
+
+						{{ p__('button', 'Save changes') }}
+					</button>
+				</div>
+			</div>
+		</form>
+	</x-form>
+{% endblock %}

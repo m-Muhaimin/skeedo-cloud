@@ -1,0 +1,335 @@
+{% extends "/layouts/main.twig" %}
+{% set active_menu = '/admin/settings' %}
+
+{% set xdata = 'settings' %}
+{% block title p__('title', 'Stripe settings')|title %}
+
+{% block template %}
+	<div>
+		{% include "snippets/back.twig" with {link: 'admin/settings/payments', label: 'Payments'} %}
+
+		<h1 class="mt-4">{{ p__('heading', 'Stripe settings') }}</h1>
+	</div>
+
+	{% set config %}
+	{
+										mode: `{{ option.stripe.mode ?? 'test' }}`,
+										test_secret_key: `{{ environment == 'demo' ? 'hidden in demo' : option.stripe.test.secret_key ?? '' }}`,
+										test_publishable_key: `{{ option.stripe.test.publishable_key ?? '' }}`,
+										test_webhook_secret: `{{ environment == 'demo' ? 'hidden in demo' : option.stripe.test.webhook_secret ?? '' }}`,
+										live_secret_key: `{{ environment == 'demo' ? 'hidden in demo' : option.stripe.live.secret_key ?? '' }}`,
+										live_publishable_key: `{{ option.stripe.live.publishable_key ?? '' }}`,
+										live_webhook_secret: `{{ environment == 'demo' ? 'hidden in demo' : option.stripe.live.webhook_secret ?? '' }}`,
+									}
+	{% endset %}
+
+	<x-form>
+		<form @submit.prevent="submit" x-ref="form">
+			<div x-data="{{ config }}" class="flex flex-col gap-8">
+
+				<input type="hidden" name="stripe[secret_key]" :value="mode=='live' ? live_secret_key : test_secret_key ">
+				<input type="hidden" name="stripe[publishable_key]" :value="mode=='live' ? live_publishable_key : test_publishable_key ">
+				<input type="hidden" name="stripe[webhook_secret]" :value="mode=='live' ? live_webhook_secret : test_webhook_secret ">
+
+				<div class="flex flex-col gap-2">
+					<section class="flex flex-col gap-6 box" data-density="comfortable">
+
+						<h2>{{ p__('heading', 'Details') }}</h2>
+
+						<div class="flex justify-between items-center p-3 rounded-lg bg-intermediate">
+							{{ p__('label', 'Status') }}
+
+							<label class="inline-flex gap-2 items-center cursor-pointer">
+								<input type="checkbox" name="stripe[is_enabled]" class="hidden peer" {{ option.stripe.is_enabled is defined and option.stripe.is_enabled ? 'checked' : '' }}>
+
+								<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+								<span class="text-content-dimmed peer-checked:hidden">
+									{{ __('Disabled') }}
+								</span>
+
+								<span class="hidden text-success peer-checked:inline">
+									{{ __('Enabled') }}
+								</span>
+							</label>
+						</div>
+
+						<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+							<div x-data="{currency: `{{ option.stripe.currency ?? '' }}`}">
+								<label for="stripe[currency]">
+									{{ p__('label', 'Charge Currency') }}
+								</label>
+
+								<select id="stripe[currency]" name="stripe[currency]" class="mt-2 input" x-model="currency">
+									<option value="">{{ __('Inherit') }}</option>
+
+									{% for code, name in currencies %}
+										<option value="{{ code }}" {{ option.stripe.currency is defined and code == option.stripe.currency ? 'selected' : '' }}>
+											{{ name }}
+										</option>
+									{% endfor %}
+								</select>
+
+								<ul class="info mt-2">
+									<template x-if="!currency">
+										<li>
+											{{ __('All charges will be made in default currency:') }}
+											<a href="/admin/settings/billing" target="_blank" class="inline-flex gap-1 items-center text-content hover:underline">
+												{{ option.billing.currency ?? '' }}
+
+												<i class="text-xs ti ti-external-link"></i>
+											</a>
+										</li>
+									</template>
+
+									<template x-if="currency">
+										<li>
+											{{ __('If the currency rate provider is set up, the amount for all transactions processed via this payment gateway will automatically be converted into the chosen currency.') }}
+										</li>
+									</template>
+								</ul>
+							</div>
+
+							<div x-data="{type: `{{ option.stripe.type ?? 'card' }}`}">
+								<label for="stripe[type]">
+									{{ p__('label', 'Form type') }}
+								</label>
+
+								<select id="stripe[type]" name="stripe[type]" class="mt-2 input" x-model="type">
+									<option value="card">{{ __('Simple') }}</option>
+									<option value="payment">{{ __('Advanced') }}</option>
+								</select>
+
+								<ul class="info mt-2">
+									<template x-if="type == 'card'">
+										<li>
+											{{ __('Simple payment form includes card input fields and a single payment button.') }}
+										</li>
+									</template>
+
+									<template x-if="type == 'payment'">
+										<li>
+											{{ __('Advanced card form includes all payment methods enabled in your Stripe account.') }}
+
+											{% set click %}
+											<a href="https://dashboard.stripe.com/settings/payment_methods" target="_blank" class="inline-flex gap-1 items-center text-content hover:underline">
+												{{ p__('button', 'Click here') }}
+
+												<i class="text-xs ti ti-external-link"></i>
+											</a>
+											{% endset %}
+
+											{{__(':click_here to view payment methods.', {':click_here': click})|raw}}
+										</li>
+									</template>
+								</ul>
+							</div>
+						</div>
+
+						<div>
+							<label>{{ p__('label', 'Mode') }}</label>
+
+							<div class="flex gap-2 items-center mt-2">
+								<label>
+									<input type="radio" name="stripe[mode]" value="test" class="radio-button" x-model="mode"/>
+
+									<span>{{ p__('input-value', 'Test') }}</span>
+								</label>
+
+								<label>
+									<input type="radio" name="stripe[mode]" value="live" class="radio-button" x-model="mode"/>
+
+									<span>{{ p__('input-value', 'Live') }}</span>
+								</label>
+							</div>
+						</div>
+					</section>
+
+					<section class="grid grid-cols-1 gap-6 box" data-density="comfortable">
+						<h2>{{ p__('heading', 'Customer portal') }}</h2>
+
+						<div>
+							<div class="flex justify-between items-center p-3 rounded-lg bg-intermediate">
+								{{ p__('label', 'Enable customer portal') }}
+
+								<label class="inline-flex gap-2 items-center cursor-pointer">
+									<input type="checkbox" name="stripe[customer_portal]" class="hidden peer" {{ option.stripe.customer_portal|default(false) ? 'checked' : '' }}>
+
+									<span class="block relative w-10 h-6 rounded-3xl transition-all bg-line peer-checked:bg-success after:h-5 after:w-5 after:top-0.5 after:absolute after:left-0 after:ms-0.5 after:transition-all after:rounded-full after:bg-white peer-checked:after:left-4"></span>
+
+									<span class="text-content-dimmed peer-checked:hidden">
+										{{ __('Disabled') }}
+									</span>
+
+									<span class="hidden text-success peer-checked:inline">
+										{{ __('Enabled') }}
+									</span>
+								</label>
+							</div>
+
+							<ul class="info mt-2">
+								<li>
+									{{ __("When enabled, the Stripe Customer Portal integration will be accessible from the billing overview page for all Stripe-based subscriptions.") }}
+								</li>
+
+								<li>
+									{{ __('The customer portal allows customers to manage their payment methods, subscriptions, and billing details.') }}
+								</li>
+
+								<li>
+									{{ __("Make sure following options are turned off in the customer portal settings:") }}
+									<ul class="list-inside m-3 font-medium text-content">
+										<li>
+											- Customers can switch plans
+										</li>
+
+										<li>
+											- Customers can change quantity of their plan
+										</li>
+									</ul>
+								</li>
+							</ul>
+						</div>
+
+						<div>
+							<a :href="mode=='test' ? 'https://dashboard.stripe.com/test/settings/billing/portal' : 'https://dashboard.stripe.com/settings/billing/portal'" target="_blank" class="button button-sm">
+								{{ p__('button', 'Configure customer portal') }}
+
+								<i class="text-xs ti ti-external-link"></i>
+							</a>
+						</div>
+					</section>
+
+					<section class="grid grid-cols-1 gap-6 box" data-density="comfortable">
+						<div class="flex gap-2 items-center">
+							<h2>{{ p__('heading', 'Keys') }}</h2>
+
+							<span x-show="mode == 'test'" class="badge">
+								{{ __('Test mode') }}
+							</span>
+						</div>
+
+						<div>
+							<label for="stripe.live.publishable_key">
+								{{ p__('label', 'API publishable key') }}
+							</label>
+
+							<template x-if="mode=='live'">
+								<input type="text" id="stripe.live.publishable_key" name="stripe[live][publishable_key]" class="mt-2 input" autocomplete="off" x-model="live_publishable_key"/>
+							</template>
+
+							<template x-if="mode=='test'">
+								<input type="text" id="stripe.test.publishable_key" name="stripe[test][publishable_key]" class="mt-2 input" autocomplete="off" x-model="test_publishable_key"/>
+							</template>
+
+							<ul class="info mt-2">
+								<li>
+									{{ __("Can't find your API Publishable Key?") }}
+
+									<a :href="mode=='test' ? 'https://dashboard.stripe.com/test/apikeys' : 'https://dashboard.stripe.com/apikeys'" target="_blank" class="text-content hover:underline">
+										{{ p__('button', 'Click here') }}
+									</a>
+								</li>
+							</ul>
+						</div>
+
+						<div>
+							<label for="stripe.live.secret_key">
+								{{ p__('label', 'API secret key') }}
+							</label>
+
+							<template x-if="mode=='live'">
+								<input type="password" id="stripe.live.secret_key" name="stripe[live][secret_key]" class="mt-2 input" autocomplete="new-password" x-model="live_secret_key"/>
+							</template>
+
+							<template x-if="mode=='test'">
+								<input type="password" id="stripe.test.secret_key" name="stripe[test][secret_key]" class="mt-2 input" autocomplete="new-password" x-model="test_secret_key"/>
+							</template>
+
+							<ul class="info mt-2">
+								<li>
+									{{ __("Can't find your API Secret Key?") }}
+
+									<a :href="mode=='test' ? 'https://dashboard.stripe.com/test/apikeys' : 'https://dashboard.stripe.com/apikeys'" target="_blank" class="text-content hover:underline">
+										{{ p__('button', 'Click here') }}
+									</a>
+								</li>
+							</ul>
+						</div>
+					</section>
+
+					<section class="grid grid-cols-1 gap-6 box" data-density="comfortable">
+
+						<div class="flex gap-2 items-center">
+							<h2>{{ p__('heading', 'Webhooks') }}</h2>
+
+							<span x-show="mode == 'test'" class="badge">
+								{{ __('Test mode') }}
+							</span>
+						</div>
+
+						<div>
+							<label>{{ p__('label', 'Webhook URL') }}</label>
+
+							<div class="flex items-center mt-2 input">
+								<x-copy data-msg="URL copied to clipboard" data-tippy-placement="right" class="badge">{your_domain}/webhooks/stripe</x-copy>
+							</div>
+
+							<ul class="info mt-2">
+								<li>
+									{% set link %}
+									<a :href="mode == 'test' ? 'https://dashboard.stripe.com/test/webhooks' : 'https://dashboard.stripe.com/webhooks'" target="_blank" class="text-content hover:underline">
+										{{ __('Stripe Dashboard') }}
+									</a>
+									{% endset %}
+
+									{{ __('Create a webhook endpoint in your %s with the Webhook URL.', link)|raw }}
+								</li>
+
+								<li>{{ __('Make sure to select all events') }}</li>
+							</ul>
+						</div>
+
+						<div>
+							<label for="stripe.live.webhook_secret">
+								{{ p__('label', 'Webhook secret') }}
+							</label>
+
+							<template x-if="mode=='live'">
+								<input type="password" id="stripe.live.webhook_secret" name="stripe[live][webhook_secret]" class="mt-2 input" autocomplete="new-password" x-model="live_webhook_secret"/>
+							</template>
+
+							<template x-if="mode=='test'">
+								<input type="password" id="stripe.test.webhook_secret" name="stripe[test][webhook_secret]" class="mt-2 input" autocomplete="new-password" x-model="test_webhook_secret"/>
+							</template>
+
+							<ul class="info mt-2">
+								<li>
+									{% set link %}
+									<a href="https://stripe.com/docs/development/dashboard/register-webhook#add-a-webhook-endpoint" target="_blank" class="text-content hover:underline">
+										{{ p__('button', 'Click here') }}
+									</a>
+									{% endset %}
+
+									{{ __('For more information %s', link)|raw }}
+								</li>
+							</ul>
+						</div>
+					</section>
+				</div>
+
+				<div class="flex gap-4 justify-end">
+					<a href="admin/settings" class="button button-outline">
+						{{ p__('button', 'Cancel') }}
+					</a>
+
+					<button type="submit" class="button button-accent" :processing="isProcessing">
+						{% include "/snippets/spinner.twig" %}
+
+						{{ p__('button', 'Save changes') }}
+					</button>
+				</div>
+			</div>
+		</form>
+	</x-form>
+{% endblock %}
