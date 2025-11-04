@@ -1,4 +1,22 @@
 {
   "image": "mcr.microsoft.com/devcontainers/universal:2",
-  "features": {}
+  "features": {
+    "ghcr.io/devcontainers/features/php:1": {
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/composer:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "bmewburn.vscode-intelephense-client",
+        "felixfbecker.php-debug"
+      ]
+    }
+  },
+  "forwardPorts": [8000, 8080],
+  "postCreateCommand": "composer install && cp .env.example .env",
+  "remoteEnv": {
+    "APP_ENV": "development"
+  }
 }
